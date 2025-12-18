@@ -1,0 +1,224 @@
+/* Basic reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+#game-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+header h1 {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#timer {
+  font-weight: bold;
+}
+
+main {
+  display: flex;
+  gap: 20px;
+}
+
+main.hidden {
+  display: none;
+}
+
+#call-section,
+#map-section {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+#call-section h2,
+#map-section h2,
+#units-panel h3 {
+  margin-bottom: 10px;
+  color: #444;
+}
+
+#call-dialogue {
+  flex: 1;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+  overflow-y: auto;
+  background-color: #fafafa;
+}
+
+#call-dialogue p {
+  margin-bottom: 8px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.options button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.options button:hover {
+  background-color: #0056b3;
+}
+
+#map-section {
+  position: relative;
+}
+
+#map-grid {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  gap: 2px;
+  width: 100%;
+  height: 400px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.grid-cell {
+  border: 1px solid #ddd;
+  background-color: #f9f9f9;
+  position: relative;
+}
+
+/* Incident marker */
+.incident {
+  background-color: #ff4c4c;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* Unit marker */
+.unit {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.unit.police {
+  background-color: #0057b8; /* blue */
+}
+.unit.fire {
+  background-color: #d32f2f; /* red */
+}
+.unit.medical {
+  background-color: #388e3c; /* green */
+}
+
+#units-panel {
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+}
+
+#units-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.unit-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding: 4px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background-color: #f7f7f7;
+}
+
+.unit-item button {
+  padding: 4px 8px;
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.unit-item button:disabled {
+  background-color: #aaa;
+  cursor: not-allowed;
+}
+
+.unit-item button:hover:not(:disabled) {
+  background-color: #1e7e34;
+}
+
+#scoreboard {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+}
+
+#result-section {
+  text-align: center;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#result-section.hidden {
+  display: none;
+}

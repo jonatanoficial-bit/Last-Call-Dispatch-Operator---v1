@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Last Call Dispatch Operator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Last Call Dispatch Operator</h1>
+      <div class="controls">
+        <button id="start-btn">Start Game</button>
+        <span id="timer">Time: 00:00</span>
+      </div>
+    </header>
+    <main id="main" class="hidden">
+      <section id="call-section">
+        <h2>Call Center</h2>
+        <div id="call-dialogue" class="scroll-box"></div>
+        <div id="call-options" class="options"></div>
+      </section>
+      <section id="map-section">
+        <h2>City Map</h2>
+        <div id="map-grid"></div>
+        <aside id="units-panel">
+          <h3>Available Units</h3>
+          <div id="units-list"></div>
+        </aside>
+      </section>
+    </main>
+    <footer>
+      <div id="scoreboard">
+        <span id="score">Score: 0</span>
+        <span id="calls-handled">Calls handled: 0</span>
+      </div>
+    </footer>
+    <div id="result-section" class="hidden">
+      <h2>Game Over</h2>
+      <p id="result-text"></p>
+      <button id="restart-btn">Restart</button>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
