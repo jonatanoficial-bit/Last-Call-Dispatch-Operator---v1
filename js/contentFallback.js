@@ -1,0 +1,447 @@
+// Conteúdo embutido (fallback) — Fase 2
+// Usado quando o jogo roda via file:// e o fetch() pode falhar.
+// Em deploy (Vercel/GitHub Pages), os arquivos /data/*.json são a fonte principal.
+
+export const CITY_NOVA_AURORA = {
+  "id": "nova_aurora",
+  "name": "Nova Aurora (Simulação)",
+  "country": "BR",
+  "region": "BR",
+  "grid": {
+    "w": 18,
+    "h": 12
+  },
+  "bases": [
+    {
+      "id": "pd1",
+      "type": "police",
+      "name": "Batalhão Central",
+      "x": 2,
+      "y": 2
+    },
+    {
+      "id": "fd1",
+      "type": "fire",
+      "name": "Quartel Central",
+      "x": 15,
+      "y": 9
+    },
+    {
+      "id": "md1",
+      "type": "medical",
+      "name": "Posto Médico",
+      "x": 10,
+      "y": 3
+    }
+  ],
+  "hotspots": [
+    {
+      "name": "Centro",
+      "x": 8,
+      "y": 6
+    },
+    {
+      "name": "Zona Norte",
+      "x": 6,
+      "y": 2
+    },
+    {
+      "name": "Zona Sul",
+      "x": 12,
+      "y": 10
+    },
+    {
+      "name": "Industrial",
+      "x": 15,
+      "y": 6
+    },
+    {
+      "name": "Orla",
+      "x": 2,
+      "y": 10
+    }
+  ]
+};
+
+export const PHASE2_CALLS = {
+  "meta": {
+    "version": "phase2",
+    "language": "pt-BR"
+  },
+  "calls": [
+    {
+      "id": "br_fire_kitchen_01",
+      "region": "BR",
+      "serviceHint": "fire",
+      "severity": "high",
+      "timeLimitSec": 120,
+      "opening": "193, Bombeiros. Qual sua emergência? Tem fumaça saindo da cozinha do apartamento do meu vizinho! O alarme disparou e eu sinto cheiro forte de gás!",
+      "caller": "Vizinho nervoso",
+      "scenario": {
+        "incidentType": "fire",
+        "resolveSec": 18,
+        "hotspot": "Centro"
+      },
+      "protocol": {
+        "addressLine": "Rua das Palmeiras, 120 - Apto 34",
+        "detailsLine": "Fumaça preta na cozinha. Pode ter botijão de gás.",
+        "injuriesLine": "Ainda não vi ninguém ferido, mas pode ter gente dentro.",
+        "prank": false
+      },
+      "instructions": {
+        "prompt": "Instruções imediatas ao chamador:",
+        "options": [
+          {
+            "id": "evac",
+            "label": "Oriente evacuação e NÃO usar elevador. Fechar portas. Desligar energia/gás se seguro.",
+            "correct": true
+          },
+          {
+            "id": "water",
+            "label": "Diga para jogar água no fogão imediatamente, mesmo com gás.",
+            "correct": false
+          },
+          {
+            "id": "wait",
+            "label": "Peça para esperar do lado de dentro para confirmar se o fogo para.",
+            "correct": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "t": 25,
+          "text": "O chamador grita: 'O fogo aumentou e tem gente tossindo no corredor!'",
+          "escalate": {
+            "severity": "high",
+            "add": "needsMedical"
+          }
+        }
+      ]
+    },
+    {
+      "id": "us_med_choking_01",
+      "region": "US",
+      "serviceHint": "medical",
+      "severity": "high",
+      "timeLimitSec": 110,
+      "opening": "911, what's your emergency? My dad is choking! He can't breathe and he's turning red!",
+      "caller": "Adult child (panicked)",
+      "scenario": {
+        "incidentType": "medical",
+        "resolveSec": 16,
+        "hotspot": "Zona Norte"
+      },
+      "protocol": {
+        "addressLine": "445 Pine Street, Apt 2B",
+        "detailsLine": "Adult male choking after eating. Not speaking.",
+        "injuriesLine": "Conscious but cannot breathe.",
+        "prank": false
+      },
+      "instructions": {
+        "prompt": "Pré-chegada (engasgo):",
+        "options": [
+          {
+            "id": "heimlich",
+            "label": "Instrua manobra de Heimlich (compressões abdominais) e chamar ajuda agora.",
+            "correct": true
+          },
+          {
+            "id": "water",
+            "label": "Mandar beber água para descer a comida.",
+            "correct": false
+          },
+          {
+            "id": "finger",
+            "label": "Enfiar os dedos na garganta para puxar o objeto.",
+            "correct": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "t": 20,
+          "text": "O chamador diz: 'Ele ficou meio mole... acho que vai desmaiar!'",
+          "escalate": {
+            "severity": "high",
+            "add": "critical"
+          }
+        }
+      ]
+    },
+    {
+      "id": "eu_pol_robbery_01",
+      "region": "EU",
+      "serviceHint": "police",
+      "severity": "high",
+      "timeLimitSec": 105,
+      "opening": "112, emergência. Tem um assalto acontecendo aqui na loja! Eu tô escondido atrás do balcão, ele tem uma arma!",
+      "caller": "Funcionário escondido",
+      "scenario": {
+        "incidentType": "police",
+        "resolveSec": 20,
+        "hotspot": "Industrial"
+      },
+      "protocol": {
+        "addressLine": "Avenida Central, 900 - Loja 12",
+        "detailsLine": "Assalto em andamento. Suspeito com arma, 1 indivíduo.",
+        "injuriesLine": "Ninguém ferido ainda, mas ameaça constante.",
+        "prank": false
+      },
+      "instructions": {
+        "prompt": "Instruções de segurança:",
+        "options": [
+          {
+            "id": "hide",
+            "label": "Oriente ficar escondido, silencioso, manter-se seguro e NÃO confrontar.",
+            "correct": true
+          },
+          {
+            "id": "hero",
+            "label": "Oriente tentar imobilizar o suspeito agora.",
+            "correct": false
+          },
+          {
+            "id": "exit",
+            "label": "Oriente correr para fora da loja imediatamente gritando.",
+            "correct": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "t": 18,
+          "text": "O chamador sussurra: 'Ele tá indo pros fundos... ouvi barulho de vidro quebrando.'",
+          "escalate": {
+            "severity": "high",
+            "add": "suspectMoving"
+          }
+        }
+      ]
+    },
+    {
+      "id": "br_rescue_entrapment_01",
+      "region": "BR",
+      "serviceHint": "fire",
+      "severity": "high",
+      "timeLimitSec": 130,
+      "opening": "193, pelo amor de Deus! Bateu um carro no poste e tem uma pessoa presa nas ferragens!",
+      "caller": "Motorista ajudando",
+      "scenario": {
+        "incidentType": "rescue",
+        "resolveSec": 22,
+        "hotspot": "Orla"
+      },
+      "protocol": {
+        "addressLine": "Av. Beira-Mar, 50 (perto do quiosque azul)",
+        "detailsLine": "Colisão com poste. Vítima presa. Possível vazamento de combustível.",
+        "injuriesLine": "Vítima consciente, sangrando.",
+        "prank": false
+      },
+      "instructions": {
+        "prompt": "Orientação antes da chegada:",
+        "options": [
+          {
+            "id": "safe",
+            "label": "Oriente sinalizar a via, desligar ignição se seguro, NÃO puxar a vítima. Pressão no sangramento.",
+            "correct": true
+          },
+          {
+            "id": "pull",
+            "label": "Oriente puxar a vítima com força para fora imediatamente.",
+            "correct": false
+          },
+          {
+            "id": "smoke",
+            "label": "Mandar fumar para acalmar e esperar.",
+            "correct": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "t": 30,
+          "text": "O chamador: 'Tá saindo fumaça do motor!'",
+          "escalate": {
+            "severity": "high",
+            "add": "fireRisk"
+          }
+        }
+      ]
+    },
+    {
+      "id": "au_routing_01",
+      "region": "AU",
+      "serviceHint": "any",
+      "severity": "medium",
+      "timeLimitSec": 120,
+      "opening": "000. Do you need Police, Fire or Ambulance? ... There’s a person collapsed on the sidewalk, not responding!",
+      "caller": "Passerby",
+      "scenario": {
+        "incidentType": "medical",
+        "resolveSec": 18,
+        "hotspot": "Centro"
+      },
+      "protocol": {
+        "addressLine": "Corner of King St and Market St",
+        "detailsLine": "Adult collapsed, not responding.",
+        "injuriesLine": "Not breathing normally (gasping).",
+        "prank": false,
+        "routing": true
+      },
+      "instructions": {
+        "prompt": "Pré-chegada (possível PCR):",
+        "options": [
+          {
+            "id": "cpr",
+            "label": "Inicie RCP: compressões no centro do peito, ritmo constante. Peça por DEA.",
+            "correct": true
+          },
+          {
+            "id": "shake",
+            "label": "Apenas sacudir a pessoa e esperar.",
+            "correct": false
+          },
+          {
+            "id": "water",
+            "label": "Dar água para acordar.",
+            "correct": false
+          }
+        ]
+      },
+      "events": []
+    },
+    {
+      "id": "br_pol_domestic_01",
+      "region": "BR",
+      "serviceHint": "police",
+      "severity": "medium",
+      "timeLimitSec": 120,
+      "opening": "190, Polícia Militar. Meu vizinho tá batendo na esposa de novo! Eu ouvi gritos e coisas quebrando!",
+      "caller": "Vizinho preocupado",
+      "scenario": {
+        "incidentType": "police",
+        "resolveSec": 18,
+        "hotspot": "Zona Sul"
+      },
+      "protocol": {
+        "addressLine": "Rua do Sol, 77, Casa 3",
+        "detailsLine": "Suspeita de violência doméstica. Barulhos de agressão.",
+        "injuriesLine": "Não vejo a vítima, mas ouço gritos.",
+        "prank": false
+      },
+      "instructions": {
+        "prompt": "Orientação ao denunciante:",
+        "options": [
+          {
+            "id": "safe",
+            "label": "Oriente NÃO intervir fisicamente. Manter-se seguro. Descrever o local e aguardar viatura.",
+            "correct": true
+          },
+          {
+            "id": "enter",
+            "label": "Oriente entrar na casa para separar os dois.",
+            "correct": false
+          },
+          {
+            "id": "record",
+            "label": "Oriente provocar o agressor para 'gravar reação'.",
+            "correct": false
+          }
+        ]
+      },
+      "events": []
+    },
+    {
+      "id": "br_prank_01",
+      "region": "BR",
+      "serviceHint": "police",
+      "severity": "low",
+      "timeLimitSec": 90,
+      "opening": "190... tem um dinossauro na rua aqui! Ele tá comendo os carros! (risadinhas ao fundo)",
+      "caller": "Criança rindo",
+      "scenario": {
+        "incidentType": "police",
+        "resolveSec": 10,
+        "hotspot": "Centro"
+      },
+      "protocol": {
+        "addressLine": "(inconsistente)",
+        "detailsLine": "Relato absurdo e risadas.",
+        "injuriesLine": "Nenhuma.",
+        "prank": true
+      },
+      "instructions": {
+        "prompt": "Como proceder:",
+        "options": [
+          {
+            "id": "screen",
+            "label": "Fazer triagem: pedir endereço completo e detalhes. Se continuar inconsistente, encerrar como trote.",
+            "correct": true
+          },
+          {
+            "id": "dispatch",
+            "label": "Despachar viatura imediatamente para investigar o dinossauro.",
+            "correct": false
+          },
+          {
+            "id": "argue",
+            "label": "Responder com ironia e xingar o chamador.",
+            "correct": false
+          }
+        ]
+      },
+      "events": []
+    },
+    {
+      "id": "za_smoke_false_01",
+      "region": "ZA",
+      "serviceHint": "fire",
+      "severity": "low",
+      "timeLimitSec": 110,
+      "opening": "Emergência… tem muita fumaça na rua, acho que é incêndio. Eu não sei o endereço certinho, é perto da estação.",
+      "caller": "Morador confuso",
+      "scenario": {
+        "incidentType": "fire",
+        "resolveSec": 14,
+        "hotspot": "Industrial"
+      },
+      "protocol": {
+        "addressLine": "Próximo à estação central (sem número)",
+        "detailsLine": "Fumaça pode ser de queima de lixo/obra. Sem chamas visíveis.",
+        "injuriesLine": "Sem vítimas confirmadas.",
+        "prank": false
+      },
+      "instructions": {
+        "prompt": "Triagem:",
+        "options": [
+          {
+            "id": "ask",
+            "label": "Pergunte se há chamas, pessoas presas e de onde vem a fumaça. Envie 1 unidade para checagem.",
+            "correct": true
+          },
+          {
+            "id": "panic",
+            "label": "Envie todos os caminhões e peça para todo mundo correr.",
+            "correct": false
+          },
+          {
+            "id": "ignore",
+            "label": "Ignore e encerre sem verificar.",
+            "correct": false
+          }
+        ]
+      },
+      "events": [
+        {
+          "t": 35,
+          "text": "Atualização: 'Agora eu vi chamas pequenas num monte de lixo.'",
+          "escalate": {
+            "severity": "medium",
+            "add": "confirmedFire"
+          }
+        }
+      ]
+    }
+  ]
+};
