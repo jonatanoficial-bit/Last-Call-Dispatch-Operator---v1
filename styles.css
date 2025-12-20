@@ -217,3 +217,92 @@ body{
   .queuePanel{grid-column:1; grid-row:3}
   .hud{justify-content:flex-start}
 }
+
+
+/* Phase 3: City selector + Leaflet map */
+.selectPill{
+  gap: 10px;
+  align-items: center;
+}
+.selectPill select{
+  background: rgba(255,255,255,0.06);
+  color: inherit;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 6px 10px;
+  outline: none;
+}
+.mapWrap{
+  position: relative;
+  height: 460px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(0,0,0,0.25);
+}
+.map{
+  position: absolute;
+  inset: 0;
+}
+.leaflet-container{
+  font: inherit;
+}
+.markerIncident{
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 900;
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+}
+.markerIncident.low{ background: rgba(120,200,255,0.20); }
+.markerIncident.medium{ background: rgba(255,200,100,0.22); }
+.markerIncident.high{ background: rgba(255,120,140,0.22); }
+
+.markerUnit{
+  width: 34px;
+  height: 24px;
+  border-radius: 10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 800;
+  border: 1px solid rgba(255,255,255,0.30);
+  background: rgba(255,255,255,0.06);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+}
+.markerUnit.busy{ opacity: 0.75; filter: saturate(0.7); }
+
+.tutorialToast{
+  position: fixed;
+  bottom: 18px;
+  left: 18px;
+  right: 18px;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(10,12,22,0.72);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.55);
+  z-index: 9999;
+  display:flex;
+  gap: 12px;
+  align-items: center;
+}
+.tutorialToast .dot{
+  width: 10px;height:10px;border-radius:99px;background: rgba(120,200,255,0.9);
+}
+.tutorialToast .txt{
+  flex:1;
+  line-height: 1.25;
+  color: rgba(255,255,255,0.9);
+}
+.tutorialToast .actions{
+  display:flex;
+  gap: 8px;
+}

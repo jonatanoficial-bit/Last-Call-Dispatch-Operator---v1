@@ -6,7 +6,7 @@ export class UIManager{
     this.audio = audio;
 
     this.els = {
-      cityPill: document.getElementById('cityPill'),
+      citySelect: document.getElementById('citySelect'),
       turnTime: document.getElementById('turnTime'),
       score: document.getElementById('score'),
       pauseBtn: document.getElementById('pauseBtn'),
@@ -50,7 +50,9 @@ export class UIManager{
   }
 
   renderTop(){
-    this.els.cityPill.textContent = `CIDADE: ${this.state.city?.name ?? '—'}`;
+    if (this.els.citySelect && this.els.citySelect.selectedOptions.length){
+      // keep select label handled elsewhere
+    }
     this.els.turnTime.textContent = fmtTime(this.state.turnRemaining);
     this.els.score.textContent = String(this.state.score);
     this.els.pauseBtn.textContent = this.state.paused ? 'Retomar' : 'Pausar';
@@ -164,6 +166,11 @@ export class UIManager{
     this.els.queueCount.textContent = String(this.state.queue.length);
     this.els.queue.innerHTML = '';
 
+    // AUTO-SELECT: if nothing is selected, pick the first call to reduce confusion
+    if (!this.state.selectedCallId && this.state.queue.length > 0){
+      this.state.selectedCallId = this.state.queue[0].id;
+    }
+
     for (const call of this.state.queue){
       const card = document.createElement('button');
       card.className = 'callCard' + (call.id === this.state.selectedCallId ? ' selected' : '');
@@ -183,6 +190,7 @@ export class UIManager{
       card.onclick = () => {
         this.state.selectedCallId = call.id;
         this.audio.playSelect();
+        this.setHint('Chamada selecionada. Clique em “Atender selecionada”.');
         this.renderQueue();
       };
 
@@ -201,6 +209,43 @@ export class UIManager{
   // -----------------
   renderIncidentBadge(incident){
     this.els.incidentBadge.textContent = incident ? `Incidente: ${incident.type.toUpperCase()} / ${incident.severity.toUpperCase()}` : 'Incidente: —';
+  }
+
+
+  // -----------------
+  // Tutorial toast (non-blocking)
+  // -----------------
+  showTutorialToast(text, { primaryLabel='OK', onPrimary=null, secondaryLabel=null, onSecondary=null } = {}){
+    this.hideTutorialToast();
+    const t = document.createElement('div');
+    t.className = 'tutorialToast';
+    t.innerHTML = `<div class="dot"></div><div class="txt"></div><div class="actions"></div>`;
+    t.querySelector('.txt').textContent = text;
+
+    const actions = t.querySelector('.actions');
+    const primary = document.createElement('button');
+    primary.className = 'btn primary';
+    primary.textContent = primaryLabel;
+    primary.onclick = () => { if (onPrimary) onPrimary(); this.hideTutorialToast(); };
+    actions.appendChild(primary);
+
+    if (secondaryLabel){
+      const sec = document.createElement('button');
+      sec.className = 'btn ghost';
+      sec.textContent = secondaryLabel;
+      sec.onclick = () => { if (onSecondary) onSecondary(); this.hideTutorialToast(); };
+      actions.appendChild(sec);
+    }
+
+    document.body.appendChild(t);
+    this._tutorialToast = t;
+  }
+
+  hideTutorialToast(){
+    if (this._tutorialToast){
+      this._tutorialToast.remove();
+      this._tutorialToast = null;
+    }
   }
 
   renderUnitDock(units, onDispatch){

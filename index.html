@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Last Call Dispatch Operator</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
 <body>
   <header class="topbar">
@@ -12,12 +13,14 @@
       <div class="logo">LCDO</div>
       <div class="brandText">
         <div class="title">Last Call Dispatch Operator</div>
-        <div class="subtitle">Fase 2.1 — fila + protocolo (corrigido)</div>
+        <div class="subtitle">Fase 3.1 — mapa real (Leaflet) + seleção de cidade</div>
       </div>
     </div>
 
     <div class="hud">
-      <div class="pill" id="cityPill">CIDADE: —</div>
+      <label class="pill selectPill">CIDADE
+  <select id="citySelect" aria-label="Selecionar cidade"></select>
+</label>
       <div class="pill">TURNO <span id="turnTime">00:00</span></div>
       <div class="pill">SCORE <span id="score">0</span></div>
       <button class="btn ghost" id="pauseBtn">Pausar</button>
@@ -60,8 +63,8 @@
         </div>
       </div>
 
-      <div class="gridWrap">
-        <canvas id="grid" width="860" height="460" aria-label="mapa"></canvas>
+      <div class="mapWrap">
+        <div id="map" class="map" aria-label="mapa"></div>
         <div class="unitDock" id="unitDock"></div>
       </div>
 
@@ -90,6 +93,7 @@
     </section>
   </main>
 
-  <script type="module" src="js/main.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

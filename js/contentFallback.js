@@ -1,14 +1,259 @@
-// Embedded fallback content (Fase 2.1)
-// Used if fetch() is blocked (e.g., opening index.html via file://).
+// Embedded fallback content (Fase 3)
+// Used when running via file:// where fetch() may be blocked.
+// Source of truth remains /data/*.json in deployments.
 
-export const CITY_NOVA_AURORA = {
-  "id": "nova_aurora",
-  "name": "Nova Aurora (Simulação)",
-  "region": "BR",
-  "grid": {
-    "w": 26,
-    "h": 14
+export const CITY_BY_ID = {
+  "nova_aurora": {
+    "id": "nova_aurora",
+    "name": "Nova Aurora (Simulação)",
+    "country": "BR",
+    "center": {
+      "lat": -23.55052,
+      "lng": -46.633308
+    },
+    "zoom": 12,
+    "bbox": {
+      "minLat": -23.62,
+      "minLng": -46.72,
+      "maxLat": -23.49,
+      "maxLng": -46.55
+    },
+    "bases": [
+      {
+        "id": "pol_base",
+        "type": "police",
+        "lat": -23.555,
+        "lng": -46.64
+      },
+      {
+        "id": "fire_base",
+        "type": "fire",
+        "lat": -23.545,
+        "lng": -46.61
+      },
+      {
+        "id": "med_base",
+        "type": "medical",
+        "lat": -23.56,
+        "lng": -46.6
+      }
+    ]
+  },
+  "sao_paulo": {
+    "id": "sao_paulo",
+    "name": "São Paulo - SP",
+    "country": "BR",
+    "center": {
+      "lat": -23.55052,
+      "lng": -46.633308
+    },
+    "zoom": 11,
+    "bbox": {
+      "minLat": -23.75,
+      "minLng": -46.83,
+      "maxLat": -23.4,
+      "maxLng": -46.36
+    },
+    "bases": [
+      {
+        "id": "pol_base",
+        "type": "police",
+        "lat": -23.548,
+        "lng": -46.638
+      },
+      {
+        "id": "fire_base",
+        "type": "fire",
+        "lat": -23.563,
+        "lng": -46.655
+      },
+      {
+        "id": "med_base",
+        "type": "medical",
+        "lat": -23.556,
+        "lng": -46.625
+      }
+    ]
+  },
+  "rio_de_janeiro": {
+    "id": "rio_de_janeiro",
+    "name": "Rio de Janeiro - RJ",
+    "country": "BR",
+    "center": {
+      "lat": -22.906847,
+      "lng": -43.172897
+    },
+    "zoom": 12,
+    "bbox": {
+      "minLat": -23.08,
+      "minLng": -43.8,
+      "maxLat": -22.76,
+      "maxLng": -43.1
+    },
+    "bases": [
+      {
+        "id": "pol_base",
+        "type": "police",
+        "lat": -22.912,
+        "lng": -43.2
+      },
+      {
+        "id": "fire_base",
+        "type": "fire",
+        "lat": -22.916,
+        "lng": -43.17
+      },
+      {
+        "id": "med_base",
+        "type": "medical",
+        "lat": -22.93,
+        "lng": -43.22
+      }
+    ]
+  },
+  "brasilia": {
+    "id": "brasilia",
+    "name": "Brasília - DF",
+    "country": "BR",
+    "center": {
+      "lat": -15.793889,
+      "lng": -47.882778
+    },
+    "zoom": 12,
+    "bbox": {
+      "minLat": -15.9,
+      "minLng": -48.1,
+      "maxLat": -15.68,
+      "maxLng": -47.7
+    },
+    "bases": [
+      {
+        "id": "pol_base",
+        "type": "police",
+        "lat": -15.793,
+        "lng": -47.88
+      },
+      {
+        "id": "fire_base",
+        "type": "fire",
+        "lat": -15.803,
+        "lng": -47.87
+      },
+      {
+        "id": "med_base",
+        "type": "medical",
+        "lat": -15.78,
+        "lng": -47.9
+      }
+    ]
+  },
+  "new_york": {
+    "id": "new_york",
+    "name": "New York City - USA",
+    "country": "US",
+    "center": {
+      "lat": 40.7128,
+      "lng": -74.006
+    },
+    "zoom": 12,
+    "bbox": {
+      "minLat": 40.55,
+      "minLng": -74.25,
+      "maxLat": 40.92,
+      "maxLng": -73.7
+    },
+    "bases": [
+      {
+        "id": "pol_base",
+        "type": "police",
+        "lat": 40.73,
+        "lng": -73.995
+      },
+      {
+        "id": "fire_base",
+        "type": "fire",
+        "lat": 40.711,
+        "lng": -74.012
+      },
+      {
+        "id": "med_base",
+        "type": "medical",
+        "lat": 40.741,
+        "lng": -73.975
+      }
+    ]
+  },
+  "london": {
+    "id": "london",
+    "name": "London - UK",
+    "country": "UK",
+    "center": {
+      "lat": 51.5072,
+      "lng": -0.1276
+    },
+    "zoom": 12,
+    "bbox": {
+      "minLat": 51.35,
+      "minLng": -0.45,
+      "maxLat": 51.7,
+      "maxLng": 0.2
+    },
+    "bases": [
+      {
+        "id": "pol_base",
+        "type": "police",
+        "lat": 51.515,
+        "lng": -0.1
+      },
+      {
+        "id": "fire_base",
+        "type": "fire",
+        "lat": 51.507,
+        "lng": -0.09
+      },
+      {
+        "id": "med_base",
+        "type": "medical",
+        "lat": 51.501,
+        "lng": -0.12
+      }
+    ]
   }
+};
+
+export const CITIES_INDEX = {
+  "cities": [
+    {
+      "id": "nova_aurora",
+      "name": "Nova Aurora (Simulação)",
+      "country": "BR"
+    },
+    {
+      "id": "sao_paulo",
+      "name": "São Paulo - SP",
+      "country": "BR"
+    },
+    {
+      "id": "rio_de_janeiro",
+      "name": "Rio de Janeiro - RJ",
+      "country": "BR"
+    },
+    {
+      "id": "brasilia",
+      "name": "Brasília - DF",
+      "country": "BR"
+    },
+    {
+      "id": "new_york",
+      "name": "New York City - USA",
+      "country": "US"
+    },
+    {
+      "id": "london",
+      "name": "London - UK",
+      "country": "UK"
+    }
+  ]
 };
 
 export const PHASE2_CALLS = {

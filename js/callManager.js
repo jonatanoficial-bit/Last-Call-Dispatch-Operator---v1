@@ -91,6 +91,10 @@ export class CallManager{
   }
 
   answerSelected(){
+    // If none selected, auto pick first to reduce confusion
+    if (!this.state.selectedCallId && this.state.queue.length > 0){
+      this.state.selectedCallId = this.state.queue[0].id;
+    }
     const id = this.state.selectedCallId;
     if (!id){
       this.ui.setHint('Selecione uma chamada na fila primeiro.');

@@ -1,4 +1,15 @@
-import { CITY_NOVA_AURORA, PHASE2_CALLS } from './contentFallback.js';
+import { CITY_BY_ID, CITIES_INDEX, PHASE2_CALLS } from './contentFallback.js';
+
+export async function loadCityIndex(){
+  try{
+    const res = await fetch('data/cities/index.json', { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    return await res.json();
+  }catch(e){
+    console.warn('[content] fetch city index failed, fallback:', e);
+    return CITIES_INDEX;
+  }
+}
 
 export async function loadCity(cityId){
   try{
@@ -7,8 +18,8 @@ export async function loadCity(cityId){
     return await res.json();
   }catch(e){
     console.warn('[content] fetch city failed, fallback:', e);
-    if (cityId !== 'nova_aurora') throw e;
-    return CITY_NOVA_AURORA;
+    if (CITY_BY_ID[cityId]) return CITY_BY_ID[cityId];
+    throw e;
   }
 }
 
