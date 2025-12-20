@@ -1,74 +1,38 @@
 export class AudioManager{
   constructor(){
-    this.enabled = true;
     this.ctx = null;
-    this._ringOsc = null;
-    this._ringGain = null;
+    this.muted = false;
   }
 
-  _ensure(){
-    if (!this.ctx){
-      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (this.ctx.state === 'suspended'){
-      this.ctx.resume().catch(()=>{});
-    }
+  ensure(){
+    if (this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
   }
 
-  _beep(freq=880, dur=0.07, gain=0.08){
-    if (!this.enabled) return;
-    this._ensure();
+  ping(freq=660, dur=0.07, type='sine', gain=0.05){
+    if (this.muted) return;
+    this.ensure();
+    if (!this.ctx) return;
     const t0 = this.ctx.currentTime;
-    const o = this.ctx.createOscillator();
+    const osc = this.ctx.createOscillator();
     const g = this.ctx.createGain();
-    o.type = 'square';
-    o.frequency.value = freq;
-    g.gain.setValueAtTime(gain, t0);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    o.connect(g).connect(this.ctx.destination);
-    o.start(t0);
-    o.stop(t0 + dur);
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.value = 0.0;
+    g.gain.linearRampToValueAtTime(gain, t0+0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+    osc.connect(g).connect(this.ctx.destination);
+    osc.start(t0);
+    osc.stop(t0+dur+0.02);
   }
 
-  playClick(){ this._beep(980, 0.05, 0.06); }
-  playResolve(){ this._beep(660, 0.08, 0.08); setTimeout(()=>this._beep(990, 0.08, 0.06), 80); }
-  playError(){ this._beep(220, 0.10, 0.10); }
-  playRadio(){ this._beep(540, 0.06, 0.06); setTimeout(()=>this._beep(820, 0.06, 0.05), 65); }
-  playRingOnce(){ this._beep(1200, 0.06, 0.07); setTimeout(()=>this._beep(900, 0.06, 0.05), 70); }
-
-  startRinging(){
-    if (!this.enabled) return;
-    this._ensure();
-    if (this._ringOsc) return;
-    const t0 = this.ctx.currentTime;
-    const o = this.ctx.createOscillator();
-    const g = this.ctx.createGain();
-    o.type = 'sine';
-    o.frequency.value = 880;
-    g.gain.setValueAtTime(0.0, t0);
-    o.connect(g).connect(this.ctx.destination);
-    o.start();
-    this._ringOsc = o;
-    this._ringGain = g;
-
-    // pulso
-    let on = false;
-    this._ringTimer = setInterval(()=>{
-      if (!this._ringGain) return;
-      on = !on;
-      const t = this.ctx.currentTime;
-      this._ringGain.gain.cancelScheduledValues(t);
-      this._ringGain.gain.setValueAtTime(on ? 0.04 : 0.0, t);
-    }, 220);
-  }
-
-  stopRinging(){
-    if (this._ringTimer) clearInterval(this._ringTimer);
-    this._ringTimer = null;
-    if (this._ringOsc){
-      try{ this._ringOsc.stop(); }catch{}
-      this._ringOsc = null;
-    }
-    this._ringGain = null;
-  }
+  // Friendly names used by UI/Managers
+  playIncoming(freq=740, gain=0.05){ this.ping(freq, 0.10, 'triangle', gain); }
+  playSelect(){ this.ping(520, 0.06, 'sine', 0.04); }
+  playType(){ this.ping(900, 0.03, 'triangle', 0.025); }
+  playDispatch(){ this.ping(520, 0.07, 'sawtooth', 0.04); }
+  playResolve(){ this.ping(980, 0.08, 'sine', 0.05); this.ping(1170, 0.10, 'sine', 0.045); }
+  playError(){ this.ping(220, 0.12, 'square', 0.04); }
 }

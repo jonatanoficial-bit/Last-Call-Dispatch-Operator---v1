@@ -1,32 +1,37 @@
-# Last Call Dispatch Operator — Protótipo (Fase 2)
+# Last Call Dispatch Operator — Fase 2.1 (corrigido)
 
-Este é um protótipo **100% front-end** (HTML/CSS/JS) para rodar no navegador e publicar no **Vercel** ou **GitHub Pages**.
+Esta build é **100% HTML/CSS/JS** (sem custos) e roda em:
+- GitHub Pages
+- Vercel
+- Qualquer servidor estático
 
-## Como rodar localmente
-- Opção 1 (recomendado): use um servidor estático.
-  - VS Code: extensão **Live Server**
-  - ou `python -m http.server 8080`
-- Depois abra: `http://localhost:8080`
+## O que foi corrigido em relação ao print
+No seu print, a chamada ficava "travada" (campos não atualizavam / ações não avançavam). Nesta versão:
+- Os campos **Endereço / Detalhes / Vítimas** são renderizados **sempre** a partir de `call.collected`.
+- Cada ação do protocolo chama `ui.renderCallFields(call)` e `ui.renderCallActions(call)`.
+- O transcript usa typewriter, mas não bloqueia o estado.
 
-> Observação: abrir direto via `file://` pode bloquear `fetch()` em alguns navegadores.  
-> O projeto tem **fallback embutido**, então ainda deve funcionar, mas o modo servidor é melhor.
-
-## Como jogar (Fase 2)
+## Como jogar
 1. Clique **Iniciar turno**.
-2. Selecione uma chamada na **Fila** e clique **Atender selecionada**.
-3. Faça triagem: endereço, o que está acontecendo e vítimas.
-4. Dê **instruções pré-chegada** (se disponível).
-5. Clique **Criar ocorrência e preparar despacho**.
-6. No mapa, clique no pino do incidente `!`, selecione uma unidade e clique **Despachar unidade**.
-7. Acompanhe a unidade até resolver a ocorrência.
+2. Selecione uma chamada na fila e clique **Atender selecionada**.
+3. Use os botões de protocolo para coletar endereço/detalhes.
+4. Um marcador `!` aparecerá no mapa.
+5. Clique no marcador para selecionar o incidente, depois clique em uma unidade disponível para despachar.
+
+## Deploy (GitHub Pages)
+- Suba a pasta inteira no repositório.
+- Ative Pages apontando para a branch/pasta.
+
+## Deploy (Vercel)
+- Importe o repo.
+- Framework: "Other".
+- Build: vazio.
+- Output: `/`.
 
 ## Estrutura
-- `index.html` / `styles.css`
-- `js/` lógica (estado, chamadas, despacho)
-- `data/` conteúdo em JSON (cidades e chamadas)
+- `index.html`
+- `styles.css`
+- `js/` (módulos)
+- `data/` (JSON de cidade e chamadas)
 
-## Próximas fases (exemplos)
-- Carreira, upgrades, mais cidades
-- Mais variedade de chamadas e scripts ramificados
-- Áudio com arquivos reais + vozes
-- Mapa real (Leaflet/OSM) e rota real
+> Próximo passo (Fase 3): integrar Leaflet + OpenStreetMap, múltiplas cidades e progressão.

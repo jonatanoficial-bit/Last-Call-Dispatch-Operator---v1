@@ -1,10 +1,4 @@
-import { pick, formatClock } from './util.js';
-
-function sevKey(sev){
-  if (sev === 'high') return 'high';
-  if (sev === 'medium') return 'medium';
-  return 'low';
-}
+import { pick, uid } from './utils.js';
 
 export class CallManager{
   constructor(state, ui, audio, dispatch){
@@ -13,370 +7,274 @@ export class CallManager{
     this.audio = audio;
     this.dispatch = dispatch;
 
-    this._spawnTimer = 0;
+    this._spawnAcc = 0;
+    this._eventsAcc = 0;
+    this._callTemplates = [];
   }
 
-  startShift(){
-    this._spawnTimer = 0;
-    // pré-carrega algumas chamadas
-    this._ensureQueueSeed(2);
+  setTemplates(calls){ this._callTemplates = calls; }
+
+  startTurn(){
+    this.state.turnRunning = true;
+    this.state.paused = false;
+    this._spawnAcc = 0;
+    // spawn 1 imediatamente
+    this.spawnCall();
   }
 
-  _ensureQueueSeed(n){
-    for (let i=0; i<n; i++){
-      if (this.state.callQueue.filter(c=>c.status !== 'closed').length >= this.state.config.queueMax) return;
-      this.spawnCall();
+  tick(dt){
+    if (!this.state.turnRunning || this.state.paused) return;
+
+    // turn timer
+    this.state.turnRemaining -= dt;
+    if (this.state.turnRemaining <= 0){
+      this.state.turnRemaining = 0;
+      this.state.turnRunning = false;
+      this.audio.playResolve();
+      this.ui.setHint('Fim do turno. Reinicie para jogar novamente.');
+      return;
     }
+
+    // spawn new calls
+    this._spawnAcc += dt;
+    if (this._spawnAcc >= this.state.config.spawnEvery){
+      this._spawnAcc = 0;
+      if (this.state.queue.length < this.state.config.maxQueue){
+        this.spawnCall();
+      }
+    }
+
+    // tick queue call timers
+    for (const call of this.state.queue){
+      call.remaining -= dt;
+      // events while waiting
+      this._handleCallEvents(call, dt);
+    }
+
+    // active call timer + events
+    if (this.state.activeCall){
+      this.state.activeCall.remaining -= dt;
+      this._handleCallEvents(this.state.activeCall, dt);
+      this.ui.updateCallTimer(this.state.activeCall);
+      if (this.state.activeCall.remaining <= 0){
+        this.audio.playError();
+        this.ui.appendTranscript('⚠️ A ligação caiu. Você demorou demais.');
+        this.state.addScore(-15);
+        this.endActiveCall(true);
+      }
+    }
+
+    // remove timed-out queue calls
+    const before = this.state.queue.length;
+    this.state.queue = this.state.queue.filter(c => c.remaining > 0);
+    if (this.state.queue.length !== before){
+      this.audio.playError();
+      this.ui.renderQueue();
+    }
+
+    // update queue timers on ui
+    this.ui.updateQueueTimers();
   }
 
   spawnCall(){
-    const template = pick(this.state.callsData);
-    const call = this.state.makeRuntimeCall(template);
-
-    // transcript first line
-    call.transcript.push(`☎️ ${template.opening}`);
-    this.state.callQueue.push(call);
-
-    // ring feedback
-    this.audio.playRingOnce();
-    return call;
+    const tpl = pick(this._callTemplates);
+    const call = JSON.parse(JSON.stringify(tpl));
+    call.id = tpl.id + '__' + uid('c').slice(-5);
+    call.remaining = this.state.config.callTimeout;
+    call.collected = { address:'', details:'', victims:'' };
+    call.didInstructions = false;
+    call._eventCursor = 0;
+    call._elapsed = 0;
+    this.state.queue.push(call);
+    this.audio.playIncoming();
+    this.ui.renderQueue();
   }
 
-  getTemplateById(id){ return this.state.callsData.find(c=>c.id === id); }
-
-  update(dt){
-    // decrement timers for all open calls
-    for (const call of this.state.callQueue){
-      if (call.status === 'closed') continue;
-      call.timeLeft -= dt;
-      call._elapsed += dt;
-
-      // fire timed events when active or hold/ringing too (simulates evolving situation)
-      const template = this.getTemplateById(call.templateId);
-      if (template?.events?.length){
-        for (const ev of template.events){
-          if (call._eventsFired.has(ev.t)) continue;
-          if (call._elapsed >= ev.t){
-            call._eventsFired.add(ev.t);
-            call.transcript.push(`\n⚠️ Atualização: ${ev.text}`);
-            if (ev.escalate?.severity){
-              call.severity = ev.escalate.severity;
-            }
-          }
-        }
-      }
-
-      if (call.timeLeft <= 0){
-        this._handleMissedCall(call);
-      }
-    }
-
-    // spawn new calls over time
-    if (!this.state.running) return;
-    this._spawnTimer += dt;
-    if (this._spawnTimer >= this.state.config.callSpawnEverySec){
-      this._spawnTimer = 0;
-      const openCount = this.state.callQueue.filter(c=>c.status !== 'closed').length;
-      if (openCount < this.state.config.queueMax){
-        this.spawnCall();
-        this.ui.toast('Nova chamada na fila.');
-      }
-    }
-  }
-
-  _handleMissedCall(call){
-    if (call.status === 'closed') return;
-    call.status = 'closed';
-
-    const penalty = this.state.config.missedCallPenalty[sevKey(call.severity)] ?? 10;
-    this.state.addScore(-penalty);
-
-    if (this.state.activeCallId === call.rid){
-      this.state.activeCallId = null;
-      this.ui.toast('Chamada perdida (tempo esgotado).');
-    }
-    if (this.state.selectedQueueCallId === call.rid){
-      this.state.selectedQueueCallId = null;
-    }
-    this.audio.playError();
-  }
-
-  // ==== Active call lifecycle ====
-  answerCall(callRid){
-    const call = this.state.callQueue.find(c=>c.rid === callRid && c.status !== 'closed');
-    if (!call) return false;
-
-    // If another active call exists, auto-hold it
-    if (this.state.activeCallId && this.state.activeCallId !== callRid){
-      this.holdActive(true);
-    }
-
-    call.status = 'active';
-    this.state.activeCallId = call.rid;
-    this.state.selectedQueueCallId = call.rid;
-
-    // reset some time lost penalty if switching
-    call.timeLeft = Math.max(1, call.timeLeft - this.state.config.onHoldPenaltySec);
-
-    this.audio.stopRinging();
-    this.ui.toast('Chamada atendida.');
-
-    return true;
-  }
-
-  holdActive(auto=false){
-    const id = this.state.activeCallId;
-    if (!id) return false;
-    const call = this.state.callQueue.find(c=>c.rid === id);
-    if (!call) return false;
-
-    call.status = 'hold';
-    call.timeLeft = Math.max(1, call.timeLeft - this.state.config.onHoldPenaltySec);
-
-    this.state.activeCallId = null;
-    if (!auto) this.ui.toast('Chamada em espera.');
-    return true;
-  }
-
-  endActive(){
-    const id = this.state.activeCallId;
-    if (!id) return false;
-    const call = this.state.callQueue.find(c=>c.rid === id);
-    if (!call) return false;
-
-    call.status = 'closed';
-    this.state.activeCallId = null;
-    this.state.selectedQueueCallId = null;
-    this.ui.toast('Chamada encerrada.');
-    return true;
-  }
-
-  getActiveCall(){
-    if (!this.state.activeCallId) return null;
-    return this.state.callQueue.find(c=>c.rid === this.state.activeCallId) ?? null;
-  }
-
-  // ==== Options logic ====
-  getOptions(call){
-    const template = this.getTemplateById(call.templateId);
-    if (!template) return [];
-
-    const opts = [];
-
-    // Routing (AU 000 style)
-    if (call.routingNeeded && !call.serviceSelected){
-      opts.push({ label:'Roteamento: Polícia', onClick:()=>this._selectService(call, 'police', template) });
-      opts.push({ label:'Roteamento: Bombeiros', onClick:()=>this._selectService(call, 'fire', template) });
-      opts.push({ label:'Roteamento: Ambulância', onClick:()=>this._selectService(call, 'medical', template) });
-      opts.push({ label:'Perguntar: endereço primeiro', onClick:()=>this._askAddress(call, template) });
-      return opts;
-    }
-
-    // Core protocol questions
-    if (!call.addressKnown){
-      opts.push({ label:'Perguntar: Qual é o endereço exato?', onClick:()=>this._askAddress(call, template) });
-    }
-    if (!call.detailsKnown){
-      opts.push({ label:'Perguntar: O que está acontecendo?', onClick:()=>this._askDetails(call, template) });
-    }
-    if (!call.injuriesKnown){
-      opts.push({ label:'Perguntar: Há feridos? A vítima está consciente?', onClick:()=>this._askInjuries(call, template) });
-    }
-
-    // Trote handling / triage
-    if (call.prank && call.detailsKnown){
-      opts.push({ label:'Triagem: Encerrar como trote (sem despacho)', onClick:()=>this._closeAsPrank(call, template) });
-    }
-
-    // Instructions (once we have at least details)
-    if (!call.instructionDone && call.detailsKnown){
-      opts.push({ label:'Dar instruções pré-chegada', onClick:()=>this._doInstructions(call, template) });
-    }
-
-    // Dispatch creation request
-    const canCreateIncident = call.addressKnown && call.detailsKnown && !call.incidentId;
-    if (canCreateIncident){
-      opts.push({ label:'Criar ocorrência e preparar despacho', onClick:()=>this._createIncident(call, template) });
-    }
-
-    // After incident created: guide player to dispatch
-    if (call.incidentId && !call.waitingForDispatch){
-      opts.push({ label:'Confirmar: despachar unidade agora (no mapa)', onClick:()=>this._waitForDispatch(call, template) });
-    }
-
-    // If waiting for dispatch and incident unresolved
-    if (call.waitingForDispatch){
-      opts.push({ label:'Manter chamador calmo e na linha', onClick:()=>this._reassure(call, template) });
-    }
-
-    // Safe end if incident already dispatched/resolved
-    if (call.incidentId){
-      opts.push({ label:'Encerrar chamada (após despacho)', onClick:()=>this._endAfterDispatch(call, template) });
-    }
-
-    return opts;
-  }
-
-  _append(call, text){
-    call.transcript.push(text);
-  }
-
-  _selectService(call, chosen, template){
-    call.serviceSelected = chosen;
-    const expected = template.scenario?.incidentType === 'police' ? 'police'
-                  : template.scenario?.incidentType === 'medical' ? 'medical'
-                  : template.scenario?.incidentType === 'rescue' ? 'fire'
-                  : template.scenario?.incidentType === 'fire' ? 'fire'
-                  : template.serviceHint;
-
-    if (expected && expected !== 'any' && chosen !== expected){
-      this.state.addScore(-6);
-      call.timeLeft = Math.max(1, call.timeLeft - 8);
-      this.audio.playError();
-      this._append(call, `\n❌ Roteamento incorreto. Perda de tempo na transferência. (-6 pontos)`);
-    }else{
-      this.state.addScore(+4);
-      this.audio.playResolve();
-      this._append(call, `\n✅ Serviço roteado corretamente. (+4 pontos)`);
-    }
-    call.routingNeeded = false;
-  }
-
-  _askAddress(call, template){
-    call.addressKnown = true;
-    call.factAddress = template.protocol?.addressLine || 'Endereço informado.';
-    this._append(call, `\n👤 Endereço: ${call.factAddress}`);
-  }
-
-  _askDetails(call, template){
-    call.detailsKnown = true;
-    call.factDetails = template.protocol?.detailsLine || 'Detalhes informados.';
-    this._append(call, `\n👤 Detalhes: ${call.factDetails}`);
-  }
-
-  _askInjuries(call, template){
-    call.injuriesKnown = true;
-    call.factInjuries = template.protocol?.injuriesLine || 'Sem informações adicionais.';
-    this._append(call, `\n👤 Vítimas: ${call.factInjuries}`);
-  }
-
-  _doInstructions(call, template){
-    call.instructionDone = true;
-    const inst = template.instructions;
-    if (!inst?.options?.length){
-      this._append(call, `\nℹ️ Nenhuma instrução específica disponível. Mantenha a calma e aguarde.`);
+  answerSelected(){
+    const id = this.state.selectedCallId;
+    if (!id){
+      this.ui.setHint('Selecione uma chamada na fila primeiro.');
       return;
     }
-    // Present instruction prompt then auto-open mini-choice by turning options into temporary choices:
-    // We'll store a transient field so UI can show 3 instruction options next render.
-    call._instructionPrompt = inst.prompt;
-    call._instructionOptions = inst.options.map(o=>({ ...o }));
-    this._append(call, `\n\n🧠 ${inst.prompt}`);
-  }
-
-  // For UI: when instruction options exist, override option list
-  getInstructionOverride(call){
-    if (!call._instructionOptions) return null;
-    return call._instructionOptions.map(o=>({
-      label: o.label,
-      onClick: ()=>this._chooseInstruction(call, o)
-    }));
-  }
-
-  _chooseInstruction(call, opt){
-    const isCorrect = !!opt.correct;
-    call.instructionCorrect = isCorrect;
-
-    delete call._instructionOptions;
-    delete call._instructionPrompt;
-
-    if (isCorrect){
-      this.state.addScore(+10);
-      this.audio.playResolve();
-      this._append(call, `\n✅ Instrução correta. (+10 pontos)`);
-    }else{
-      this.state.addScore(-12);
-      this.audio.playError();
-      this._append(call, `\n❌ Instrução inadequada. (-12 pontos)`);
+    const idx = this.state.queue.findIndex(c => c.id === id);
+    if (idx < 0){
+      this.ui.setHint('Chamada não encontrada.');
+      return;
     }
-  }
-
-  _createIncident(call, template){
-    // If prank and user creates incident -> penalty
-    if (call.prank){
-      this.state.addScore(-20);
-      this.audio.playError();
-      this._append(call, `\n❌ Era trote. Despacho desnecessário. (-20 pontos)`);
-    } else {
-      this.state.addScore(+6);
-      this.audio.playResolve();
-      this._append(call, `\n✅ Ocorrência registrada no sistema. (+6 pontos)`);
+    if (this.state.activeCall){
+      this.ui.setHint('Você já tem uma chamada ativa. Coloque em espera ou encerre.');
+      return;
     }
+    const call = this.state.queue.splice(idx,1)[0];
+    this.state.selectedCallId = null;
+    this.state.activeCall = call;
+    this.audio.playSelect();
+    this.ui.renderQueue();
+    this.ui.renderActiveCall(call);
+    this._bindActionButtons();
 
-    const inc = this.dispatch.createIncidentFromCall(call, template);
-    call.incidentId = inc.id;
-    this.state.selectedIncidentId = inc.id;
+    this.ui.setHint('Colete Endereço e Detalhes. Em seguida, o incidente será criado e você poderá despachar.');
   }
 
-  _waitForDispatch(call, template){
-    call.waitingForDispatch = true;
-    this.ui.toast('Despache uma unidade no mapa.');
+  holdActive(){
+    if (!this.state.activeCall) return;
+    // move back to queue (simple)
+    const call = this.state.activeCall;
+    this.state.activeCall = null;
+    call.remaining = Math.max(8, call.remaining); // don't insta-drop
+    this.state.queue.unshift(call);
+    this.audio.playSelect();
+    this.ui.clearActiveCall();
+    this.ui.renderQueue();
+    this.ui.setHint('Chamada colocada em espera.');
   }
 
-  _reassure(call){
-    this._append(call, `\n📣 Operador: "Entendi. A ajuda está a caminho. Fique em segurança e me mantenha informado."`);
-    call.timeLeft = Math.max(1, call.timeLeft - 2);
-  }
+  endActiveCall(force=false){
+    if (!this.state.activeCall) return;
+    const call = this.state.activeCall;
+    this.state.activeCall = null;
+    this.ui.clearActiveCall();
+    if (!force) this.audio.playSelect();
 
-  _endAfterDispatch(call){
-    // keep call open; player can end, but if dispatch not done -> penalty
-    if (!call.incidentId){
-      this.state.addScore(-4);
-      this.audio.playError();
-      this._append(call, `\n❌ Encerramento prematuro sem ocorrência registrada. (-4 pontos)`);
+    // if ended without dispatch on real emergencies, small penalty
+    if (!force && call.type !== 'prank'){
+      this.state.addScore(-8);
+      this.ui.setHint('Chamada encerrada sem conclusão. -8 pontos');
     }
-    call.status = 'closed';
-    this.state.activeCallId = null;
-    this.state.selectedQueueCallId = null;
-    this.ui.toast('Chamada finalizada.');
+    this.ui.renderQueue();
   }
 
-  _closeAsPrank(call){
-    // Good: identify trote
-    this.state.addScore(+12);
-    this.audio.playResolve();
-    this._append(call, `\n✅ Trote identificado. Chamada encerrada. (+12 pontos)`);
-    call.status = 'closed';
-    this.state.activeCallId = null;
-    this.state.selectedQueueCallId = null;
+  _bindActionButtons(){
+    // delegate clicks inside callActions
+    this.ui.els.callActions.onclick = (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      this.handleAction(action);
+    };
   }
 
-  // Called by Main when dispatch resolves an incident
-  onIncidentResolved(res){
-    const { incident, unit } = res || {};
-    if (!incident) return;
-
-    // find related call
-    const call = this.state.callQueue.find(c => c.incidentId === incident.id && c.status !== 'closed');
+  handleAction(action){
+    const call = this.state.activeCall;
     if (!call) return;
 
-    const mismatch = incident.mismatch;
-    if (mismatch){
-      const penalty = incident.severity === 'high' ? 30 : incident.severity === 'medium' ? 20 : 12;
-      this.state.addScore(-penalty);
-      this.audio.playError();
-      call.transcript.push(`\n\n📄 Relatório: Unidade inadequada enviada. Resultado pior. (-${penalty} pontos)`);
-    }else{
-      const bonus = incident.severity === 'high' ? 30 : incident.severity === 'medium' ? 20 : 10;
-      this.state.addScore(+bonus);
-      this.audio.playResolve();
-      call.transcript.push(`\n\n📄 Relatório: Ocorrência encerrada com sucesso. (+${bonus} pontos)`);
+    // protocol actions
+    if (action === 'ask_address'){
+      call.collected.address = call.script.address;
+      this.audio.playType();
+      this.ui.appendTranscript(`Operador: Qual é o endereço exato?\nChamador: ${call.script.address}`);
+      this.ui.renderCallFields(call); // ✅ garante atualização
+      this.ui.renderCallActions(call);
+      this._maybeCreateIncident(call);
+      return;
+    }
+    if (action === 'ask_details'){
+      call.collected.details = call.script.details;
+      this.audio.playType();
+      this.ui.appendTranscript(`Operador: O que está acontecendo agora?\nChamador: ${call.script.details}`);
+      this.ui.renderCallFields(call);
+      this.ui.renderCallActions(call);
+      this._maybeCreateIncident(call);
+      return;
+    }
+    if (action === 'ask_victims'){
+      call.collected.victims = call.script.victims;
+      this.audio.playType();
+      this.ui.appendTranscript(`Operador: Há feridos? Quantos?\nChamador: ${call.script.victims || 'Não sei…'}`);
+      this.ui.renderCallFields(call);
+      this.ui.renderCallActions(call);
+      return;
     }
 
-    call.waitingForDispatch = false;
-    call.status = 'closed';
+    // prank triage
+    if (action === 'triage_prank'){
+      call.didInstructions = true;
+      this.audio.playResolve();
+      this.ui.appendTranscript(`Operador: Vou fazer algumas perguntas…\nChamador: (risadas) Era brincadeira…`);
+      this.ui.appendTranscript(`✅ Registro: chamada improcedente / trote.`);
+      this.state.addScore(+10);
+      this.endActiveCall(true);
+      return;
+    }
+    if (action === 'dispatch_anyway'){
+      call.didInstructions = true;
+      this.audio.playError();
+      this.ui.appendTranscript(`❌ Você despachou sem confirmar. Recurso desperdiçado.`);
+      this.state.addScore(-12);
+      this.endActiveCall(true);
+      return;
+    }
 
-    if (this.state.activeCallId === call.rid) this.state.activeCallId = null;
-    if (this.state.selectedQueueCallId === call.rid) this.state.selectedQueueCallId = null;
+    // instructions
+    if (action === 'instr_ok'){
+      call.didInstructions = true;
+      this.audio.playResolve();
+      this.ui.appendTranscript(`✅ Instrução correta: ${call.script.instructions_ok}`);
+      this.state.addScore(+8);
+      this.ui.renderCallActions(call);
+      return;
+    }
+    if (action === 'instr_bad'){
+      call.didInstructions = true;
+      this.audio.playError();
+      this.ui.appendTranscript(`❌ Instrução incorreta: ${call.script.instructions_bad}`);
+      this.state.addScore(-10);
+      this.ui.renderCallActions(call);
+      return;
+    }
+  }
+
+  _maybeCreateIncident(call){
+    // need at least address + details to create incident
+    if (!call.collected.address || !call.collected.details) return;
+    if (call._incidentId) return;
+
+    // create incident
+    const incident = this.dispatch.createIncidentFromCall(call);
+    call._incidentId = incident.id;
+
+    this.ui.appendTranscript('📡 Despacho: incidente registrado. Selecione o marcador (!) e despache a unidade.');
+    this.ui.setHint('Selecione o incidente no mapa e clique numa unidade disponível para despachar.');
+  }
+
+  _handleCallEvents(call, dt){
+    call._elapsed = (call._elapsed ?? 0) + dt;
+    if (!call.events || !call.events.length) return;
+    const cursor = call._eventCursor ?? 0;
+    if (cursor >= call.events.length) return;
+
+    const nextEvt = call.events[cursor];
+    if (call._elapsed >= nextEvt.at){
+      call._eventCursor = cursor + 1;
+      // only show events if call is active
+      if (this.state.activeCall && this.state.activeCall.id === call.id){
+        this.audio.playIncoming(520, 0.05);
+        this.ui.appendTranscript(`📣 Atualização: ${nextEvt.text}`);
+        // mild penalty if still no dispatch
+        if (!call._incidentId){
+          this.state.addScore(-2);
+        }
+      }
+    }
+  }
+
+  onIncidentResolved(incident, unit){
+    const call = this.state.activeCall;
+    const mismatch = incident.mismatch;
+
+    if (mismatch){
+      const p = incident.severity==='high'?30:incident.severity==='medium'?20:12;
+      this.state.addScore(-p);
+      this.audio.playError();
+      this.ui.appendTranscript(`❌ Falha operacional: unidade inadequada. -${p} pontos`);
+    }else{
+      const b = incident.severity==='high'?30:incident.severity==='medium'?20:10;
+      this.state.addScore(+b);
+      this.audio.playResolve();
+      this.ui.appendTranscript(`📄 Relatório: ${incident.report.success} +${b} pontos`);
+    }
+
+    // close call after resolution
+    this.endActiveCall(true);
   }
 }

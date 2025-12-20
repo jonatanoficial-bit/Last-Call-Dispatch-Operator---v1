@@ -1,182 +1,99 @@
 import { GameState } from './gameState.js';
+import { loadCity, loadCalls } from './contentLoader.js';
 import { UIManager } from './uiManager.js';
 import { AudioManager } from './audioManager.js';
 import { DispatchManager } from './dispatchManager.js';
 import { CallManager } from './callManager.js';
 
+// polyfill for roundRect (older browsers)
+if (CanvasRenderingContext2D && !CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    this.beginPath();
+    this.moveTo(x+rr, y);
+    this.arcTo(x+w, y, x+w, y+h, rr);
+    this.arcTo(x+w, y+h, x, y+h, rr);
+    this.arcTo(x, y+h, x, y, rr);
+    this.arcTo(x, y, x+w, y, rr);
+    this.closePath();
+    return this;
+  };
+}
+
 const state = new GameState();
 const audio = new AudioManager();
 const ui = new UIManager(state, audio);
-let dispatch = null;
-let calls = null;
+const dispatch = new DispatchManager(state, ui, audio);
+const calls = new CallManager(state, ui, audio, dispatch);
 
-let lastT = performance.now();
+async function init(){
+  state.setCity(await loadCity('nova_aurora'));
+  const callData = await loadCalls();
+  calls.setTemplates(callData.calls);
 
-async function boot(){
-  await state.loadContent({ cityId:'nova_aurora' });
-  state.resetRun();
-
-  dispatch = new DispatchManager(state, ui, audio);
-  calls = new CallManager(state, ui, audio, dispatch);
+  dispatch.initUnits();
+  ui.renderTop();
+  ui.renderQueue();
+  ui.renderUnitDock(state.units, (unitId) => dispatch.dispatchUnit(unitId));
+  ui.renderIncidentBadge(null);
+  dispatch.render();
 
   ui.bindHandlers({
-    onStart: startShift,
-    onRestart: restart,
-    onPauseToggle: togglePause,
-    onHoldActive: ()=>{ if (state.running) { calls.holdActive(false); renderAll(); } },
-    onEndActive: ()=>{ if (state.running) { calls.endActive(); renderAll(); } },
-
-    onAnswerSelected: ()=> answerSelected(),
-
-    onUnitSelected: ()=>{ ui.setDispatchEnabled(canDispatchNow()); },
-    onDispatch: ()=>doDispatch(),
-
-    getCallOptions: (call, template)=>getCallOptions(call, template),
+    onTogglePause(){
+      if (!state.turnRunning) return;
+      state.paused = !state.paused;
+      ui.renderTop();
+    },
+    onStart(){
+      if (state.turnRunning) return;
+      state.turnRunning = true;
+      state.paused = false;
+      state.turnRemaining = state.turnSec;
+      state.score = 0;
+      state.queue = [];
+      state.activeCall = null;
+      state.selectedCallId = null;
+      state.incidents = [];
+      dispatch.initUnits();
+      ui.clearActiveCall();
+      ui.renderQueue();
+      ui.renderUnitDock(state.units, (unitId) => dispatch.dispatchUnit(unitId));
+      ui.setHint('Turno iniciado. Atenda a fila e despache corretamente.');
+      calls.startTurn();
+      ui.renderTop();
+    },
+    onReset(){
+      state.reset();
+      init();
+    },
+    onAnswerSelected(){
+      calls.answerSelected();
+    },
+    onHold(){
+      calls.holdActive();
+    },
+    onEndCall(){
+      calls.endActiveCall(false);
+    }
   });
 
-  dispatch.initGrid();
+  // main loop
+  let last = performance.now();
+  function frame(t){
+    const dt = Math.min(0.05, (t - last)/1000);
+    last = t;
 
-  renderAll();
-  requestAnimationFrame(loop);
-}
+    // update
+    calls.tick(dt);
+    dispatch.tick(dt);
 
-function startShift(){
-  if (state.running) return;
-  state.resetRun();
-  state.running = true;
-  calls.startShift();
-  ui.toast('Turno iniciado.');
-  renderAll();
-}
+    // top HUD
+    ui.renderTop();
+    ui.renderUnitDock(state.units, (unitId) => dispatch.dispatchUnit(unitId));
 
-function restart(){
-  state.resetRun();
-  ui.toast('Reiniciado.');
-  renderAll();
-}
-
-function togglePause(){
-  if (!state.running) return;
-  state.paused = !state.paused;
-  if (state.paused) ui.toast('Pausado.');
-  else ui.toast('Continuando.');
-  renderAll();
-}
-
-function answerSelected(){
-  const rid = state.selectedQueueCallId;
-  if (!rid) return;
-  calls.answerCall(rid);
-  renderAll();
-}
-
-function getActiveTemplate(){
-  const call = calls.getActiveCall();
-  if (!call) return { call:null, template:null };
-  return { call, template: calls.getTemplateById(call.templateId) };
-}
-
-function getCallOptions(call, template){
-  if (!call || !template) return [];
-
-  // If there is an instruction mini-menu override
-  const override = calls.getInstructionOverride(call);
-  if (override){
-    return override.concat([{ label:'Voltar', onClick:()=>{ delete call._instructionOptions; delete call._instructionPrompt; } }]);
+    requestAnimationFrame(frame);
   }
-
-  // Default protocol options
-  return calls.getOptions(call);
+  requestAnimationFrame(frame);
 }
 
-function doDispatch(){
-  const result = dispatch.dispatchSelected();
-  if (!result.ok){
-    ui.toast(result.reason || 'Não foi possível despachar.');
-    audio.playError();
-    return;
-  }
-
-  // When dispatch happens, try to find active/related call and mark waiting
-  const incId = result.incident?.id;
-  if (incId){
-    const call = state.callQueue.find(c=>c.incidentId === incId);
-    if (call){
-      call.waitingForDispatch = true;
-      call.transcript.push(`\n📡 Despacho: Unidade ${result.unit.id} a caminho. ETA estimado: ${estimateEta(result.unit, result.incident)}s`);
-    }
-  }
-
-  renderAll();
-}
-
-function estimateEta(unit, incident){
-  const dist = Math.abs(unit.x - incident.x) + Math.abs(unit.y - incident.y);
-  const speed = state.config.unitSpeedCellsPerSec;
-  return Math.ceil(dist / Math.max(1, speed));
-}
-
-function canDispatchNow(){
-  return !!(state.selectedIncidentId && state.selectedUnitId);
-}
-
-function renderAll(){
-  ui.updateHUD();
-  ui.renderQueue();
-  const { call, template } = getActiveTemplate();
-  ui.renderActiveCall(call, template);
-  ui.renderUnits();
-  ui.renderSelectedIncidentLabel();
-  dispatch.renderAllMarkers();
-  ui.setDispatchEnabled(canDispatchNow());
-}
-
-function loop(t){
-  const dt = Math.min(0.05, (t - lastT) / 1000);
-  lastT = t;
-
-  if (state.running && !state.paused){
-    state.shiftElapsed += dt;
-
-    calls.update(dt);
-    dispatch.update(dt);
-
-    // If any incident just resolved, award/close related call
-    for (const inc of state.incidents){
-      if (inc.status === 'resolved' && !inc._notified){
-        inc._notified = true;
-        calls.onIncidentResolved({ incident: inc, unit: state.units.find(u=>u.id === inc.assignedUnitId) });
-      }
-    }
-
-    // End shift
-    if (state.shiftElapsed >= state.config.shiftDurationSec){
-      endShift();
-    }
-  }
-
-  // UI refresh: keep timer updates smooth
-  renderAll();
-  requestAnimationFrame(loop);
-}
-
-function endShift(){
-  state.running = false;
-  state.paused = false;
-
-  // close open calls with small penalty (unfinished)
-  let unfinished = 0;
-  for (const c of state.callQueue){
-    if (c.status !== 'closed'){
-      c.status = 'closed';
-      unfinished += 1;
-    }
-  }
-  if (unfinished > 0){
-    state.addScore(-unfinished * 8);
-  }
-
-  ui.showModal(`Score final: ${state.score}. Chamadas pendentes no fim do turno: ${unfinished}.`);
-}
-
-boot();
+init();

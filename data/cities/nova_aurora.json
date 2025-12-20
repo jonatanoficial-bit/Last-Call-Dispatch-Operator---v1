@@ -1,60 +1,6 @@
 {
   "id": "nova_aurora",
   "name": "Nova Aurora (Simulação)",
-  "country": "BR",
   "region": "BR",
-  "grid": {
-    "w": 18,
-    "h": 12
-  },
-  "bases": [
-    {
-      "id": "pd1",
-      "type": "police",
-      "name": "Batalhão Central",
-      "x": 2,
-      "y": 2
-    },
-    {
-      "id": "fd1",
-      "type": "fire",
-      "name": "Quartel Central",
-      "x": 15,
-      "y": 9
-    },
-    {
-      "id": "md1",
-      "type": "medical",
-      "name": "Posto Médico",
-      "x": 10,
-      "y": 3
-    }
-  ],
-  "hotspots": [
-    {
-      "name": "Centro",
-      "x": 8,
-      "y": 6
-    },
-    {
-      "name": "Zona Norte",
-      "x": 6,
-      "y": 2
-    },
-    {
-      "name": "Zona Sul",
-      "x": 12,
-      "y": 10
-    },
-    {
-      "name": "Industrial",
-      "x": 15,
-      "y": 6
-    },
-    {
-      "name": "Orla",
-      "x": 2,
-      "y": 10
-    }
-  ]
+  "grid": {"w": 26, "h": 14}
 }

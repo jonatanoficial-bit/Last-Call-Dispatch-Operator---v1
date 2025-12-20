@@ -1,112 +1,94 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-  <title>Last Call Dispatch Operator — Fase 2</title>
-  <link rel="stylesheet" href="styles.css"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Last Call Dispatch Operator</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="app">
-    <header class="topbar">
-      <div class="brand">
-        <div class="logo">LCDO</div>
-        <div class="titles">
-          <div class="title">Last Call Dispatch Operator</div>
-          <div class="subtitle">Fase 2 — fila de chamadas • protocolo • instruções pré-chegada</div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">LCDO</div>
+      <div class="brandText">
+        <div class="title">Last Call Dispatch Operator</div>
+        <div class="subtitle">Fase 2.1 — fila + protocolo (corrigido)</div>
+      </div>
+    </div>
+
+    <div class="hud">
+      <div class="pill" id="cityPill">CIDADE: —</div>
+      <div class="pill">TURNO <span id="turnTime">00:00</span></div>
+      <div class="pill">SCORE <span id="score">0</span></div>
+      <button class="btn ghost" id="pauseBtn">Pausar</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel callPanel">
+      <div class="panelHeader">
+        <div class="panelTitle">Chamada ativa</div>
+        <div class="panelBadges">
+          <div class="badge" id="riskBadge">Risco: —</div>
+          <div class="badge" id="callTimerBadge">Tempo: —</div>
         </div>
       </div>
 
-      <div class="hud">
-        <div class="hudItem"><span class="k">Cidade</span><span class="v" id="hudCity">—</span></div>
-        <div class="hudItem"><span class="k">Turno</span><span class="v" id="hudShift">00:00</span></div>
-        <div class="hudItem"><span class="k">Score</span><span class="v" id="hudScore">0</span></div>
-        <button id="btnPause" class="btn ghost">Pausar</button>
-      </div>
-    </header>
+      <div class="callBody">
+        <div class="callTranscript" id="callTranscript"></div>
 
-    <main class="layout">
-      <section class="panel callPanel">
-        <div class="panelHeader">
-          <div class="panelTitle">Chamada ativa</div>
-          <div class="panelMeta">
-            <span class="pill" id="callSeverity">—</span>
-            <span class="pill" id="callTimer">—</span>
-          </div>
+        <div class="callFields">
+          <div><span class="fieldLabel">Endereço:</span> <span id="fieldAddress">—</span></div>
+          <div><span class="fieldLabel">Detalhes:</span> <span id="fieldDetails">—</span></div>
+          <div><span class="fieldLabel">Vítimas:</span> <span id="fieldVictims">—</span></div>
         </div>
 
-        <div id="callTranscript" class="transcript" aria-label="Transcrição da chamada"></div>
+        <div class="callActions" id="callActions"></div>
 
-        <div class="callFacts">
-          <div class="fact"><span class="label">Endereço:</span> <span id="factAddress" class="value">—</span></div>
-          <div class="fact"><span class="label">Detalhes:</span> <span id="factDetails" class="value">—</span></div>
-          <div class="fact"><span class="label">Vítimas:</span> <span id="factInjuries" class="value">—</span></div>
-        </div>
-
-        <div id="callOptions" class="options"></div>
-
-        <div class="callActions">
-          <button id="btnHold" class="btn ghost" disabled>Colocar em espera</button>
-          <button id="btnEnd" class="btn danger" disabled>Encerrar chamada</button>
-        </div>
-
-        <div class="toast" id="toast" role="status" aria-live="polite"></div>
-      </section>
-
-      <section class="panel mapPanel">
-        <div class="panelHeader">
-          <div class="panelTitle">Despacho</div>
-          <div class="panelMeta">
-            <span class="pill" id="selectedIncident">Incidente: —</span>
-          </div>
-        </div>
-
-        <div class="mapWrap">
-          <div id="gridMap" class="gridMap" aria-label="Mapa em grade"></div>
-        </div>
-
-        <div class="dispatchBar">
-          <div class="units" id="unitList"></div>
-          <div class="dispatchBtns">
-            <button id="btnDispatch" class="btn" disabled>Despachar unidade</button>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel queuePanel">
-        <div class="panelHeader">
-          <div class="panelTitle">Fila de chamadas</div>
-          <div class="panelMeta">
-            <span class="pill" id="queueCount">0</span>
-          </div>
-        </div>
-        <div id="queueList" class="queueList"></div>
-        <div class="queueActions">
-          <button id="btnAnswerNext" class="btn" disabled>Atender selecionada</button>
-        </div>
-      </section>
-    </main>
-
-    <section class="panel footerPanel">
-      <div class="footerRow">
-        <button id="btnStart" class="btn primary">Iniciar turno</button>
-        <button id="btnRestart" class="btn ghost" disabled>Reiniciar</button>
-        <div class="hint">
-          Dica: selecione uma chamada na fila para atender. Colete o endereço e a natureza, dê instruções e despache a unidade correta.
+        <div class="callFooter">
+          <button class="btn ghost" id="holdBtn">Colocar em espera</button>
+          <button class="btn danger" id="endCallBtn">Encerrar chamada</button>
         </div>
       </div>
     </section>
 
-    <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Resultado do turno">
-      <div class="modalCard">
-        <div class="modalTitle">Fim do turno</div>
-        <div id="modalBody" class="modalBody"></div>
-        <div class="modalActions">
-          <button id="btnCloseModal" class="btn primary">Ok</button>
+    <section class="panel dispatchPanel">
+      <div class="panelHeader">
+        <div class="panelTitle">Despacho</div>
+        <div class="panelBadges">
+          <div class="badge" id="incidentBadge">Incidente: —</div>
         </div>
       </div>
-    </div>
-  </div>
+
+      <div class="gridWrap">
+        <canvas id="grid" width="860" height="460" aria-label="mapa"></canvas>
+        <div class="unitDock" id="unitDock"></div>
+      </div>
+
+      <div class="dispatchFooter">
+        <div class="hint" id="hint">Dica: selecione uma chamada na fila, atenda, colete endereço/detalhes e despache a unidade correta.</div>
+      </div>
+    </section>
+
+    <section class="panel queuePanel">
+      <div class="panelHeader">
+        <div class="panelTitle">Fila de chamadas</div>
+        <div class="panelBadges">
+          <div class="badge" id="queueCount">0</div>
+        </div>
+      </div>
+
+      <div class="queueBody">
+        <div class="queue" id="queue"></div>
+        <button class="btn primary" id="answerBtn">Atender selecionada</button>
+      </div>
+
+      <div class="queueFooter">
+        <button class="btn primary" id="startBtn">Iniciar turno</button>
+        <button class="btn ghost" id="resetBtn">Reiniciar</button>
+      </div>
+    </section>
+  </main>
 
   <script type="module" src="js/main.js"></script>
 </body>
