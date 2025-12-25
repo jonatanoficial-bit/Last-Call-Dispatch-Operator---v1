@@ -72,6 +72,11 @@
       font-size:11px;padding:6px 10px;border-radius:999px;
       background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:var(--muted)
     }
+    .badge.high{border-color:rgba(255,77,109,.35);background:rgba(255,77,109,.12);color:#ffdbe2}
+    .badge.med{border-color:rgba(255,176,32,.28);background:rgba(255,176,32,.12);color:#ffe7b4}
+    .badge.low{border-color:rgba(61,255,158,.22);background:rgba(61,255,158,.10);color:#c9ffe9}
+    .badge.neutral{border-color:rgba(124,247,255,.25);background:rgba(124,247,255,.10);color:#cfefff}
+
     .btn{
       appearance:none;border:none;cursor:pointer;padding:10px 12px;border-radius:14px;
       font-weight:900;font-size:12px;color:var(--text);
@@ -85,22 +90,32 @@
     .btn.ghost{background:rgba(255,255,255,.04)}
     .btn.danger{background:rgba(255,77,109,.14);border-color:rgba(255,77,109,.28);color:#ffdbe2}
     .btn.warn{background:rgba(255,176,32,.14);border-color:rgba(255,176,32,.25);color:#ffe7b4}
+    .btn.good{background:rgba(61,255,158,.12);border-color:rgba(61,255,158,.22);color:#c9ffe9}
+
     .help{
       margin:0 12px 12px;padding:10px 12px;border-radius:14px;background:rgba(0,0,0,.18);
       border:1px solid rgba(255,255,255,.06);color:var(--muted);font-size:12px
     }
 
-    .callPanel{min-height:420px;display:flex;flex-direction:column}
-    .dispatchPanel{min-height:420px;display:flex;flex-direction:column}
+    .callPanel{min-height:440px;display:flex;flex-direction:column}
+    .dispatchPanel{min-height:440px;display:flex;flex-direction:column}
     .queuePanel{grid-column:1/-1}
 
-    .callTranscript{padding:12px;height:210px;overflow:auto;font-size:12px;line-height:1.5}
+    .callTranscript{padding:12px;height:240px;overflow:auto;font-size:12px;line-height:1.5}
     .line{margin:0 0 8px;white-space:pre-wrap}
     .op{color:var(--accent)}
     .cl{color:var(--text)}
     .sys{color:var(--muted)}
     .bad{color:var(--danger)}
     .good{color:var(--good)}
+    .typingCaret{
+      display:inline-block; width:9px; height:14px; margin-left:2px;
+      background: rgba(124,247,255,.75);
+      transform: translateY(2px);
+      animation: blink .85s infinite;
+      border-radius:2px;
+    }
+    @keyframes blink { 0%,55%{opacity:1} 56%,100%{opacity:0} }
 
     .callFields{padding:0 12px 12px;display:grid;gap:6px}
     .fieldRow{display:flex;gap:8px;align-items:baseline}
@@ -139,7 +154,9 @@
     .qMeta{display:flex;gap:8px;align-items:center}
     .tag{font-size:11px;padding:4px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:var(--muted)}
     .tag.high{border-color:rgba(255,77,109,.28);background:rgba(255,77,109,.12);color:#ffdbe2}
+    .tag.med{border-color:rgba(255,176,32,.25);background:rgba(255,176,32,.12);color:#ffe7b4}
     .tag.low{border-color:rgba(61,255,158,.22);background:rgba(61,255,158,.10);color:#c9ffe9}
+    .tag.prank{border-color:rgba(124,247,255,.25);background:rgba(124,247,255,.10);color:#cfefff}
     .qText{font-size:12px;line-height:1.4;white-space:pre-wrap}
     .qFooter{margin-top:8px;color:var(--muted);font-size:11px}
 
@@ -176,7 +193,7 @@
         <div class="logo">LCDO</div>
         <div class="brandText">
           <div class="title">Last Call Dispatch Operator</div>
-          <div class="subtitle">Index Único (mobile) — sem pastas JS • “Iniciar turno” garantido</div>
+          <div class="subtitle">Fase: Jogabilidade — máquina de escrever + trotes + gravidade</div>
         </div>
       </div>
       <div class="hud">
@@ -192,6 +209,7 @@
         <div class="panelHeader">
           <div class="panelTitle">Chamada ativa</div>
           <div class="panelMeta">
+            <span class="badge neutral" id="badgeType">—</span>
             <span class="badge" id="badgeRisk">—</span>
             <span class="badge" id="badgeCallTime">Tempo 00:00</span>
           </div>
@@ -213,12 +231,13 @@
         </div>
 
         <div class="actions bottom">
+          <button class="btn good" id="btnMarkPrank">Marcar como trote</button>
           <button class="btn ghost" id="btnHold">Colocar em espera</button>
           <button class="btn danger" id="btnEndCall">Encerrar chamada</button>
         </div>
 
         <div class="help" id="callHelp">
-          Fluxo: Iniciar turno → Selecionar chamada → Atender → Perguntar endereço + detalhes → aparece “!” no mapa → clicar “!” → despachar unidade.
+          Dica: trotes existem. Se suspeitar, use <b>“Marcar como trote”</b>. Se for emergência real, isso dá penalidade.
         </div>
       </section>
 
@@ -283,9 +302,11 @@
         btnAskDetails: document.getElementById('btnAskDetails'),
         btnAskVictims: document.getElementById('btnAskVictims'),
         btnGiveInstructions: document.getElementById('btnGiveInstructions'),
+        btnMarkPrank: document.getElementById('btnMarkPrank'),
         btnHold: document.getElementById('btnHold'),
         btnEndCall: document.getElementById('btnEndCall'),
 
+        badgeType: document.getElementById('badgeType'),
         badgeRisk: document.getElementById('badgeRisk'),
         badgeCallTime: document.getElementById('badgeCallTime'),
         badgeIncident: document.getElementById('badgeIncident'),
@@ -322,46 +343,166 @@
         toast._t = setTimeout(()=>els.toast.classList.remove('show'), 1600);
       }
 
+      // ===== Conteúdo Variado (Trote / Leve / Médio / Grave) =====
       const CITY = { name:"Nova Aurora (Simulação)", grid:{w:32,h:18} };
+
+      // pequenos geradores pra variar sem “repetir” demais
+      const NAMES = ["Carlos","Ana","Marcos","Juliana","Paulo","Renata","Gabriel","Bruna","Vitor","Camila"];
+      const STREETS = ["Rua Central","Av. das Nações","Rua do Mercado","Rua da Estação","Av. Atlântica","Rua das Flores","Rua São Bento","Av. Independência"];
+      const PLACES = ["Apto 42","Casa 12","Loja térrea","Esquina","Bloco B","Condomínio","Ponto de ônibus","Posto de gasolina"];
+
+      function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+      function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+
+      // severity: low/med/high  |  expected: police/fire/medic/none
       const TEMPLATES = [
+        // ===== TROTES (none) =====
         {
-          id:"br_fire_kitchen", region:"BR", number:"193", risk:"HIGH", riskLabel:"ALTA",
-          title:"Fumaça na cozinha (apto)", incidentType:"fire", severity:"high",
-          opening:"193, Bombeiros. Tem fumaça saindo da cozinha do apartamento do meu vizinho! Sinto cheiro de gás.",
-          address:"Rua Central, 120, Bloco B, Apto 42.",
-          details:"Muita fumaça, possível fogo no fogão. O morador não responde.",
-          victims:"1 possível vítima presa. Não tenho certeza.",
-          instructions:[
-            {text:"Evacue o corredor e não use elevador.", good:true, note:"Evita fumaça e risco elétrico."},
-            {text:"Entre e procure a vítima rapidamente.", good:false, note:"Perigoso: fumaça e gás."}
+          id:"br_prank_kid", region:"BR", number:"190", expected:"none", severity:"prank", isPrank:true,
+          title:"Trote (criança rindo)",
+          opening: () => "alô? hehe... é... tem um dragão na rua! HAHAHA!",
+          address: () => "—",
+          details: () => "Voz infantil, risadas e informação impossível.",
+          victims: () => "Nenhuma.",
+          instructions: () => [{text:"Solicitar informações reais, orientar sobre consequências e encerrar.", good:true, note:"Procedimento adequado."}]
+        },
+        {
+          id:"br_prank_pizza", region:"BR", number:"193", expected:"none", severity:"prank", isPrank:true,
+          title:"Trote (pedido de pizza)",
+          opening: () => "oi... quero uma pizza grande e uma coca. entrega rápido!",
+          address: () => pick(STREETS)+", "+randInt(10,999)+", "+pick(PLACES)+".",
+          details: () => "Pessoa insiste que é 'pedido' e não emergência.",
+          victims: () => "Nenhuma.",
+          instructions: () => [{text:"Informar que é linha de emergência e encerrar.", good:true, note:"Evita desperdício."}]
+        },
+
+        // ===== LEVES =====
+        {
+          id:"br_low_noise", region:"BR", number:"190", expected:"police", severity:"low", isPrank:false,
+          title:"Perturbação do sossego (barulho)",
+          opening: () => "190? Meu vizinho tá com som alto desde cedo, não consigo dormir!",
+          address: () => pick(STREETS)+", "+randInt(10,999)+", "+pick(PLACES)+".",
+          details: () => "Som alto e discussão. Sem ameaça imediata aparente.",
+          victims: () => "Sem feridos.",
+          instructions: () => [
+            {text:"Manter distância e evitar confronto direto.", good:true, note:"Reduz risco de escalada."},
+            {text:"Ir lá e quebrar o som.", good:false, note:"Isso aumenta o conflito."}
           ]
         },
         {
-          id:"us_med_choking", region:"US", number:"911", risk:"HIGH", riskLabel:"ALTA",
-          title:"Engasgo (adulto)", incidentType:"medic", severity:"high",
-          opening:"911, my dad is choking! He can't breathe!",
-          address:"221 Pine Street, apartment 3B.",
-          details:"Ele estava comendo e agora não consegue falar.",
-          victims:"1 adulto consciente, muito dificuldade.",
-          instructions:[
-            {text:"Faça compressões abdominais (Heimlich) se souber.", good:true, note:"Indicado para engasgo grave."},
+          id:"us_low_minor_crash", region:"US", number:"911", expected:"police", severity:"low", isPrank:false,
+          title:"Batida leve (sem feridos aparentes)",
+          opening: () => "911, a car hit me at a stop sign. I think no one is hurt.",
+          address: () => randInt(100,999)+" "+pick(["Pine St","Oak Ave","River Rd","Market St"]) + ", "+pick(PLACES)+".",
+          details: () => "Dois carros com danos leves. Via parcialmente bloqueada.",
+          victims: () => "Sem feridos aparentes.",
+          instructions: () => [
+            {text:"Se seguro, mover veículos para local seguro e sinalizar.", good:true, note:"Evita novo acidente."},
+            {text:"Ficar parado no meio da via para discutir.", good:false, note:"Perigoso."}
+          ]
+        },
+
+        // ===== MÉDIOS =====
+        {
+          id:"eu_med_fire_small", region:"EU", number:"112", expected:"fire", severity:"med", isPrank:false,
+          title:"Fogo pequeno (lixeira/curto-circuito)",
+          opening: () => "112! Tem fogo pequeno na área comum. Muita fumaça, mas parece controlável.",
+          address: () => pick(STREETS)+", "+randInt(10,999)+", "+pick(["prédio","hall","garagem","escada"]) + ".",
+          details: () => "Fumaça moderada e cheiro forte. Pessoas evacuando.",
+          victims: () => "Possível inalação de fumaça.",
+          instructions: () => [
+            {text:"Evacuar e fechar portas para conter fumaça.", good:true, note:"Contenção básica correta."},
+            {text:"Usar elevador para sair rápido.", good:false, note:"Risco em incêndio."}
+          ]
+        },
+        {
+          id:"br_med_domestic", region:"BR", number:"190", expected:"police", severity:"med", isPrank:false,
+          title:"Violência doméstica (possível agressão)",
+          opening: () => "190... eu ouvi gritos no apartamento ao lado, parece que ele tá batendo nela!",
+          address: () => pick(STREETS)+", "+randInt(10,999)+", "+pick(PLACES)+".",
+          details: () => "Gritos, choro e barulhos de impacto. Situação instável.",
+          victims: () => "1 possível vítima.",
+          instructions: () => [
+            {text:"Não intervir fisicamente; manter distância e aguardar viatura.", good:true, note:"Protege o denunciante."},
+            {text:"Arrombar a porta sozinho.", good:false, note:"Risco elevado ao denunciante."}
+          ]
+        },
+
+        // ===== GRAVES =====
+        {
+          id:"br_high_fire_gas", region:"BR", number:"193", expected:"fire", severity:"high", isPrank:false,
+          title:"Incêndio + cheiro de gás (apto)",
+          opening: () => "193, tem fumaça saindo da cozinha do apartamento do meu vizinho! Sinto cheiro de gás!",
+          address: () => pick(STREETS)+", "+randInt(10,999)+", "+pick(["Bloco B, Apto 42","Apto 12","cobertura","térreo"]) + ".",
+          details: () => "Muita fumaça, possível fogo no fogão. O morador não responde.",
+          victims: () => "1 possível vítima presa.",
+          instructions: () => [
+            {text:"Evacue o corredor e não use elevador.", good:true, note:"Procedimento correto em incêndio."},
+            {text:"Entre e procure a vítima rapidamente.", good:false, note:"Perigo por fumaça e gás."}
+          ]
+        },
+        {
+          id:"us_high_choking", region:"US", number:"911", expected:"medic", severity:"high", isPrank:false,
+          title:"Engasgo grave (adulto)",
+          opening: () => "911, my dad is choking! He can't breathe!",
+          address: () => randInt(100,999)+" "+pick(["Pine Street","Hill Avenue","Broadway","Lake Road"]) + ", "+pick(PLACES)+".",
+          details: () => "Ele estava comendo e agora não consegue falar nem tossir.",
+          victims: () => "1 adulto consciente, sufocando.",
+          instructions: () => [
+            {text:"Faça compressões abdominais (Heimlich) se souber.", good:true, note:"Conduta adequada em engasgo grave."},
             {text:"Dê água imediatamente.", good:false, note:"Pode piorar."}
           ]
         },
         {
-          id:"eu_pol_robbery", region:"EU", number:"112", risk:"HIGH", riskLabel:"ALTA",
-          title:"Assalto em andamento (loja)", incidentType:"police", severity:"high",
-          opening:"112. Tem um assalto acontecendo, estou escondido e ele tem uma arma!",
-          address:"Avenida das Nações, 55, loja térrea.",
-          details:"Suspeito armado exigindo dinheiro. Clientes no local.",
-          victims:"Sem feridos por enquanto, reféns potenciais.",
-          instructions:[
-            {text:"Fique escondido e em silêncio.", good:true, note:"Reduz risco."},
-            {text:"Confronte o suspeito.", good:false, note:"Aumenta risco."}
+          id:"eu_high_robbery", region:"EU", number:"112", expected:"police", severity:"high", isPrank:false,
+          title:"Assalto em andamento (arma)",
+          opening: () => "112! Tem um assalto acontecendo, estou escondido e ele tem uma arma!",
+          address: () => pick(STREETS)+", "+randInt(10,999)+", "+pick(["loja térrea","farmácia","mercado","lanchonete"]) + ".",
+          details: () => "Suspeito armado exigindo dinheiro. Clientes no local.",
+          victims: () => "Reféns potenciais, risco alto.",
+          instructions: () => [
+            {text:"Fique escondido e em silêncio.", good:true, note:"Evita escalada."},
+            {text:"Confronte o suspeito.", good:false, note:"Aumenta risco de violência."}
           ]
         }
       ];
 
+      // pesos para variedade (mais leves, menos graves, trotes raros mas presentes)
+      const WEIGHTS = {
+        prank: 0.12, // 12%
+        low:   0.45, // 45%
+        med:   0.28, // 28%
+        high:  0.15  // 15%
+      };
+
+      function chooseTemplateWeighted(){
+        const r = Math.random();
+        let bucket = 'low';
+        let acc = 0;
+        const order = ['prank','low','med','high'];
+        for (const k of order){
+          acc += WEIGHTS[k];
+          if (r <= acc){ bucket = k; break; }
+        }
+        const list = TEMPLATES.filter(t => t.severity === bucket);
+        return list.length ? list[Math.floor(Math.random()*list.length)] : TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
+      }
+
+      function severityLabel(sev){
+        if (sev==='prank') return {txt:'TROTE', cls:'neutral'};
+        if (sev==='low') return {txt:'LEVE', cls:'low'};
+        if (sev==='med') return {txt:'MÉDIA', cls:'med'};
+        return {txt:'GRAVE', cls:'high'};
+      }
+
+      function typeLabel(expected){
+        if (expected==='police') return {txt:'Polícia', cls:'neutral'};
+        if (expected==='fire') return {txt:'Bombeiros', cls:'neutral'};
+        if (expected==='medic') return {txt:'Médico', cls:'neutral'};
+        return {txt:'Indefinido', cls:'neutral'};
+      }
+
+      // ===== Estado =====
       const state = {
         city: CITY,
         running:false,
@@ -380,7 +521,10 @@
           { id:'F1', type:'fire',   x:28, y:4, status:'available', target:null },
           { id:'M1', type:'medic',  x:16, y:4, status:'available', target:null },
         ],
-        _id:0
+        _id:0,
+        _spawn:0,
+        typing: { busy:false, queue:[] },
+        ui: { currentCallId:null }
       };
 
       function nextId(prefix){
@@ -394,20 +538,104 @@
         return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
       }
 
+      // ===== Máquina de escrever (fila) =====
+      function clearTranscript(){
+        els.callTranscript.innerHTML = '';
+      }
+      function appendLine(kind, text, typed=true){
+        const div = document.createElement('div');
+        div.className = 'line ' + kind;
+        const span = document.createElement('span');
+        div.appendChild(span);
+        if (typed){
+          const caret = document.createElement('span');
+          caret.className = 'typingCaret';
+          div.appendChild(caret);
+          els.callTranscript.appendChild(div);
+          els.callTranscript.scrollTop = els.callTranscript.scrollHeight;
+
+          state.typing.queue.push({ span, caret, text, speed: 14 + Math.random()*10 }); // chars/seg
+          runTypingQueue();
+        } else {
+          span.textContent = text;
+          els.callTranscript.appendChild(div);
+          els.callTranscript.scrollTop = els.callTranscript.scrollHeight;
+        }
+      }
+
+      function runTypingQueue(){
+        if (state.typing.busy) return;
+        state.typing.busy = true;
+
+        const job = state.typing.queue.shift();
+        if (!job){
+          state.typing.busy = false;
+          return;
+        }
+
+        const { span, caret, text, speed } = job;
+        span.textContent = '';
+        let i = 0;
+        let last = performance.now();
+
+        function step(now){
+          const dt = Math.min(0.05, (now - last)/1000);
+          last = now;
+
+          // quantos chars por frame
+          const add = Math.max(1, Math.floor(speed * dt * 3));
+          i = Math.min(text.length, i + add);
+          span.textContent = text.slice(0, i);
+          els.callTranscript.scrollTop = els.callTranscript.scrollHeight;
+
+          if (i >= text.length){
+            if (caret && caret.parentNode) caret.parentNode.removeChild(caret);
+            state.typing.busy = false;
+            runTypingQueue();
+            return;
+          }
+          requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+
+      // ===== UI/HUD =====
       function renderHUD(){
         els.hudCity.textContent = state.city.name;
         els.hudShift.textContent = fmt(state.shiftRemaining);
         els.hudScore.textContent = String(state.score);
         els.badgeQueueCount.textContent = String(state.queue.length);
-        els.badgeIncident.textContent = state.selectedIncidentId ? 'Incidente: '+state.selectedIncidentId : 'Incidente: —';
 
         if (!state.activeCall){
+          els.badgeType.textContent = '—';
+          els.badgeType.className = 'badge neutral';
           els.badgeRisk.textContent = '—';
+          els.badgeRisk.className = 'badge';
           els.badgeCallTime.textContent = 'Tempo 00:00';
         } else {
-          els.badgeRisk.textContent = 'Risco ' + state.activeCall.riskLabel;
+          const sev = severityLabel(state.activeCall.template.severity);
+          const typ = typeLabel(state.activeCall.template.expected);
+
+          els.badgeType.textContent = typ.txt;
+          els.badgeType.className = 'badge ' + typ.cls;
+
+          els.badgeRisk.textContent = sev.txt;
+          els.badgeRisk.className = 'badge ' + (sev.cls || 'neutral');
+
           els.badgeCallTime.textContent = 'Tempo ' + fmt(state.activeCall.elapsed);
         }
+
+        els.badgeIncident.textContent = state.selectedIncidentId ? 'Incidente: '+state.selectedIncidentId : 'Incidente: —';
+
+        // botões: só habilitar ações quando há chamada
+        const hasCall = !!state.activeCall;
+        els.btnAskAddress.disabled = !hasCall;
+        els.btnAskDetails.disabled = !hasCall;
+        els.btnAskVictims.disabled = !hasCall;
+        els.btnGiveInstructions.disabled = !hasCall;
+        els.btnMarkPrank.disabled = !hasCall;
+        els.btnHold.disabled = !hasCall;
+        els.btnEndCall.disabled = !hasCall;
       }
 
       function renderQueue(){
@@ -416,25 +644,29 @@
           const div = document.createElement('div');
           div.className = 'qItem' + (state.selectedQueueId===call.id ? ' selected':'');
           div.dataset.id = call.id;
+
+          const sev = call.template.severity;
+          const tagClass = sev==='prank' ? 'prank' : sev;
+          const tagLabel = sev==='prank' ? 'TROTE' : (sev==='low'?'LEVE':(sev==='med'?'MÉDIA':'GRAVE'));
+
           div.innerHTML = `
             <div class="qTop">
-              <div class="qId">${call.region}_${call.template.id}</div>
+              <div class="qId">${call.template.region}_${call.template.id}</div>
               <div class="qMeta">
-                <span class="tag high">${call.risk}</span>
+                <span class="tag ${tagClass}">${tagLabel}</span>
                 <span class="tag">${fmt(call.waiting)}</span>
               </div>
             </div>
             <div class="qText">${call.preview}</div>
-            <div class="qFooter">Toque para selecionar • Número ${call.number}</div>
+            <div class="qFooter">Toque para selecionar • Número ${call.template.number}</div>
           `;
           els.queueList.appendChild(div);
         });
       }
 
-      function renderCall(){
+      function updateFields(){
         const c = state.activeCall;
         if (!c){
-          els.callTranscript.innerHTML = '<div class="line sys">Selecione uma chamada na fila e clique em “Atender selecionada”.</div>';
           els.fieldAddress.textContent = '—';
           els.fieldDetails.textContent = '—';
           els.fieldVictims.textContent = '—';
@@ -443,47 +675,58 @@
         els.fieldAddress.textContent = c.collected.address || '—';
         els.fieldDetails.textContent = c.collected.details || '—';
         els.fieldVictims.textContent = c.collected.victims || '—';
-
-        els.callTranscript.innerHTML = '';
-        c.transcript.forEach(line=>{
-          const d = document.createElement('div');
-          d.className = 'line ' + line.kind;
-          d.textContent = line.text;
-          els.callTranscript.appendChild(d);
-        });
-        els.callTranscript.scrollTop = els.callTranscript.scrollHeight;
       }
 
+      // ===== Geração e Fluxo =====
       function seedQueue(){
-        // sempre cria pelo menos 2 chamadas ao iniciar turno
-        if (state.queue.length>=2) return;
-        spawnCall();
-        spawnCall();
+        if (state.queue.length>=3) return;
+        spawnCall(); spawnCall(); spawnCall();
         if (!state.selectedQueueId && state.queue.length>0) state.selectedQueueId = state.queue[0].id;
       }
 
       function spawnCall(){
-        const tpl = TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
+        const tpl = chooseTemplateWeighted();
         const id = nextId('CALL');
-        const preview = `${tpl.number}, ${tpl.title}\n${tpl.opening.slice(0, 90)}${tpl.opening.length>90?'…':''}`;
+
+        const opening = (typeof tpl.opening === 'function') ? tpl.opening() : tpl.opening;
+        const preview = `${tpl.number}, ${tpl.title}\n${opening.slice(0, 92)}${opening.length>92?'…':''}`;
+
         state.queue.push({
           id,
           template: tpl,
-          templateId: tpl.id,
-          region: tpl.region,
-          number: tpl.number,
-          risk: tpl.risk,
-          riskLabel: tpl.riskLabel,
-          waiting:0,
           elapsed:0,
-          preview,
-          transcript: [
-            {kind:'sys', text:`Linha ${tpl.number} conectada (${tpl.region}).`},
-            {kind:'cl', text:`Chamador: ${tpl.opening}`}
-          ],
+          waiting:0,
           collected:{address:'',details:'',victims:''},
-          incidentCreated:false
+          incidentCreated:false,
+          // texto base gerado por função (para variar)
+          gen:{
+            opening,
+            address: (typeof tpl.address === 'function') ? tpl.address() : tpl.address,
+            details: (typeof tpl.details === 'function') ? tpl.details() : tpl.details,
+            victims: (typeof tpl.victims === 'function') ? tpl.victims() : tpl.victims
+          },
+          preview
         });
+      }
+
+      function openCallUI(call){
+        state.ui.currentCallId = call.id;
+        clearTranscript();
+        appendLine('sys', `Linha ${call.template.number} conectada (${call.template.region}).`, true);
+
+        // saudação padrão (simula protocolo)
+        let greet = '';
+        if (call.template.region === 'BR'){
+          greet = `${call.template.number}, emergência. Qual sua ocorrência?`;
+        } else if (call.template.region === 'US'){
+          greet = `${call.template.number}, what is your emergency?`;
+        } else {
+          greet = `${call.template.number}, qual sua emergência?`;
+        }
+        appendLine('op', `Operador: ${greet}`, true);
+
+        appendLine('cl', `Chamador: ${call.gen.opening}`, true);
+        updateFields();
       }
 
       function answerSelected(){
@@ -499,31 +742,45 @@
         state.activeCall = call;
         state.selectedQueueId = state.queue[0]?.id || null;
 
-        call.transcript.push({kind:'op', text:`Operador: ${call.number}, emergência. Qual o endereço exato?`});
+        openCallUI(call);
         toast('Chamada atendida.');
       }
 
-      function ensureIncident(){
+      function maybeCreateIncident(){
         const c = state.activeCall;
         if (!c || c.incidentCreated) return;
+
+        // Se for trote, NÃO cria incidente
+        if (c.template.isPrank){
+          return;
+        }
+
+        // Só cria quando tem o mínimo: endereço + detalhes
         if (!c.collected.address || !c.collected.details) return;
 
         const incId = nextId('INC');
         const x = 2 + Math.floor(Math.random()*(CITY.grid.w-4));
         const y = 2 + Math.floor(Math.random()*(CITY.grid.h-4));
+
+        // tempo de resolução depende da gravidade
+        let resolveBase = 7;
+        if (c.template.severity === 'low') resolveBase = 6;
+        if (c.template.severity === 'med') resolveBase = 9;
+        if (c.template.severity === 'high') resolveBase = 12;
+
         state.incidents.push({
           id: incId,
-          type: c.template.incidentType,
+          expected: c.template.expected,
           severity: c.template.severity,
           x,y,
           status:'waiting',
-          expected: c.template.incidentType,
           assigned:null,
-          resolve: 6 + Math.random()*6
+          resolve: resolveBase + Math.random()*6
         });
         state.selectedIncidentId = incId;
         c.incidentCreated = true;
-        c.transcript.push({kind:'sys', text:`Incidente registrado: ${incId} (${c.template.incidentType}). Selecione o “!” no mapa e despache uma unidade.`});
+
+        appendLine('sys', `Incidente registrado: ${incId}. Selecione o “!” no mapa e despache a unidade correta.`, true);
         toast('Incidente criado no mapa.');
       }
 
@@ -532,60 +789,136 @@
         if (!c){ toast('Nenhuma chamada ativa.'); return; }
 
         if (kind==='address'){
-          c.transcript.push({kind:'op', text:'Operador: Qual é o endereço exato?'});
-          c.collected.address = c.template.address;
-          c.transcript.push({kind:'cl', text:'Chamador: '+c.template.address});
-          toast('Endereço coletado.');
+          appendLine('op', 'Operador: Qual é o endereço exato?', true);
+          // trote: pode responder “confuso”
+          if (c.template.isPrank){
+            appendLine('cl', 'Chamador: ah… não sei… é… perto do… dragão!', true);
+            c.collected.address = ''; // não coleta
+            appendLine('sys', 'Sinal de alerta: endereço inconsistente.', true);
+          } else {
+            appendLine('cl', 'Chamador: '+c.gen.address, true);
+            c.collected.address = c.gen.address;
+          }
+          toast('Endereço atualizado.');
         }
+
         if (kind==='details'){
-          c.transcript.push({kind:'op', text:'Operador: Descreva o que está acontecendo.'});
-          c.collected.details = c.template.details;
-          c.transcript.push({kind:'cl', text:'Chamador: '+c.template.details});
-          toast('Detalhes coletados.');
+          appendLine('op', 'Operador: Descreva o que está acontecendo.', true);
+          if (c.template.isPrank){
+            appendLine('cl', 'Chamador: ele tá cuspindo fogo! hahaha!', true);
+            c.collected.details = ''; // não coleta
+            appendLine('sys', 'Sinal de alerta: detalhes absurdos/inconsistentes.', true);
+          } else {
+            appendLine('cl', 'Chamador: '+c.gen.details, true);
+            c.collected.details = c.gen.details;
+          }
+          toast('Detalhes atualizados.');
         }
+
         if (kind==='victims'){
-          c.transcript.push({kind:'op', text:'Operador: Há vítimas/feridos?'});
-          c.collected.victims = c.template.victims;
-          c.transcript.push({kind:'cl', text:'Chamador: '+c.template.victims});
-          toast('Vítimas coletadas.');
+          appendLine('op', 'Operador: Há vítimas/feridos?', true);
+          if (c.template.isPrank){
+            appendLine('cl', 'Chamador: só meu videogame que morreu! kkk', true);
+            c.collected.victims = '—';
+          } else {
+            appendLine('cl', 'Chamador: '+c.gen.victims, true);
+            c.collected.victims = c.gen.victims;
+          }
+          toast('Vítimas atualizado.');
         }
-        ensureIncident();
+
+        updateFields();
+        maybeCreateIncident();
       }
 
       function giveInstructions(){
         const c = state.activeCall;
         if (!c){ toast('Nenhuma chamada ativa.'); return; }
-        const opts = c.template.instructions || [];
-        const choice = opts.find(o=>o.good) || opts[0];
-        c.transcript.push({kind:'op', text:'Operador: '+choice.text});
-        if (choice.good){
-          state.score += 8;
-          c.transcript.push({kind:'good', text:'✓ Correto: '+choice.note+' (+8)'});
-          toast('+8 pontos (instruções corretas)');
+
+        const opts = (typeof c.template.instructions === 'function') ? c.template.instructions() : (c.template.instructions || []);
+        const goodOpt = opts.find(o=>o.good) || opts[0];
+        const badOpt = opts.find(o=>!o.good) || opts[0];
+
+        // chance de erro do operador (jogador) não faz sentido: quem escolhe é você.
+        // Então aqui nós mostramos DUAS opções “simuladas” por vez (você clica uma única vez hoje).
+        // Nesta fase, o botão aplica a opção “boa” automaticamente (para não travar jogabilidade).
+        // Depois, quando você disser “Próximo”, eu troco para: duas opções clicáveis (decisão real).
+        const chosen = goodOpt;
+
+        appendLine('op', 'Operador: '+chosen.text, true);
+
+        // pontuação baseada em gravidade
+        let bonus = 8;
+        if (c.template.severity==='low') bonus = 6;
+        if (c.template.severity==='med') bonus = 9;
+        if (c.template.severity==='high') bonus = 12;
+
+        if (chosen.good){
+          state.score += bonus;
+          appendLine('good', `✓ Correto: ${chosen.note} (+${bonus})`, true);
+          toast(`+${bonus} pontos (instruções corretas)`);
         } else {
-          state.score -= 10;
-          c.transcript.push({kind:'bad', text:'✗ Incorreto: '+choice.note+' (-10)'});
-          toast('-10 pontos (instruções incorretas)');
+          state.score -= 12;
+          appendLine('bad', `✗ Incorreto: ${chosen.note} (-12)`, true);
+          toast('-12 pontos (instruções incorretas)');
         }
-        ensureIncident();
+
+        updateFields();
+        maybeCreateIncident();
+      }
+
+      function markPrank(){
+        const c = state.activeCall;
+        if (!c){ toast('Nenhuma chamada ativa.'); return; }
+
+        appendLine('op', 'Operador: Confirmo possível trote. Linha de emergência é para risco real. Encerrando.', true);
+
+        if (c.template.isPrank){
+          state.score += 15;
+          appendLine('good', '✓ Trote identificado corretamente. (+15)', true);
+          toast('+15 (trote correto)');
+        } else {
+          state.score -= 25;
+          appendLine('bad', '✗ Era uma ocorrência real. Penalidade por triagem errada. (-25)', true);
+          toast('-25 (triagem errada)');
+        }
+
+        appendLine('sys', 'Chamada encerrada.', true);
+        state.activeCall = null;
+        updateFields();
       }
 
       function endCall(){
         if (!state.activeCall){ toast('Nenhuma chamada ativa.'); return; }
-        state.activeCall.transcript.push({kind:'sys', text:'Chamada encerrada.'});
+        appendLine('sys', 'Chamada encerrada pelo operador.', true);
         state.activeCall = null;
+        updateFields();
         toast('Chamada finalizada.');
       }
 
       function holdCall(){
         if (!state.activeCall){ toast('Nenhuma chamada ativa.'); return; }
-        state.activeCall.transcript.push({kind:'op', text:'Operador: Permaneça na linha, por favor.'});
+        appendLine('op', 'Operador: Permaneça na linha, por favor.', true);
         toast('Em espera (simulado).');
       }
 
       // ===== Canvas (mapa grade) =====
       const canvas = els.canvas;
       const ctx = canvas.getContext('2d');
+
+      if (!CanvasRenderingContext2D.prototype.roundRect){
+        CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+          const rr = Math.min(r, w/2, h/2);
+          this.beginPath();
+          this.moveTo(x+rr,y);
+          this.arcTo(x+w,y,x+w,y+h,rr);
+          this.arcTo(x+w,y+h,x,y+h,rr);
+          this.arcTo(x,y+h,x,y,rr);
+          this.arcTo(x,y,x+w,y,rr);
+          this.closePath();
+          return this;
+        };
+      }
 
       function resizeCanvas(){
         const rect = canvas.getBoundingClientRect();
@@ -612,11 +945,10 @@
         const w = rect.width, h = rect.height;
         ctx.clearRect(0,0,w,h);
 
-        // grid
         const pad = 14;
         const cell = Math.min((w-pad*2)/CITY.grid.w, (h-pad*2)/CITY.grid.h);
 
-        ctx.globalAlpha = 1;
+        // grid
         ctx.strokeStyle = 'rgba(255,255,255,.07)';
         for (let i=0;i<=CITY.grid.w;i++){
           const x = pad + i*cell;
@@ -627,12 +959,25 @@
           ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+CITY.grid.w*cell, y); ctx.stroke();
         }
 
-        // incidents as !
+        // incidents
         state.incidents.filter(i=>i.status!=='resolved').forEach(inc=>{
           const p = cellToPx(inc.x, inc.y);
+
+          // cor por severidade
+          let fill = 'rgba(255,255,255,.12)';
+          let stroke = 'rgba(255,255,255,.22)';
+          if (inc.severity==='low'){ fill='rgba(61,255,158,.10)'; stroke='rgba(61,255,158,.32)'; }
+          if (inc.severity==='med'){ fill='rgba(255,176,32,.12)'; stroke='rgba(255,176,32,.35)'; }
+          if (inc.severity==='high'){ fill='rgba(255,77,109,.12)'; stroke='rgba(255,77,109,.40)'; }
+
+          if (inc.id===state.selectedIncidentId){
+            fill='rgba(124,247,255,.22)';
+            stroke='rgba(124,247,255,.80)';
+          }
+
           ctx.beginPath();
-          ctx.fillStyle = inc.id===state.selectedIncidentId ? 'rgba(124,247,255,.35)' : 'rgba(255,255,255,.12)';
-          ctx.strokeStyle = inc.id===state.selectedIncidentId ? 'rgba(124,247,255,.8)' : 'rgba(255,255,255,.20)';
+          ctx.fillStyle = fill;
+          ctx.strokeStyle = stroke;
           ctx.lineWidth = 2;
           ctx.arc(p.cx,p.cy,16,0,Math.PI*2);
           ctx.fill(); ctx.stroke();
@@ -659,21 +1004,6 @@
           ctx.textAlign='center'; ctx.textBaseline='middle';
           ctx.fillText(u.id, p.cx, p.cy+1);
         });
-      }
-
-      // polyfill roundRect for older
-      if (!CanvasRenderingContext2D.prototype.roundRect){
-        CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
-          const rr = Math.min(r, w/2, h/2);
-          this.beginPath();
-          this.moveTo(x+rr,y);
-          this.arcTo(x+w,y,x+w,y+h,rr);
-          this.arcTo(x+w,y+h,x,y+h,rr);
-          this.arcTo(x,y+h,x,y,rr);
-          this.arcTo(x,y,x+w,y,rr);
-          this.closePath();
-          return this;
-        };
       }
 
       function hitIncident(px,py){
@@ -720,10 +1050,27 @@
       els.dockF1.addEventListener('click', ()=>dispatch('F1'));
       els.dockM1.addEventListener('click', ()=>dispatch('M1'));
 
+      // ===== Simulação tempo real =====
       function tick(dt){
-        // update waiting
         state.queue.forEach(c=>c.waiting += dt);
         if (state.activeCall) state.activeCall.elapsed += dt;
+
+        // Paciência do chamador (simples): se passar muito tempo sem coletar info, penaliza
+        if (state.activeCall && !state.activeCall.template.isPrank){
+          const c = state.activeCall;
+          // leve: tolera mais; grave: tolera menos
+          let limit = 60;
+          if (c.template.severity==='low') limit = 95;
+          if (c.template.severity==='med') limit = 75;
+          if (c.template.severity==='high') limit = 55;
+
+          if (!c._warned && c.elapsed > limit){
+            c._warned = true;
+            state.score -= 8;
+            appendLine('bad', '⚠ Demora excessiva: tempo perdido e risco aumentado. (-8)', true);
+            toast('-8 (demora)');
+          }
+        }
 
         // movement + resolve
         const speed = 5; // cells/sec
@@ -749,34 +1096,44 @@
           if (inc.status!=='onscene') return;
           inc.resolve -= dt;
           if (inc.resolve<=0){
-            // resolve
             const u = state.units.find(x=>x.id===inc.assigned);
             const wrong = u && u.type!==inc.expected;
+
+            // pontuação por gravidade
+            let base = 22;
+            if (inc.severity==='low') base = 18;
+            if (inc.severity==='med') base = 26;
+            if (inc.severity==='high') base = 35;
+
             if (wrong){
-              state.score -= 30;
-              toast('Falha: unidade errada (-30)');
-              if (state.activeCall) state.activeCall.transcript.push({kind:'bad', text:'❌ Unidade errada causou atraso crítico. (-30)'});
+              const penalty = Math.floor(base * 0.9);
+              state.score -= penalty;
+              toast(`Falha: unidade errada (-${penalty})`);
+              if (state.activeCall) appendLine('bad', `❌ Unidade errada causou atraso crítico. (-${penalty})`, true);
             } else {
-              state.score += 30;
-              toast('Ocorrência resolvida (+30)');
-              if (state.activeCall) state.activeCall.transcript.push({kind:'good', text:'📄 Relatório: ocorrência encerrada com sucesso. (+30)'});
+              state.score += base;
+              toast(`Ocorrência resolvida (+${base})`);
+              if (state.activeCall) appendLine('good', `📄 Relatório: ocorrência encerrada com sucesso. (+${base})`, true);
             }
+
             inc.status='resolved';
             if (u){
               u.status='available';
               u.target=null;
             }
+
+            // encerra chamada (se estiver ativa e relacionada)
             if (state.activeCall){
-              state.activeCall.transcript.push({kind:'sys', text:'Chamada encerrada após conclusão da ocorrência.'});
+              appendLine('sys', 'Chamada encerrada após conclusão da ocorrência.', true);
               state.activeCall = null;
+              updateFields();
             }
           }
         });
       }
 
-      // ===== Main Loop =====
+      // ===== Loop =====
       let last = performance.now();
-
       function loop(now){
         const dt = Math.min(0.05, (now-last)/1000);
         last = now;
@@ -788,47 +1145,42 @@
             state.running = false;
             toast('Turno finalizado.');
           }
+
           tick(dt);
 
-          // spawn new calls each 10s (limit)
-          state._spawn = (state._spawn||0) + dt;
-          if (state._spawn>=10){
+          // nova chamada a cada 9s, limita a fila
+          state._spawn += dt;
+          if (state._spawn>=9){
             state._spawn=0;
-            if (state.queue.length<6) spawnCall();
+            if (state.queue.length<7) spawnCall();
             if (!state.selectedQueueId && state.queue.length>0) state.selectedQueueId = state.queue[0].id;
           }
         }
 
         renderQueue();
-        renderCall();
         renderHUD();
         draw();
 
         requestAnimationFrame(loop);
       }
 
-      // ===== Button binds =====
+      // ===== Botões =====
       els.btnStart.addEventListener('click', ()=>{
         try{
-          // PROVA VISUAL IMEDIATA (se não mudar, é cache)
           els.btnStart.textContent = 'Turno iniciado ✓';
-          setTimeout(()=>els.btnStart.textContent='Iniciar turno', 1200);
+          setTimeout(()=>els.btnStart.textContent='Iniciar turno', 900);
 
           state.running = true;
           state.paused = false;
           if (state.shiftRemaining<=0) state.shiftRemaining = state.shiftTotal;
 
           seedQueue();
-          toast('Turno iniciado. Toque em uma chamada na fila.');
+          toast('Turno iniciado. Selecione uma chamada na fila.');
           console.log('[LCDO] Turno iniciado (OK).');
         }catch(err){ fatal(err); }
       });
 
-      els.btnRestart.addEventListener('click', ()=>{
-        try{
-          location.reload();
-        }catch(err){ fatal(err); }
-      });
+      els.btnRestart.addEventListener('click', ()=>{ try{ location.reload(); }catch(err){ fatal(err); } });
 
       els.btnPause.addEventListener('click', ()=>{
         try{
@@ -843,6 +1195,7 @@
       els.btnAskDetails.addEventListener('click', ()=>{ try{ ask('details'); }catch(err){ fatal(err); } });
       els.btnAskVictims.addEventListener('click', ()=>{ try{ ask('victims'); }catch(err){ fatal(err); } });
       els.btnGiveInstructions.addEventListener('click', ()=>{ try{ giveInstructions(); }catch(err){ fatal(err); } });
+      els.btnMarkPrank.addEventListener('click', ()=>{ try{ markPrank(); }catch(err){ fatal(err); } });
       els.btnEndCall.addEventListener('click', ()=>{ try{ endCall(); }catch(err){ fatal(err); } });
       els.btnHold.addEventListener('click', ()=>{ try{ holdCall(); }catch(err){ fatal(err); } });
 
@@ -853,13 +1206,16 @@
         toast('Chamada selecionada. Clique em “Atender selecionada”.');
       });
 
-      // init
-      renderQueue();
-      renderCall();
-      renderHUD();
-      draw();
-      toast('Carregado. Clique em “Iniciar turno”.');
+      // ===== Init =====
+      function initScreen(){
+        clearTranscript();
+        appendLine('sys', 'Carregado. Clique em “Iniciar turno”.', true);
+        updateFields();
+        renderHUD();
+        draw();
+      }
 
+      initScreen();
       requestAnimationFrame(loop);
     })();
   </script>
