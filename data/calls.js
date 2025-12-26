@@ -1,259 +1,440 @@
-// data/calls.js
-// Banco de chamadas com perguntas (FASE A).
-// Todas as chamadas aqui possuem questions.address/situation/danger definidas.
+/* =========================================================
+   data/calls.js - Last Call Dispatch Operator
+   Fase 2B (Perguntas dinâmicas por caso + severidade evolutiva)
+   ========================================================= */
 
 window.CALLS = [
   // =========================
-  // BRASIL - POLÍCIA (190) - LEVES
+  // BR - POLÍCIA (190)
   // =========================
   {
-    id: "br_pol_lost_child_01",
-    locale: "BR",
-    title: "Criança perdida em local público",
-    severity: "leve",
-    text: "Perdi meu filho por alguns minutos no shopping. Estou na entrada principal.",
-    truth: {
-      type: "police",
-      isPrank: false,
-      address: "Shopping Aurora - Entrada Principal",
-      situation: "Responsável perdeu contato visual com a criança. Local público com grande fluxo.",
-      danger: "Risco moderado (criança pode se afastar). Não há ameaça direta relatada.",
-      flags: { weapon: false, injured: false, fire: false, multiple: false }
-    },
-    recommended: {
-      police: ["pm_area"], // patrulha/área resolve
-      fire: []
-    },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: {
-        q: "Perguntar: Qual é o local exato (shopping/entrada/andar)?",
-        a: "É no Shopping Aurora, entrada principal. Eu tô bem na porta da frente."
-      },
-      situation: {
-        q: "Perguntar: Como a criança se perdeu e há quanto tempo?",
-        a: "Foi rapidinho, uns 3 minutos. Eu virei e ele sumiu no meio das pessoas."
-      },
-      danger: {
-        q: "Perguntar: Idade/roupa da criança e se alguém suspeito se aproximou?",
-        a: "Ele tem 6 anos, camiseta azul e tênis branco. Não vi ninguém suspeito."
-      },
-      optional: [
+    id: "br_pol_trote_risada_01",
+    agency: "police",
+    region: "BR",
+    title: "Trote com risadas e história absurda",
+    baseSeverity: "trote",
+    protocol: {
+      required: ["confirm_intent"],
+      questions: [
         {
-          id: "desc",
-          q: "Perguntar: Nome da criança e características (altura/cabelo)?",
-          a: "O nome dele é Lucas, baixinho, cabelo castanho curto.",
-          reveals: { description: true }
-        },
-        {
-          id: "last_seen",
-          q: "Perguntar: Onde foi visto pela última vez?",
-          a: "Perto da praça de alimentação, do lado do quiosque de sorvete.",
-          reveals: { lastSeen: true }
+          id: "confirm_intent",
+          label: "Confirmar ocorrência",
+          prompt: "190. Confirme a ocorrência real, por favor. O que está acontecendo?",
+          answer: "(risadas ao fundo) Ah… é brincadeira… (desliga)",
+          effect: { confidenceTrote: +3 }
         }
       ]
-    }
+    },
+    dispatch: {
+      correctRoles: ["dismiss_only"],
+      allowedRoles: ["area_patrol"]
+    },
+    hint: "Trote: o correto é encerrar. Despachar aqui é desperdício.",
   },
 
   {
-    id: "br_pol_noise_01",
-    locale: "BR",
+    id: "br_pol_som_alto_01",
+    agency: "police",
+    region: "BR",
     title: "Perturbação do sossego (som alto)",
-    severity: "leve",
-    text: "Meu vizinho está com som altíssimo e não deixa ninguém dormir.",
-    truth: {
-      type: "police",
-      isPrank: false,
-      address: "Rua das Acácias, 88 - Apto 12",
-      situation: "Som alto em residência/apartamento. Possível conflito entre vizinhos.",
-      danger: "Baixo risco imediato, mas pode escalar para discussão/agressão.",
-      flags: { weapon: false, injured: false, fire: false, multiple: false }
-    },
-    recommended: { police: ["pm_area"], fire: [] },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: { q: "Perguntar: Qual o endereço exato?", a: "Rua das Acácias, 88, apartamento 12." },
-      situation: { q: "Perguntar: O que está acontecendo?", a: "Som muito alto e gritaria desde cedo." },
-      danger: { q: "Perguntar: Houve ameaça ou briga?", a: "Ainda não, mas já discutimos e ele xingou." },
-      optional: [
-        { id: "time", q: "Perguntar: Há quanto tempo está assim?", a: "Há umas 2 horas.", reveals: { duration: true } }
+    baseSeverity: "leve",
+    protocol: {
+      required: ["addr", "what_happening"],
+      questions: [
+        {
+          id: "addr",
+          label: "Endereço",
+          prompt: "Qual o endereço completo e um ponto de referência?",
+          answer: "Rua das Acácias, 155. Em frente a uma padaria.",
+          effect: { severity: "leve" }
+        },
+        {
+          id: "what_happening",
+          label: "Situação",
+          prompt: "O que está acontecendo exatamente?",
+          answer: "Vizinho com som alto há horas. Não tem briga, só barulho.",
+          effect: { severity: "leve" }
+        },
+        {
+          id: "danger",
+          label: "Risco/violência",
+          prompt: "Existe ameaça, agressão, arma, ou alguém ferido?",
+          answer: "Não. Só o som mesmo.",
+          effect: { severity: "leve" }
+        }
       ]
-    }
-  },
-
-  // =========================
-  // BRASIL - POLÍCIA (190) - MÉDIOS / GRAVES
-  // =========================
-  {
-    id: "br_pol_suspect_01",
-    locale: "BR",
-    title: "Suspeito rondando residência",
-    severity: "medio",
-    text: "Tem um homem rondando a minha casa, olhando as janelas. Estou com medo.",
-    truth: {
-      type: "police",
-      isPrank: false,
-      address: "Rua das Palmeiras, 210 - Vila Nova",
-      situation: "Homem rondando residência, tentando observar portas e janelas.",
-      danger: "Possível tentativa de invasão. Chamador está dentro da casa.",
-      flags: { weapon: false, injured: false, fire: false, multiple: false }
     },
-    recommended: { police: ["pm_area"], fire: [] },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: {
-        q: "Perguntar: Qual é o endereço exato?",
-        a: "É na Rua das Palmeiras, número 210, Vila Nova. Perto da padaria do Seu Zé."
-      },
-      situation: {
-        q: "Perguntar: O que exatamente ele está fazendo?",
-        a: "Ele fica indo e voltando na calçada, tenta olhar pela janela e mexeu no portão."
-      },
-      danger: {
-        q: "Perguntar: Há risco imediato? Você está segura aí dentro?",
-        a: "Estou trancada. Ele ainda está aqui fora. Não vi arma, mas tô com medo."
-      },
-      optional: [
-        { id: "weapon", q: "Perguntar: Você viu alguma arma?", a: "Não vi arma. Ele está com as mãos no bolso.", reveals: { weaponUnknown: true } },
-        { id: "desc", q: "Perguntar: Descreva a pessoa (roupa, altura).", a: "Homem alto, moletom escuro, boné.", reveals: { description: true } }
-      ]
-    }
+    dispatch: {
+      correctRoles: ["area_patrol"],
+      allowedRoles: ["area_patrol", "civil_investigation"]
+    },
+    hint: "Caso leve. Foque em endereço e natureza do pedido. Viatura de área.",
   },
 
   {
-    id: "br_pol_robbery_01",
-    locale: "BR",
-    title: "Assalto em andamento (com arma)",
-    severity: "grave",
-    text: "Tem um assalto acontecendo aqui na loja! Eu tô escondido atrás do balcão!",
-    truth: {
-      type: "police",
-      isPrank: false,
-      address: "Av. Central, 55 - Centro",
-      situation: "Dois suspeitos dentro de uma loja, ameaçando com arma.",
-      danger: "Risco imediato de morte. Suspeitos armados e agressivos.",
-      flags: { weapon: true, injured: false, fire: false, multiple: true }
-    },
-    recommended: { police: ["rota", "choque"], fire: [] },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: { q: "Perguntar: Qual é o endereço exato?", a: "Avenida Central, 55, loja de eletrônicos, em frente ao ponto." },
-      situation: { q: "Perguntar: O que está acontecendo agora?", a: "Dois homens pegando tudo, gritando e mandando deitar no chão." },
-      danger: { q: "Perguntar: Tem arma? Alguém ferido?", a: "Sim, um com pistola. Ninguém ferido ainda, mas estão agressivos." },
-      optional: [
-        { id: "suspects", q: "Perguntar: Quantos suspeitos e como estão vestidos?", a: "Dois. Um jaqueta cinza, outro camisa preta. Um tem tatuagem.", reveals: { multiple: true } },
-        { id: "hostages", q: "Perguntar: Tem reféns / pessoas presas?", a: "Tem clientes no chão. Acho que ninguém trancado.", reveals: { hostages: true } }
+    id: "br_pol_viol_dom_01",
+    agency: "police",
+    region: "BR",
+    title: "Violência doméstica (gritos e possível agressão)",
+    baseSeverity: "medio",
+    protocol: {
+      required: ["addr", "danger_now"],
+      questions: [
+        {
+          id: "addr",
+          label: "Endereço",
+          prompt: "Qual o endereço completo e como a viatura encontra o local?",
+          answer: "Rua do Campo, 77, casa 2. Portão verde.",
+          effect: { severity: "medio" }
+        },
+        {
+          id: "danger_now",
+          label: "Risco imediato",
+          prompt: "A agressão está acontecendo agora? Há arma? Há crianças no local?",
+          answer: "Sim, está acontecendo agora. Tem criança chorando. Não vi arma.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "suspect_desc",
+          label: "Suspeito",
+          prompt: "Descreva o agressor: roupa, altura, se bebeu ou está alterado.",
+          answer: "Homem alto, camiseta preta. Está muito alterado.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "safe_place",
+          label: "Segurança do chamador",
+          prompt: "Você está em local seguro? Consegue se afastar e manter a linha?",
+          answer: "Estou trancada no quarto com a criança.",
+          effect: { severity: "grave" }
+        }
       ]
-    }
+    },
+    dispatch: {
+      correctRoles: ["area_patrol", "tactical_rota"],
+      allowedRoles: ["area_patrol", "tactical_rota", "shock_riot"]
+    },
+    hint: "Pode escalar rápido. Priorize risco imediato e segurança do chamador.",
   },
 
   {
-    id: "br_pol_bomb_01",
-    locale: "BR",
-    title: "Suspeita de artefato (mochila abandonada)",
-    severity: "grave",
-    text: "Tem uma mochila abandonada na entrada do prédio e estão dizendo que pode ter bomba.",
-    truth: {
-      type: "police",
-      isPrank: false,
-      address: "Rua do Comércio, 900 - Centro",
-      situation: "Objeto suspeito em local movimentado.",
-      danger: "Possível artefato explosivo. Necessidade de isolamento.",
-      flags: { weapon: true, injured: false, fire: false, multiple: false }
-    },
-    recommended: { police: ["gate", "choque"], fire: [] },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: { q: "Perguntar: Onde exatamente está o objeto?", a: "Na entrada principal, Rua do Comércio, 900, ao lado da porta." },
-      situation: { q: "Perguntar: Por que suspeitam que é perigoso?", a: "O segurança viu fios aparentes e disseram que ouviram bip." },
-      danger: { q: "Perguntar: Tem gente perto? Dá pra isolar?", a: "Tem muita gente. Segurança tenta afastar, mas tá difícil." },
-      optional: [
-        { id: "evac", q: "Perguntar: O prédio já foi evacuado?", a: "Ainda não, só afastaram da entrada.", reveals: { evacuation: false } }
+    id: "br_pol_roubo_andamento_01",
+    agency: "police",
+    region: "BR",
+    title: "Roubo em andamento (suspeitos armados)",
+    baseSeverity: "grave",
+    protocol: {
+      required: ["addr", "weapons", "suspects"],
+      questions: [
+        {
+          id: "addr",
+          label: "Endereço",
+          prompt: "Qual o endereço exato e referência?",
+          answer: "Av. Norte, 1200, perto do posto de gasolina.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "weapons",
+          label: "Armas",
+          prompt: "Eles estão armados? Consegue ver arma de fogo ou faca?",
+          answer: "Sim, vi uma arma na mão de um deles.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "suspects",
+          label: "Suspeitos",
+          prompt: "Quantos suspeitos e descrição (roupas, direção de fuga)?",
+          answer: "Dois. Um de moletom cinza, outro de boné vermelho. Estão indo para a rua lateral.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "victims",
+          label: "Vítimas",
+          prompt: "Há alguém ferido? Reféns? Alguém em risco imediato?",
+          answer: "Ninguém ferido por enquanto, mas estão ameaçando.",
+          effect: { severity: "grave" }
+        }
       ]
-    }
+    },
+    dispatch: {
+      correctRoles: ["tactical_rota", "air_eagle", "area_patrol"],
+      allowedRoles: ["tactical_rota", "air_eagle", "area_patrol", "shock_riot"]
+    },
+    hint: "Grave. Tático + apoio aéreo se disponível. Não mande só viatura comum.",
   },
 
   {
-    id: "br_pol_prank_01",
-    locale: "BR",
-    title: "Trote com risadas e desligam",
-    severity: "trote",
-    text: "Alooo… tem um dinossauro aqui… (risadas) …",
-    truth: {
-      type: "police",
-      isPrank: true,
-      address: "",
-      situation: "Trote infantil.",
-      danger: "Sem risco real.",
-      flags: { weapon: false, injured: false, fire: false, multiple: false }
-    },
-    recommended: { police: [], fire: [] },
-    questions: {
-      required: ["address", "situation"],
-      address: { q: "Perguntar: Qual é o endereço?", a: "Ah… é… na rua da sua casa! (risos) — tem gente ao fundo." },
-      situation: { q: "Perguntar: O que aconteceu?", a: "Tem um dinossauro! (risadas altas)." },
-      danger: { q: "Perguntar: Há alguém ferido? Qual o risco?", a: "Ferido nada, tio… (mais risadas)." },
-      optional: [
-        { id: "callback", q: "Perguntar: Qual seu nome e número para retorno?", a: "… (desligou)", reveals: { hungUp: true } }
+    id: "br_pol_bomba_suspeita_01",
+    agency: "police",
+    region: "BR",
+    title: "Objeto suspeito com possível artefato",
+    baseSeverity: "grave",
+    protocol: {
+      required: ["addr", "object_desc", "crowd"],
+      questions: [
+        {
+          id: "addr",
+          label: "Endereço",
+          prompt: "Onde está o objeto suspeito?",
+          answer: "Na calçada do metrô, entrada principal.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "object_desc",
+          label: "Descrição",
+          prompt: "Como é o objeto? Mochila, caixa, fios visíveis? Está fazendo barulho?",
+          answer: "É uma mochila abandonada. Não vi fios, mas ninguém mexe.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "crowd",
+          label: "Pessoas no local",
+          prompt: "Tem muita gente perto? Dá para isolar e afastar as pessoas?",
+          answer: "Tem bastante gente. Segurança tentando afastar.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "advice",
+          label: "Orientação",
+          prompt: "Oriente: ninguém deve tocar no objeto e mantenha distância. Confirma?",
+          answer: "Ok, vou avisar e afastar mais.",
+          effect: { severity: "grave" }
+        }
       ]
-    }
+    },
+    dispatch: {
+      correctRoles: ["bomb_gate", "area_patrol"],
+      allowedRoles: ["bomb_gate", "area_patrol", "tactical_rota"]
+    },
+    hint: "GATE/antibomba é essencial. Viatura para isolar e controlar perímetro.",
   },
 
   // =========================
-  // BRASIL - BOMBEIROS (193)
+  // BR - BOMBEIROS (193)
   // =========================
   {
-    id: "br_fire_kitchen_01",
-    locale: "BR",
-    title: "Fumaça na cozinha (incêndio inicial)",
-    severity: "medio",
-    text: "Tá saindo muita fumaça da cozinha do apartamento do meu vizinho! O alarme disparou!",
-    truth: {
-      type: "fire",
-      isPrank: false,
-      address: "Rua Horizonte, 1200 - Bloco B, Apto 34",
-      situation: "Fumaça densa, possível fogo em cozinha.",
-      danger: "Risco de propagação e intoxicação por fumaça.",
-      flags: { weapon: false, injured: false, fire: true, multiple: false }
-    },
-    recommended: { police: ["pm_area"], fire: ["fire_engine", "rescue"] },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: { q: "Perguntar: Qual o endereço e apartamento?", a: "Rua Horizonte, 1200, Bloco B, apartamento 34." },
-      situation: { q: "Perguntar: Você vê fogo ou só fumaça?", a: "Só fumaça saindo pela porta. Não vejo chama daqui." },
-      danger: { q: "Perguntar: Tem gente lá dentro? Alguém passou mal?", a: "Acho que ele tá lá dentro. Gente tossindo no corredor." },
-      optional: [
-        { id: "gas", q: "Perguntar: Você sente cheiro de gás?", a: "Sim, parece gás!", reveals: { gas: true } }
+    id: "br_fire_incendio_apto_01",
+    agency: "fire",
+    region: "BR",
+    title: "Incêndio em apartamento (fumaça densa)",
+    baseSeverity: "grave",
+    protocol: {
+      required: ["addr", "people_inside", "smoke_fire"],
+      questions: [
+        {
+          id: "addr",
+          label: "Endereço",
+          prompt: "Qual o endereço completo e andar/apartamento?",
+          answer: "Rua Central, 500, bloco B, 8º andar, ap 82.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "smoke_fire",
+          label: "Fogo/Fumaça",
+          prompt: "Há fogo visível ou só fumaça? De onde vem?",
+          answer: "Tem fumaça muito forte e chama na cozinha.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "people_inside",
+          label: "Vítimas",
+          prompt: "Tem gente presa no local? Alguém inalou fumaça?",
+          answer: "Minha mãe está no quarto. Ela tosse muito.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "evac",
+          label: "Orientação",
+          prompt: "Evacue se possível. Se houver fumaça no corredor, feche portas e use pano úmido. Consegue fazer isso?",
+          answer: "Vou tentar fechar a porta e ficar na janela.",
+          effect: { severity: "grave" }
+        }
       ]
-    }
+    },
+    dispatch: {
+      correctRoles: ["fire_engine", "fire_rescue", "medic_ambulance"],
+      allowedRoles: ["fire_engine", "fire_rescue", "medic_ambulance", "ladder_truck"]
+    },
+    hint: "Incêndio em prédio: AB + Resgate + Ambulância. Escada pode ajudar.",
+  },
+
+  {
+    id: "br_fire_acidente_ferragens_01",
+    agency: "fire",
+    region: "BR",
+    title: "Acidente com vítima presa nas ferragens",
+    baseSeverity: "grave",
+    protocol: {
+      required: ["addr", "trapped", "bleeding"],
+      questions: [
+        {
+          id: "addr",
+          label: "Localização",
+          prompt: "Onde ocorreu o acidente? Qual via e sentido?",
+          answer: "Marginal, próximo à ponte. Sentido centro.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "trapped",
+          label: "Vítima presa",
+          prompt: "Tem alguém preso dentro do veículo? Porta travada? Consciência?",
+          answer: "Sim, motorista preso. Está consciente, mas não consegue sair.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "bleeding",
+          label: "Sangramento",
+          prompt: "Há sangramento forte? Consegue comprimir com pano limpo sem mover a vítima?",
+          answer: "Tem sangue no braço. Estou pressionando com uma camiseta.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "hazard",
+          label: "Risco",
+          prompt: "Há vazamento de combustível ou risco de incêndio?",
+          answer: "Cheiro forte, parece vazando.",
+          effect: { severity: "grave" }
+        }
+      ]
+    },
+    dispatch: {
+      correctRoles: ["fire_rescue", "medic_ambulance", "fire_engine"],
+      allowedRoles: ["fire_rescue", "medic_ambulance", "fire_engine", "hazmat"]
+    },
+    hint: "Resgate + Ambulância. AB para segurança (vazamento).",
+  },
+
+  {
+    id: "br_fire_parto_01",
+    agency: "fire",
+    region: "BR",
+    title: "Parto em andamento (contrações e coroando)",
+    baseSeverity: "grave",
+    protocol: {
+      required: ["addr", "weeks", "crowning"],
+      questions: [
+        {
+          id: "addr",
+          label: "Endereço",
+          prompt: "Qual o endereço completo? Quem pode abrir a porta para o resgate?",
+          answer: "Rua Aurora, 90. Meu irmão vai abrir.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "weeks",
+          label: "Tempo gestação",
+          prompt: "Quantas semanas? Alguma complicação conhecida?",
+          answer: "39 semanas. Sem complicações.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "crowning",
+          label: "Coroando",
+          prompt: "A cabeça do bebê já aparece? As contrações estão muito próximas?",
+          answer: "Sim, está aparecendo. Muito rápido!",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "guidance",
+          label: "Orientação",
+          prompt: "Oriente: local limpo, panos, não puxar o bebê. Confirma?",
+          answer: "Ok, estou com toalhas e vou seguir.",
+          effect: { severity: "grave" }
+        }
+      ]
+    },
+    dispatch: {
+      correctRoles: ["medic_ambulance", "fire_rescue"],
+      allowedRoles: ["medic_ambulance", "fire_rescue", "fire_engine"]
+    },
+    hint: "Parto: Ambulância + apoio de resgate. Instrução pré-chegada é essencial.",
   },
 
   // =========================
-  // EUA - 911
+  // US - 911 (POLICE / FIRE)
   // =========================
   {
-    id: "us_med_choking_01",
-    locale: "US",
-    title: "Engasgo (adulto) - dificuldade respiratória",
-    severity: "grave",
-    text: "911! My dad is choking! He can't breathe and he's turning red!",
-    truth: {
-      type: "medical",
-      isPrank: false,
-      address: "24 Maple St, Apt 2",
-      situation: "Adulto engasgado, obstrução de vias aéreas.",
-      danger: "Risco imediato de asfixia.",
-      flags: { weapon: false, injured: true, fire: false, multiple: false }
-    },
-    recommended: { police: ["pm_area"], fire: ["ambulance", "rescue"] },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: { q: "Ask: What's the exact address?", a: "24 Maple Street, apartment 2! Please hurry!" },
-      situation: { q: "Ask: Can he speak or cough?", a: "No! He can't speak, he can't cough!" },
-      danger: { q: "Ask: Is he conscious? Turning blue?", a: "Still conscious but getting worse—color is changing!" },
-      optional: [
-        { id: "instructions", q: "Give instructions: Are you able to do abdominal thrusts?", a: "I think so—tell me what to do!", reveals: { preArrival: true } }
+    id: "us_pol_active_threat_01",
+    agency: "police",
+    region: "US",
+    title: "Active threat (shots heard nearby)",
+    baseSeverity: "grave",
+    protocol: {
+      required: ["addr", "shots_confirmed", "suspects"],
+      questions: [
+        {
+          id: "addr",
+          label: "Address",
+          prompt: "What is the exact address and cross street?",
+          answer: "12 Maple Ave, near the gas station.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "shots_confirmed",
+          label: "Shots",
+          prompt: "Did you hear gunshots? How many? Any injuries seen?",
+          answer: "Yes, multiple shots. I can't see injuries.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "suspects",
+          label: "Suspect",
+          prompt: "Any description of the suspect(s) or vehicle?",
+          answer: "Dark hoodie, running toward the alley.",
+          effect: { severity: "grave" }
+        }
       ]
-    }
+    },
+    dispatch: {
+      correctRoles: ["tactical_rota", "air_eagle", "area_patrol"],
+      allowedRoles: ["tactical_rota", "air_eagle", "area_patrol", "civil_investigation"]
+    },
+    hint: "High risk. SWAT/air support if available + patrol.",
+  },
+
+  {
+    id: "us_fire_choking_01",
+    agency: "fire",
+    region: "US",
+    title: "Choking (cannot breathe)",
+    baseSeverity: "grave",
+    protocol: {
+      required: ["addr", "breathing_status"],
+      questions: [
+        {
+          id: "addr",
+          label: "Address",
+          prompt: "What is the exact address and unit number?",
+          answer: "52 Pine Street, apartment 3B.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "breathing_status",
+          label: "Breathing",
+          prompt: "Is he able to cough or speak, or completely unable to breathe?",
+          answer: "He can't speak or cough. He's grabbing his throat.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "conscious",
+          label: "Conscious",
+          prompt: "Is he conscious right now?",
+          answer: "Yes, but panicking.",
+          effect: { severity: "grave" }
+        },
+        {
+          id: "first_aid",
+          label: "First-aid",
+          prompt: "Start abdominal thrusts (Heimlich). Are you able to do that now?",
+          answer: "Yes, I'm doing it!",
+          effect: { severity: "grave" }
+        }
+      ]
+    },
+    dispatch: {
+      correctRoles: ["medic_ambulance", "fire_rescue"],
+      allowedRoles: ["medic_ambulance", "fire_rescue", "fire_engine"]
+    },
+    hint: "Medical emergency. Ambulance + rescue. Provide instructions fast.",
   }
 ];
