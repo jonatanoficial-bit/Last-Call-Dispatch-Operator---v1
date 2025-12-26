@@ -1,225 +1,1579 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Last Call Dispatch Operator</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #0b0e13;
-  color: #eaeaea;
-}
+  :root{
+    --bg:#0b0e13;
+    --panel:#141a24;
+    --panel2:#101521;
+    --line:#1f2a3a;
+    --text:#e9edf3;
+    --muted:#9fb0c7;
+    --accent:#4fd1c5;
+    --accent2:#63b3ed;
+    --danger:#ef4444;
+    --warn:#f59e0b;
+    --ok:#22c55e;
+    --btn:#2563eb;
+    --btn2:#1d4ed8;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: radial-gradient(1200px 700px at 20% 0%, #101a2a 0%, var(--bg) 55%);
+    color:var(--text);
+  }
+  header{
+    padding:10px 12px;
+    background: linear-gradient(180deg, #0f172a 0%, #0b1222 100%);
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:5;
+  }
+  .topbar{
+    display:flex; gap:10px; align-items:center; justify-content:space-between;
+    flex-wrap:wrap;
+  }
+  .brand{
+    font-weight:800;
+    letter-spacing:0.4px;
+    color:var(--accent);
+    display:flex; align-items:center; gap:10px;
+  }
+  .chip{
+    font-size:12px;
+    color:#cfe7ff;
+    border:1px solid #233047;
+    background: rgba(20,26,36,0.7);
+    padding:4px 8px;
+    border-radius:999px;
+  }
+  .controls{
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  }
+  select, input{
+    background:#0f172a;
+    border:1px solid #233047;
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:10px;
+    outline:none;
+    font-size:14px;
+  }
+  button{
+    border:none;
+    background: var(--btn);
+    color:#fff;
+    padding:10px 12px;
+    border-radius:12px;
+    font-weight:700;
+    cursor:pointer;
+    font-size:14px;
+    transition: transform .05s ease, background .15s ease;
+  }
+  button:active{ transform: scale(0.98); }
+  button:hover{ background: var(--btn2); }
+  button:disabled{
+    opacity:0.5;
+    cursor:not-allowed;
+  }
+  .btn-ghost{
+    background: transparent;
+    border:1px solid #2b3b56;
+    color: var(--text);
+  }
+  .btn-ghost:hover{
+    background: rgba(99,179,237,0.10);
+  }
+  .btn-danger{
+    background: #b91c1c;
+  }
+  .btn-danger:hover{ background:#991b1b; }
 
-header {
-  background: #111826;
-  padding: 10px;
-  text-align: center;
-  font-weight: bold;
-  color: #4fd1c5;
-}
+  main{
+    padding:12px;
+    display:grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap:12px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  @media (max-width: 920px){
+    main{ grid-template-columns: 1fr; }
+  }
 
-main {
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  gap: 10px;
-}
+  .panel{
+    background: linear-gradient(180deg, rgba(20,26,36,0.98), rgba(14,18,26,0.98));
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.22);
+  }
+  .panel-header{
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background: rgba(12,16,24,0.75);
+  }
+  .panel-header h3{
+    margin:0;
+    font-size:14px;
+    color: var(--accent2);
+    letter-spacing:0.4px;
+    text-transform: uppercase;
+  }
+  .panel-body{
+    padding:12px;
+  }
 
-.panel {
-  background: #161b22;
-  border-radius: 8px;
-  padding: 10px;
-}
+  .grid2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+  }
+  @media (max-width: 520px){
+    .grid2{ grid-template-columns:1fr; }
+  }
 
-.panel h3 {
-  margin: 0 0 8px 0;
-  color: #63b3ed;
-}
+  .statrow{
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
+  .stat{
+    flex: 1;
+    min-width: 140px;
+    background: rgba(8,12,18,0.55);
+    border:1px solid #202b40;
+    border-radius:14px;
+    padding:10px;
+  }
+  .stat .k{ font-size:12px; color:var(--muted); }
+  .stat .v{ font-size:16px; font-weight:800; margin-top:3px; }
+  .v .small{ font-size:12px; font-weight:700; color:var(--muted); }
 
-#callText {
-  min-height: 80px;
-  font-family: "Courier New", monospace;
-  white-space: pre-wrap;
-}
+  /* Call UI */
+  .callbox{
+    background: rgba(7,10,16,0.55);
+    border:1px solid #202b40;
+    border-radius:14px;
+    padding:12px;
+  }
+  .calltitle{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; margin-bottom:10px;
+  }
+  .badge{
+    font-size:12px;
+    padding:4px 8px;
+    border-radius:999px;
+    border:1px solid #2b3b56;
+    color:#dbeafe;
+    background: rgba(37,99,235,0.12);
+  }
+  .badge.badge-danger{ border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.12); }
+  .badge.badge-warn{ border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.12); }
+  .badge.badge-ok{ border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.12); }
+  #callText{
+    min-height: 120px;
+    white-space: pre-wrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .options{
+    display:flex;
+    flex-direction: column;
+    gap:8px;
+    margin-top:10px;
+  }
+  .optbtn{
+    text-align:left;
+    background: rgba(37,99,235,0.18);
+    border:1px solid rgba(99,179,237,0.35);
+    color:#eaf3ff;
+  }
+  .optbtn:hover{
+    background: rgba(37,99,235,0.25);
+  }
 
-button {
-  background: #2563eb;
-  border: none;
-  color: #fff;
-  padding: 10px;
-  border-radius: 6px;
-  font-size: 14px;
-}
+  /* Dispatch */
+  .subtle{
+    font-size:12px;
+    color: var(--muted);
+  }
+  .list{
+    display:flex;
+    flex-direction: column;
+    gap:8px;
+  }
+  .card{
+    background: rgba(8,12,18,0.55);
+    border:1px solid #202b40;
+    border-radius:14px;
+    padding:10px;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    justify-content:space-between;
+  }
+  .card.sel{
+    outline: 2px solid rgba(79,209,197,0.35);
+    border-color: rgba(79,209,197,0.25);
+  }
+  .left{
+    display:flex;
+    flex-direction: column;
+    gap:3px;
+    min-width:0;
+  }
+  .title{
+    font-weight:900;
+    font-size:14px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .meta{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .pill{
+    font-size:12px;
+    padding:3px 8px;
+    border-radius:999px;
+    border:1px solid #2b3b56;
+    background: rgba(16,21,33,0.55);
+    color:#dbeafe;
+  }
+  .pill.ok{ border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.10); color:#d1fae5;}
+  .pill.warn{ border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.12); color:#ffedd5;}
+  .pill.danger{ border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.12); color:#ffe4e6;}
+  .right{
+    display:flex;
+    flex-direction: column;
+    gap:6px;
+    align-items:flex-end;
+    flex-shrink:0;
+  }
+  .tinybtn{
+    padding:8px 10px;
+    font-size:13px;
+    border-radius:12px;
+  }
 
-button:disabled {
-  background: #444;
-}
+  /* Map placeholder */
+  .map{
+    height: 220px;
+    border-radius:16px;
+    border:1px solid #202b40;
+    background:
+      radial-gradient(800px 300px at 10% 10%, rgba(79,209,197,0.15), transparent 60%),
+      radial-gradient(800px 300px at 80% 30%, rgba(99,179,237,0.12), transparent 55%),
+      linear-gradient(180deg, rgba(8,12,18,0.75), rgba(8,12,18,0.55));
+    position: relative;
+    overflow:hidden;
+  }
+  .map::before{
+    content:"";
+    position:absolute; inset:-40px;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 22px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 22px);
+    opacity:0.65;
+    transform: rotate(-2deg);
+  }
+  .maphud{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    justify-content:space-between;
+    padding:10px;
+  }
+  .maptop{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .maptitle{
+    font-weight:900;
+    letter-spacing:0.5px;
+    color:#dbeafe;
+  }
+  .mapzone{
+    font-size:12px;
+    color: var(--muted);
+  }
+  .mappins{
+    position:absolute; left:0; right:0; top:0; bottom:0;
+    pointer-events:none;
+  }
+  .pin{
+    position:absolute;
+    width:12px; height:12px;
+    border-radius:999px;
+    background: rgba(239,68,68,0.95);
+    box-shadow: 0 0 0 6px rgba(239,68,68,0.14);
+    animation: pulse 1.4s infinite;
+  }
+  .pin.ok{
+    background: rgba(34,197,94,0.95);
+    box-shadow: 0 0 0 6px rgba(34,197,94,0.14);
+  }
+  @keyframes pulse{
+    0%{ transform: scale(1); opacity:1; }
+    70%{ transform: scale(1.08); opacity:0.95; }
+    100%{ transform: scale(1); opacity:1; }
+  }
 
-.options {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+  .log{
+    max-height: 180px;
+    overflow:auto;
+    border-radius:14px;
+    border:1px solid #202b40;
+    background: rgba(7,10,16,0.55);
+    padding:10px;
+    font-size:12px;
+    color: #c9d6ea;
+    line-height:1.35;
+    white-space: pre-wrap;
+  }
 
-footer {
-  text-align: center;
-  font-size: 12px;
-  opacity: 0.6;
-}
+  .divider{
+    height:1px;
+    background: rgba(255,255,255,0.08);
+    margin:10px 0;
+  }
+
+  .hint{
+    font-size:12px;
+    color: var(--muted);
+    background: rgba(99,179,237,0.08);
+    border:1px solid rgba(99,179,237,0.20);
+    padding:10px;
+    border-radius:14px;
+  }
 </style>
 </head>
 
 <body>
-
 <header>
-Last Call Dispatch Operator — Chamadas AAA
+  <div class="topbar">
+    <div class="brand">
+      <span>Last Call Dispatch Operator</span>
+      <span class="chip" id="buildTag">FASE 2 — Despacho</span>
+    </div>
+
+    <div class="controls">
+      <select id="citySelect" title="Cidade / cenário">
+        <option value="sao_paulo">São Paulo (BR)</option>
+        <option value="new_york">New York (USA)</option>
+      </select>
+
+      <button id="startShiftBtn">Iniciar Turno</button>
+      <button id="endShiftBtn" class="btn-danger" disabled>Encerrar Turno</button>
+      <button id="newCallBtn" class="btn-ghost" disabled>Nova Chamada</button>
+    </div>
+  </div>
 </header>
 
 <main>
 
-<div class="panel">
-  <h3>Chamada Ativa</h3>
-  <div id="callText"></div>
-</div>
+  <!-- LEFT: Calls -->
+  <section class="panel">
+    <div class="panel-header">
+      <h3>Atendimento</h3>
+      <div class="subtle" id="callStatus">Turno não iniciado</div>
+    </div>
 
-<div class="panel">
-  <h3>Ações do Operador</h3>
-  <div class="options" id="options"></div>
-</div>
+    <div class="panel-body">
+      <div class="statrow">
+        <div class="stat">
+          <div class="k">Pontuação</div>
+          <div class="v" id="scoreEl">0</div>
+        </div>
+        <div class="stat">
+          <div class="k">Reputação</div>
+          <div class="v" id="repEl">50 <span class="small">/100</span></div>
+        </div>
+        <div class="stat">
+          <div class="k">Patente</div>
+          <div class="v" id="rankEl">Recruta</div>
+        </div>
+        <div class="stat">
+          <div class="k">Tempo de turno</div>
+          <div class="v" id="shiftTimeEl">--:--</div>
+        </div>
+      </div>
 
-<button id="startBtn">Iniciar Nova Chamada</button>
+      <div class="divider"></div>
+
+      <div class="callbox">
+        <div class="calltitle">
+          <div>
+            <span class="badge" id="callBadge">SEM CHAMADA</span>
+          </div>
+          <div class="subtle" id="callTimerEl">Tempo de chamada: --</div>
+        </div>
+
+        <div id="callText">Inicie o turno para começar a operar.</div>
+
+        <div class="options" id="options"></div>
+
+        <div class="divider"></div>
+
+        <div class="hint" id="callHint">
+          Dica: Atenda rápido, colete dados essenciais e gere um despacho correto. Chamadas graves exigem resposta adequada.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RIGHT: Dispatch -->
+  <section class="panel">
+    <div class="panel-header">
+      <h3>Despacho</h3>
+      <div class="subtle" id="dispatchStatus">Aguardando turno</div>
+    </div>
+
+    <div class="panel-body">
+      <div class="map" id="mapBox">
+        <div class="maphud">
+          <div class="maptop">
+            <div>
+              <div class="maptitle" id="mapTitle">Cidade</div>
+              <div class="mapzone" id="mapZone">Zonas: Centro • Norte • Sul • Leste • Oeste</div>
+            </div>
+            <div class="pill" id="activeIncidentsPill">0 incidentes</div>
+          </div>
+
+          <div class="subtle">
+            Mapa estilizado (placeholder). Na próxima fase, dá para plugar mapa real (Leaflet/OSM) sem quebrar a arquitetura.
+          </div>
+        </div>
+
+        <div class="mappins" id="pins"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid2">
+        <div>
+          <div class="subtle" style="margin-bottom:8px;">Fila de incidentes (selecione 1)</div>
+          <div class="list" id="incidentList"></div>
+        </div>
+
+        <div>
+          <div class="subtle" style="margin-bottom:8px;">Unidades disponíveis (selecione 1)</div>
+          <div class="list" id="unitList"></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="controls" style="justify-content:flex-end;">
+        <button id="dispatchBtn" disabled>Despachar Unidade</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="subtle" style="margin-bottom:8px;">Registro Operacional</div>
+      <div class="log" id="logEl"></div>
+    </div>
+  </section>
 
 </main>
 
-<footer>
-Simulador educativo — versão protótipo
-</footer>
-
 <script>
-const callTextEl = document.getElementById("callText");
-const optionsEl = document.getElementById("options");
-const startBtn = document.getElementById("startBtn");
+/* ==========================
+   Utils
+========================== */
+const $ = (id) => document.getElementById(id);
+const now = () => Date.now();
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const pad2 = (n) => String(n).padStart(2, "0");
 
-let typingInterval = null;
-let currentCall = null;
+function formatMMSS(ms){
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${pad2(m)}:${pad2(ss)}`;
+}
 
-const CALLS = [
-  {
-    severity: "trote",
-    intro: "Oi... é brincadeira 😂",
-    steps: [
-      {
-        text: "O chamador está rindo e não fornece informações.",
-        options: [
-          { label: "Encerrar chamada", result: "Trote identificado. Bom trabalho." },
-          { label: "Enviar viatura", result: "Erro: recurso desperdiçado." }
-        ]
-      }
+function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+/* ==========================
+   Simple Audio (no assets)
+========================== */
+let audioEnabled = true;
+
+function beep(freq=700, dur=60, type="square", gain=0.02){
+  try{
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.value = gain;
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start();
+    setTimeout(()=>{ o.stop(); ctx.close(); }, dur);
+  }catch(e){}
+}
+
+function ringOnce(){
+  // telefonema: 3 bipes com pausa
+  if(!audioEnabled) return;
+  beep(880, 90, "sine", 0.03);
+  setTimeout(()=>beep(880, 90, "sine", 0.03), 150);
+  setTimeout(()=>beep(880, 90, "sine", 0.03), 300);
+}
+
+function tickType(){
+  if(!audioEnabled) return;
+  beep(1200, 20, "square", 0.008);
+}
+
+/* ==========================
+   Typewriter
+========================== */
+let typingHandle = null;
+function typeText(el, text, speed=18, onDone=null){
+  if(typingHandle) clearInterval(typingHandle);
+  el.textContent = "";
+  let i = 0;
+  typingHandle = setInterval(()=>{
+    el.textContent += text.charAt(i);
+    if(text.charAt(i) !== " " && text.charAt(i) !== "\n") tickType();
+    i++;
+    if(i >= text.length){
+      clearInterval(typingHandle);
+      typingHandle = null;
+      if(onDone) onDone();
+    }
+  }, speed);
+}
+
+/* ==========================
+   Game Data
+========================== */
+const CITY_CONFIG = {
+  sao_paulo: {
+    name: "São Paulo",
+    zones: ["Centro","Norte","Sul","Leste","Oeste"],
+    unitTemplates: [
+      { id:"sp_area_1", name:"Polícia de Área A-01", role:"police", tags:["patrol","area"], speed:1.00, riskHandle:1, cost:1, zone:"Centro" },
+      { id:"sp_area_2", name:"Polícia de Área A-02", role:"police", tags:["patrol","area"], speed:1.05, riskHandle:1, cost:1, zone:"Leste" },
+      { id:"sp_rota",   name:"ROTA (Resposta Tática)", role:"police", tags:["tactical","highrisk"], speed:1.15, riskHandle:3, cost:3, zone:"Oeste" },
+      { id:"sp_gate",   name:"GATE (Anti-bomba/Crises)", role:"police", tags:["bomb","hostage","highrisk"], speed:0.95, riskHandle:4, cost:4, zone:"Centro" },
+      { id:"sp_choque", name:"Choque (Controle Distúrbios)", role:"police", tags:["riot","highrisk"], speed:0.90, riskHandle:3, cost:3, zone:"Norte" },
+      { id:"sp_aguia",  name:"Águia (Helicóptero)", role:"police", tags:["air","pursuit","highrisk"], speed:1.35, riskHandle:3, cost:5, zone:"Sul" },
+      { id:"sp_resgate",name:"Bombeiros Resgate R-01", role:"fire", tags:["rescue","extrication"], speed:0.95, riskHandle:2, cost:3, zone:"Centro" },
+      { id:"sp_ambul",  name:"Ambulância (Suporte Básico)", role:"ems", tags:["medical","ems"], speed:1.05, riskHandle:2, cost:2, zone:"Leste" }
     ]
   },
-  {
-    severity: "leve",
-    intro: "Tem um vizinho fazendo muito barulho.",
-    steps: [
-      {
-        text: "O problema parece sem risco imediato.",
-        options: [
-          { label: "Orientar e registrar", result: "Ocorrência leve resolvida." },
-          { label: "Enviar viatura", result: "Resposta aceitável, mas exagerada." }
-        ]
-      }
+  new_york: {
+    name: "New York",
+    zones: ["Downtown","Uptown","Queens","Brooklyn","Bronx"],
+    unitTemplates: [
+      { id:"ny_patrol_1", name:"NYPD Patrol P-12", role:"police", tags:["patrol","area"], speed:1.05, riskHandle:1, cost:1, zone:"Downtown" },
+      { id:"ny_patrol_2", name:"NYPD Patrol P-21", role:"police", tags:["patrol","area"], speed:1.00, riskHandle:1, cost:1, zone:"Brooklyn" },
+      { id:"ny_swat",     name:"SWAT (High Risk)", role:"police", tags:["tactical","highrisk","hostage"], speed:1.10, riskHandle:4, cost:4, zone:"Queens" },
+      { id:"ny_fbi",      name:"FBI Liaison (Federal)", role:"police", tags:["federal","cyber","organized"], speed:0.95, riskHandle:3, cost:4, zone:"Downtown" },
+      { id:"ny_sheriff",  name:"Sheriff Unit (Warrants)", role:"police", tags:["warrants","area"], speed:0.90, riskHandle:2, cost:2, zone:"Bronx" },
+      { id:"ny_ems",      name:"EMS Ambulance E-08", role:"ems", tags:["medical","ems"], speed:1.10, riskHandle:3, cost:3, zone:"Uptown" },
+      { id:"ny_fire",     name:"Fire Engine F-03", role:"fire", tags:["fire","rescue"], speed:1.00, riskHandle:3, cost:3, zone:"Queens" }
     ]
-  },
+  }
+};
+
+// Call pool: Each call creates an incident that must be dispatched correctly.
+// requiredTags: what dispatch expects for best outcome.
+const CALL_POOL = [
+  // Trote
   {
-    severity: "media",
-    intro: "Houve um acidente de trânsito, acho que alguém se machucou.",
+    id:"prank_kid",
+    severity:"trote",
+    title:"Possível trote",
+    intro: (city) => `Central de emergência, ${city.name}.`,
+    first: "Ô moço... tem um dinossauro na rua aqui 😂",
     steps: [
       {
-        text: "O chamador parece nervoso.",
-        options: [
-          { label: "Perguntar se há vítimas", next: 1 },
-          { label: "Enviar ajuda imediatamente", result: "Ajuda enviada rapidamente." }
+        text:"O chamador parece rindo e não fornece endereço real.",
+        options:[
+          { label:"Confirmar endereço e natureza real", effect:{quality:+1}, next:1 },
+          { label:"Despachar patrulha imediatamente", effect:{quality:-2}, end:"Você despachou sem confirmar. Recurso desperdiçado." }
         ]
       },
       {
-        text: "Uma pessoa está ferida e sangrando.",
-        options: [
-          { label: "Orientar primeiros socorros", result: "Vítima estabilizada." },
-          { label: "Mandar aguardar", result: "Erro: situação piorou." }
+        text:"A pessoa responde com informações inconsistentes e muda a história.",
+        options:[
+          { label:"Encerrar por trote e registrar", end:"Trote identificado. Boa triagem." },
+          { label:"Manter na linha e insistir", effect:{quality:-1}, end:"Tempo perdido. Outras chamadas podem ficar sem resposta." }
         ]
       }
-    ]
+    ],
+    incident: (city) => ({
+      type:"trote",
+      zone: pick(city.zones),
+      requiredTags: ["triage"],
+      baseUrgency: 0.6
+    })
   },
+
+  // Leves
   {
-    severity: "grave",
-    intro: "SOCORRO! Estão atirando aqui!",
-    steps: [
+    id:"noise_neighbor",
+    severity:"leve",
+    title:"Perturbação do sossego",
+    intro: (city) => `Central de emergência, ${city.name}. Qual sua ocorrência?`,
+    first:"Meu vizinho tá com som alto desde cedo. Não consigo dormir.",
+    steps:[
       {
-        text: "Há tiros ao fundo e gritos.",
-        options: [
-          { label: "Manter chamador em segurança", next: 1 },
-          { label: "Pedir mais detalhes", result: "Erro: tempo perdido." }
+        text:"Ocorrência sem risco imediato. Precisa triagem e registro.",
+        options:[
+          { label:"Coletar endereço e orientar", effect:{quality:+2}, next:1 },
+          { label:"Enviar unidade tática", effect:{quality:-2}, end:"Resposta exagerada. Custo alto sem necessidade." }
         ]
       },
       {
-        text: "O chamador diz que o suspeito está armado.",
-        options: [
-          { label: "Despachar unidade tática", result: "Resposta correta. Vidas salvas." },
-          { label: "Enviar patrulha comum", result: "Erro grave. Vítima fatal." }
+        text:"O chamador fornece endereço e confirma que não há ameaça.",
+        options:[
+          { label:"Registrar como baixa prioridade", end:"Registrado. Orientação correta." },
+          { label:"Pedir que resolva sozinho", effect:{quality:-1}, end:"Postura inadequada. Reputação caiu." }
         ]
       }
-    ]
+    ],
+    incident: (city) => ({
+      type:"police_low",
+      zone: pick(city.zones),
+      requiredTags: ["patrol","area"],
+      baseUrgency: 1.0
+    })
+  },
+
+  // Médio - acidente
+  {
+    id:"traffic_injury",
+    severity:"media",
+    title:"Acidente com feridos",
+    intro:(city)=>`Central de emergência, ${city.name}. Diga o que aconteceu.`,
+    first:"Teve uma colisão e uma pessoa tá sangrando!",
+    steps:[
+      {
+        text:"Você precisa confirmar localização e estado das vítimas.",
+        options:[
+          { label:"Perguntar endereço e número de feridos", effect:{quality:+2}, next:1 },
+          { label:"Mandar aguardar e desligar", effect:{quality:-3}, end:"Erro: risco de vida sem orientação." }
+        ]
+      },
+      {
+        text:"Há 2 vítimas. Uma presa no carro e outra consciente com sangramento.",
+        options:[
+          { label:"Orientar compressão no sangramento e manter calma", effect:{quality:+2}, next:2 },
+          { label:"Focar só na descrição do carro", effect:{quality:-1}, next:2 }
+        ]
+      },
+      {
+        text:"O cheiro de combustível aumentou. Pode haver risco de incêndio.",
+        options:[
+          { label:"Orientar afastar curiosos e desligar ignição", effect:{quality:+2}, end:"Boa orientação. Agora despache unidades corretas." },
+          { label:"Ignorar e pedir silêncio", effect:{quality:-2}, end:"Orientação fraca. Risco aumentou." }
+        ]
+      }
+    ],
+    incident:(city)=>({
+      type:"accident_extrication",
+      zone: pick(city.zones),
+      requiredTags: ["rescue","extrication","medical","ems"], // ideal: resgate + ambulância
+      baseUrgency: 1.4
+    })
+  },
+
+  // Grave - tiros
+  {
+    id:"shots_fired",
+    severity:"grave",
+    title:"Disparos / ameaça armada",
+    intro:(city)=>`Central de emergência, ${city.name}. Qual sua emergência?`,
+    first:"SOCORRO! Tem alguém atirando aqui perto!",
+    steps:[
+      {
+        text:"Você ouve gritos ao fundo. Precisa proteger o chamador e obter local.",
+        options:[
+          { label:"Orientar: se abrigue e diga o local", effect:{quality:+2}, next:1 },
+          { label:"Pedir que enfrente o suspeito", effect:{quality:-4}, end:"Erro gravíssimo. Risco extremo." }
+        ]
+      },
+      {
+        text:"O chamador diz que o suspeito está armado e há pessoas feridas.",
+        options:[
+          { label:"Perguntar descrição do suspeito e direção de fuga", effect:{quality:+2}, next:2 },
+          { label:"Mandar desligar e correr", effect:{quality:-2}, next:2 }
+        ]
+      },
+      {
+        text:"A situação piora: 'Ele entrou no prédio!'",
+        options:[
+          { label:"Manter na linha e reforçar segurança", effect:{quality:+2}, end:"Ok. Agora o despacho precisa ser tático." },
+          { label:"Demorar perguntando detalhes irrelevantes", effect:{quality:-2}, end:"Tempo perdido. Chance de vítimas aumentou." }
+        ]
+      }
+    ],
+    incident:(city)=>({
+      type:"active_threat",
+      zone: pick(city.zones),
+      requiredTags: ["tactical","highrisk"], // ideal: ROTA/SWAT
+      baseUrgency: 1.7
+    })
+  },
+
+  // Grave - incêndio
+  {
+    id:"house_fire",
+    severity:"grave",
+    title:"Incêndio residencial",
+    intro:(city)=>`Central de emergência, ${city.name}. Fale agora.`,
+    first:"Minha cozinha tá pegando fogo! Tem fumaça por tudo!",
+    steps:[
+      {
+        text:"Risco alto. Prioridade: evacuação e segurança.",
+        options:[
+          { label:"Orientar evacuar e NÃO usar elevador", effect:{quality:+2}, next:1 },
+          { label:"Mandar jogar água sem avaliar", effect:{quality:-2}, next:1 }
+        ]
+      },
+      {
+        text:"O chamador diz que há uma criança no quarto.",
+        options:[
+          { label:"Orientar sair e fechar portas ao sair", effect:{quality:+2}, end:"Orientação correta. Despache bombeiros imediatamente." },
+          { label:"Mandar voltar sozinho", effect:{quality:-4}, end:"Erro grave: risco de morte." }
+        ]
+      }
+    ],
+    incident:(city)=>({
+      type:"fire",
+      zone: pick(city.zones),
+      requiredTags: ["fire","rescue"],
+      baseUrgency: 1.8
+    })
+  },
+
+  // Médio - bomba suspeita (usa GATE / SWAT)
+  {
+    id:"suspicious_package",
+    severity:"media",
+    title:"Objeto suspeito",
+    intro:(city)=>`Central de emergência, ${city.name}.`,
+    first:"Tem uma mochila abandonada na estação e tá todo mundo assustado.",
+    steps:[
+      {
+        text:"Você precisa isolar área e avaliar risco sem pânico.",
+        options:[
+          { label:"Orientar afastar pessoas e manter distância", effect:{quality:+2}, next:1 },
+          { label:"Mandar alguém abrir a mochila", effect:{quality:-4}, end:"Erro crítico. Risco altíssimo." }
+        ]
+      },
+      {
+        text:"O chamador diz que ouviu um bip. Pode ser alarme ou nada.",
+        options:[
+          { label:"Manter distância e aguardar equipe especializada", effect:{quality:+2}, end:"Boa decisão. Agora despacho especializado." },
+          { label:"Enviar patrulha comum só", effect:{quality:-2}, end:"Resposta possivelmente inadequada." }
+        ]
+      }
+    ],
+    incident:(city)=>({
+      type:"bomb_threat",
+      zone: pick(city.zones),
+      requiredTags: ["bomb","highrisk"], // GATE / SWAT
+      baseUrgency: 1.5
+    })
   }
 ];
 
-function typeText(text, callback) {
-  clearInterval(typingInterval);
-  callTextEl.textContent = "";
-  let i = 0;
-  typingInterval = setInterval(() => {
-    callTextEl.textContent += text.charAt(i);
-    i++;
-    if (i >= text.length) {
-      clearInterval(typingInterval);
-      if (callback) callback();
-    }
-  }, 30);
+// severity config impacts deadlines and scoring
+const SEVERITY = {
+  trote: { badge:"TROTE", pill:"warn", deadlineMs: 40_000, baseScore: 6, repDeltaOk:+2, repDeltaBad:-4 },
+  leve:  { badge:"LEVE",  pill:"ok",   deadlineMs: 55_000, baseScore: 10, repDeltaOk:+3, repDeltaBad:-6 },
+  media: { badge:"MÉDIO", pill:"warn", deadlineMs: 45_000, baseScore: 18, repDeltaOk:+4, repDeltaBad:-10 },
+  grave: { badge:"GRAVE", pill:"danger",deadlineMs: 35_000, baseScore: 28, repDeltaOk:+6, repDeltaBad:-18 }
+};
+
+// rank from reputation/score
+function computeRank(score, rep){
+  if(rep < 20) return "Em avaliação";
+  if(score < 40) return "Recruta";
+  if(score < 120) return "Operador";
+  if(score < 240) return "Sênior";
+  return "Supervisor";
 }
 
-function showStep(stepIndex) {
-  optionsEl.innerHTML = "";
-  const step = currentCall.steps[stepIndex];
+/* ==========================
+   Game State
+========================== */
+const state = {
+  cityKey: "sao_paulo",
+  shiftActive: false,
+  shiftStart: 0,
+  shiftDurationMs: 10 * 60 * 1000, // 10 minutes
+  lastTick: 0,
 
-  typeText(step.text);
+  score: 0,
+  rep: 50,
 
-  step.options.forEach(opt => {
-    const btn = document.createElement("button");
-    btn.textContent = opt.label;
-    btn.onclick = () => {
-      if (opt.next !== undefined) {
-        showStep(opt.next);
-      } else {
-        typeText(opt.result);
-        optionsEl.innerHTML = "";
-      }
+  // call
+  callActive: false,
+  callStart: 0,
+  callTimerHandle: null,
+  callQuality: 0, // influenced by choices
+  currentCall: null,
+
+  // incidents/units
+  incidents: [],
+  units: [],
+  selectedIncidentId: null,
+  selectedUnitId: null,
+
+  // stats
+  resolved: 0,
+  failed: 0,
+};
+
+let incidentCounter = 1;
+
+/* ==========================
+   UI Elements
+========================== */
+const citySelect = $("citySelect");
+const startShiftBtn = $("startShiftBtn");
+const endShiftBtn = $("endShiftBtn");
+const newCallBtn = $("newCallBtn");
+
+const scoreEl = $("scoreEl");
+const repEl = $("repEl");
+const rankEl = $("rankEl");
+const shiftTimeEl = $("shiftTimeEl");
+
+const callStatus = $("callStatus");
+const dispatchStatus = $("dispatchStatus");
+
+const callBadge = $("callBadge");
+const callTimerEl = $("callTimerEl");
+const callTextEl = $("callText");
+const optionsEl = $("options");
+const callHint = $("callHint");
+
+const mapTitle = $("mapTitle");
+const mapZone = $("mapZone");
+const activeIncidentsPill = $("activeIncidentsPill");
+const pinsEl = $("pins");
+
+const incidentListEl = $("incidentList");
+const unitListEl = $("unitList");
+const dispatchBtn = $("dispatchBtn");
+
+const logEl = $("logEl");
+
+/* ==========================
+   Logging
+========================== */
+function log(msg){
+  const t = new Date().toLocaleTimeString();
+  logEl.textContent = `[${t}] ${msg}\n` + logEl.textContent;
+}
+
+/* ==========================
+   City Load
+========================== */
+function loadCity(cityKey){
+  state.cityKey = cityKey;
+  const city = CITY_CONFIG[cityKey];
+  mapTitle.textContent = city.name;
+  mapZone.textContent = `Zonas: ${city.zones.join(" • ")}`;
+  state.units = city.unitTemplates.map(u => ({
+    ...u,
+    status: "disponível",
+    busyUntil: 0
+  }));
+
+  // reset selections
+  state.selectedIncidentId = null;
+  state.selectedUnitId = null;
+
+  renderUnits();
+  renderIncidents();
+  renderPins();
+  log(`Cenário carregado: ${city.name}.`);
+}
+
+/* ==========================
+   Rendering
+========================== */
+function renderStats(){
+  scoreEl.textContent = state.score;
+  repEl.textContent = `${state.rep} /100`;
+  rankEl.textContent = computeRank(state.score, state.rep);
+}
+
+function renderShiftTime(){
+  if(!state.shiftActive){
+    shiftTimeEl.textContent = "--:--";
+    return;
+  }
+  const remain = (state.shiftStart + state.shiftDurationMs) - now();
+  shiftTimeEl.textContent = formatMMSS(remain);
+  if(remain <= 0){
+    endShift("Tempo do turno acabou.");
+  }
+}
+
+function severityBadge(sev){
+  const s = SEVERITY[sev];
+  callBadge.textContent = s.badge;
+  callBadge.className = "badge " + (s.pill === "danger" ? "badge-danger" : s.pill === "warn" ? "badge-warn" : "badge-ok");
+}
+
+function renderIncidents(){
+  incidentListEl.innerHTML = "";
+
+  if(state.incidents.length === 0){
+    const empty = document.createElement("div");
+    empty.className = "subtle";
+    empty.textContent = "Nenhum incidente aguardando despacho.";
+    incidentListEl.appendChild(empty);
+  }else{
+    state.incidents
+      .slice()
+      .sort((a,b)=>a.deadlineAt-b.deadlineAt)
+      .forEach(inc=>{
+        const card = document.createElement("div");
+        card.className = "card" + (state.selectedIncidentId === inc.id ? " sel" : "");
+        card.onclick = ()=>{
+          state.selectedIncidentId = inc.id;
+          renderIncidents();
+          updateDispatchButton();
+        };
+
+        const left = document.createElement("div");
+        left.className = "left";
+
+        const title = document.createElement("div");
+        title.className = "title";
+        title.textContent = inc.title;
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+
+        const sevPill = document.createElement("span");
+        sevPill.className = "pill " + (inc.severity==="grave"?"danger":inc.severity==="media"?"warn":inc.severity==="leve"?"ok":"warn");
+        sevPill.textContent = inc.severity.toUpperCase();
+
+        const zonePill = document.createElement("span");
+        zonePill.className = "pill";
+        zonePill.textContent = inc.zone;
+
+        const statusPill = document.createElement("span");
+        statusPill.className = "pill";
+        statusPill.textContent = inc.status;
+
+        meta.appendChild(sevPill);
+        meta.appendChild(zonePill);
+        meta.appendChild(statusPill);
+
+        const right = document.createElement("div");
+        right.className = "right";
+
+        const timeLeft = Math.max(0, inc.deadlineAt - now());
+        const timePill = document.createElement("span");
+        timePill.className = "pill " + (timeLeft < 10_000 ? "danger" : timeLeft < 20_000 ? "warn" : "");
+        timePill.textContent = `⏱ ${formatMMSS(timeLeft)}`;
+
+        const mini = document.createElement("div");
+        mini.className = "subtle";
+        mini.textContent = inc.requiredHint;
+
+        right.appendChild(timePill);
+        right.appendChild(mini);
+
+        left.appendChild(title);
+        left.appendChild(meta);
+
+        card.appendChild(left);
+        card.appendChild(right);
+
+        incidentListEl.appendChild(card);
+      });
+  }
+
+  activeIncidentsPill.textContent = `${state.incidents.length} incidentes`;
+}
+
+function renderUnits(){
+  unitListEl.innerHTML = "";
+
+  state.units.forEach(u=>{
+    const card = document.createElement("div");
+    card.className = "card" + (state.selectedUnitId === u.id ? " sel" : "");
+    card.onclick = ()=>{
+      state.selectedUnitId = u.id;
+      renderUnits();
+      updateDispatchButton();
     };
-    optionsEl.appendChild(btn);
+
+    const left = document.createElement("div");
+    left.className = "left";
+
+    const title = document.createElement("div");
+    title.className = "title";
+    title.textContent = u.name;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+
+    const rolePill = document.createElement("span");
+    rolePill.className = "pill";
+    rolePill.textContent = u.role.toUpperCase();
+
+    const zonePill = document.createElement("span");
+    zonePill.className = "pill";
+    zonePill.textContent = u.zone;
+
+    const statusPill = document.createElement("span");
+    statusPill.className = "pill " + (u.status==="disponível" ? "ok" : "warn");
+    statusPill.textContent = u.status;
+
+    meta.appendChild(rolePill);
+    meta.appendChild(zonePill);
+    meta.appendChild(statusPill);
+
+    const right = document.createElement("div");
+    right.className = "right";
+
+    const tags = document.createElement("div");
+    tags.className = "subtle";
+    tags.textContent = "Tags: " + u.tags.join(", ");
+
+    const cost = document.createElement("span");
+    cost.className = "pill";
+    cost.textContent = `Custo ${u.cost}`;
+
+    right.appendChild(cost);
+    right.appendChild(tags);
+
+    left.appendChild(title);
+    left.appendChild(meta);
+
+    card.appendChild(left);
+    card.appendChild(right);
+
+    unitListEl.appendChild(card);
   });
 }
 
-startBtn.onclick = () => {
-  currentCall = CALLS[Math.floor(Math.random() * CALLS.length)];
-  optionsEl.innerHTML = "";
-  typeText(
-    "Central de emergência.\n\n" +
-    currentCall.intro,
-    () => showStep(0)
-  );
-};
-</script>
+function renderPins(){
+  pinsEl.innerHTML = "";
+  // place random pins for each incident
+  state.incidents.forEach((inc, idx)=>{
+    const p = document.createElement("div");
+    p.className = "pin" + (inc.status === "resolvido" ? " ok" : "");
+    // pseudo coords
+    const x = 12 + (idx*19 % 70);
+    const y = 25 + (idx*23 % 55);
+    p.style.left = x + "%";
+    p.style.top  = y + "%";
+    pinsEl.appendChild(p);
+  });
+}
 
+function updateDispatchButton(){
+  const can = state.shiftActive &&
+              state.selectedIncidentId &&
+              state.selectedUnitId &&
+              state.incidents.some(i=>i.id===state.selectedIncidentId && i.status==="aguardando") &&
+              state.units.some(u=>u.id===state.selectedUnitId && u.status==="disponível");
+  dispatchBtn.disabled = !can;
+}
+
+function renderAll(){
+  renderStats();
+  renderShiftTime();
+  renderIncidents();
+  renderUnits();
+  renderPins();
+  updateDispatchButton();
+}
+
+/* ==========================
+   Shift Control
+========================== */
+function startShift(){
+  if(state.shiftActive) return;
+  state.shiftActive = true;
+  state.shiftStart = now();
+  state.score = 0;
+  state.rep = 50;
+  state.resolved = 0;
+  state.failed = 0;
+  state.incidents = [];
+  state.selectedIncidentId = null;
+  state.selectedUnitId = null;
+
+  // reset units
+  state.units.forEach(u=>{
+    u.status = "disponível";
+    u.busyUntil = 0;
+  });
+
+  callStatus.textContent = "Turno ativo — pronto para atender";
+  dispatchStatus.textContent = "Despacho operacional";
+  startShiftBtn.disabled = true;
+  endShiftBtn.disabled = false;
+  newCallBtn.disabled = false;
+
+  log("Turno iniciado. Central operacional.");
+  ringOnce();
+  typeText(callTextEl, "Turno iniciado.\n\nClique em “Nova Chamada” para atender a próxima ligação.", 16);
+  callBadge.textContent = "AGUARDANDO";
+  callBadge.className = "badge";
+  callTimerEl.textContent = "Tempo de chamada: --";
+  optionsEl.innerHTML = "";
+  callHint.textContent = "Dica: Uma chamada bem atendida aumenta a qualidade da informação e melhora o resultado do despacho.";
+
+  renderAll();
+}
+
+function endShift(reason="Turno encerrado."){
+  if(!state.shiftActive) return;
+  state.shiftActive = false;
+
+  startShiftBtn.disabled = false;
+  endShiftBtn.disabled = true;
+  newCallBtn.disabled = true;
+  dispatchBtn.disabled = true;
+
+  state.callActive = false;
+  state.currentCall = null;
+  optionsEl.innerHTML = "";
+
+  callStatus.textContent = "Turno não iniciado";
+  dispatchStatus.textContent = "Aguardando turno";
+
+  const summary =
+`TURNO ENCERRADO
+Motivo: ${reason}
+
+Resultados:
+- Pontuação: ${state.score}
+- Reputação: ${state.rep}/100
+- Incidentes resolvidos: ${state.resolved}
+- Falhas: ${state.failed}
+- Patente: ${computeRank(state.score, state.rep)}
+
+Dica: No próximo passo vamos adicionar modo carreira persistente (salvar progresso).`;
+
+  typeText(callTextEl, summary, 12);
+  callBadge.textContent = "ENCERRADO";
+  callBadge.className = "badge badge-warn";
+  callTimerEl.textContent = "Tempo de chamada: --";
+  log(reason);
+
+  renderAll();
+}
+
+/* ==========================
+   Calls -> Incidents
+========================== */
+function createIncidentFromCall(call){
+  const city = CITY_CONFIG[state.cityKey];
+  const incSpec = call.incident(city);
+
+  const sev = call.severity;
+  const sevCfg = SEVERITY[sev];
+  const id = `INC-${incidentCounter++}`;
+
+  // required hint is adapted by city
+  const hint = buildRequiredHint(incSpec.requiredTags);
+
+  const incident = {
+    id,
+    title: call.title,
+    severity: sev,
+    zone: incSpec.zone,
+    requiredTags: incSpec.requiredTags.slice(),
+    requiredHint: hint,
+    status: "aguardando",
+    createdAt: now(),
+    deadlineAt: now() + sevCfg.deadlineMs,
+    baseUrgency: incSpec.baseUrgency,
+    dispatchedUnitId: null,
+  };
+
+  state.incidents.push(incident);
+  log(`Incidente criado (${id}): ${incident.title} [${incident.severity}] — Zona ${incident.zone}.`);
+  renderAll();
+}
+
+function buildRequiredHint(requiredTags){
+  // Provide a human readable hint
+  // Important: some incidents accept multiple tags; show what matters.
+  if(requiredTags.includes("tactical") || requiredTags.includes("highrisk")){
+    return "Recomendado: unidade tática (ROTA/SWAT) + alta prioridade";
+  }
+  if(requiredTags.includes("bomb")){
+    return "Recomendado: equipe anti-bomba / crises (GATE/SWAT)";
+  }
+  if(requiredTags.includes("fire")){
+    return "Recomendado: bombeiros (fire engine) / resgate";
+  }
+  if(requiredTags.includes("extrication")){
+    return "Recomendado: resgate desencarceramento + ambulância";
+  }
+  if(requiredTags.includes("medical") || requiredTags.includes("ems")){
+    return "Recomendado: ambulância / suporte médico";
+  }
+  if(requiredTags.includes("patrol")){
+    return "Recomendado: patrulha de área";
+  }
+  return "Recomendado: triagem e unidade apropriada";
+}
+
+function startCall(){
+  if(!state.shiftActive) return;
+  if(state.callActive){
+    log("Você já está em chamada.");
+    return;
+  }
+
+  state.callActive = true;
+  state.callStart = now();
+  state.callQuality = 0;
+  state.currentCall = pick(CALL_POOL);
+
+  const city = CITY_CONFIG[state.cityKey];
+  ringOnce();
+
+  const sevCfg = SEVERITY[state.currentCall.severity];
+  severityBadge(state.currentCall.severity);
+
+  callStatus.textContent = "Chamada em andamento";
+  callTimerEl.textContent = "Tempo de chamada: 00:00";
+  optionsEl.innerHTML = "";
+
+  // create incident immediately when the call begins (realistic: CAD opens a ticket)
+  createIncidentFromCall(state.currentCall);
+
+  const intro = `${state.currentCall.intro(city)}\n\nChamador: ${state.currentCall.first}`;
+  typeText(callTextEl, intro, 16, ()=>{
+    showCallStep(0);
+  });
+
+  callHint.textContent = "Objetivo: colher info essencial e orientar. A qualidade do atendimento influencia o resultado do despacho.";
+
+  if(state.callTimerHandle) clearInterval(state.callTimerHandle);
+  state.callTimerHandle = setInterval(()=>{
+    if(!state.callActive){
+      clearInterval(state.callTimerHandle);
+      state.callTimerHandle = null;
+      callTimerEl.textContent = "Tempo de chamada: --";
+      return;
+    }
+    const elapsed = now() - state.callStart;
+    callTimerEl.textContent = `Tempo de chamada: ${formatMMSS(elapsed)}`;
+
+    // pressure: after 70s, rep penalty if still on call
+    if(elapsed > 75_000){
+      state.rep = clamp(state.rep - 1, 0, 100);
+      renderStats();
+    }
+  }, 250);
+
+  renderAll();
+}
+
+function showCallStep(stepIndex){
+  const call = state.currentCall;
+  const step = call.steps[stepIndex];
+
+  optionsEl.innerHTML = "";
+
+  typeText(callTextEl, step.text, 16);
+
+  step.options.forEach(opt=>{
+    const b = document.createElement("button");
+    b.className = "optbtn";
+    b.textContent = opt.label;
+    b.onclick = ()=>{
+      // apply quality effect
+      if(opt.effect && typeof opt.effect.quality === "number"){
+        state.callQuality += opt.effect.quality;
+      }
+
+      // go next or end
+      if(typeof opt.next === "number"){
+        showCallStep(opt.next);
+      }else{
+        // end call
+        const endText = opt.end || "Chamada encerrada.";
+        finishCall(endText);
+      }
+    };
+    optionsEl.appendChild(b);
+  });
+}
+
+function finishCall(endText){
+  state.callActive = false;
+  optionsEl.innerHTML = "";
+
+  // quality clamp
+  state.callQuality = clamp(state.callQuality, -6, 8);
+
+  // small rep adjustment based on call quality
+  if(state.callQuality >= 4) state.rep = clamp(state.rep + 1, 0, 100);
+  if(state.callQuality <= -2) state.rep = clamp(state.rep - 2, 0, 100);
+
+  callStatus.textContent = "Chamada finalizada — aguarde despacho";
+  typeText(callTextEl, `${endText}\n\nQualidade do atendimento: ${state.callQuality}\n(Influenciará o resultado do incidente)`, 14);
+
+  renderAll();
+}
+
+/* ==========================
+   Dispatch Logic
+========================== */
+function dispatchSelected(){
+  const inc = state.incidents.find(i=>i.id===state.selectedIncidentId);
+  const unit = state.units.find(u=>u.id===state.selectedUnitId);
+  if(!inc || !unit) return;
+  if(inc.status !== "aguardando") return;
+  if(unit.status !== "disponível") return;
+
+  // If missed deadline: auto fail
+  if(now() > inc.deadlineAt){
+    failIncident(inc, "Despacho tardio: incidente estourou o prazo.");
+    renderAll();
+    return;
+  }
+
+  // Determine match quality: does unit have at least one of required tags?
+  const required = inc.requiredTags;
+  const unitTags = unit.tags;
+
+  // For incidents that want rescue+ems, we accept either but best if match many
+  let hits = 0;
+  required.forEach(t=>{
+    if(unitTags.includes(t)) hits++;
+  });
+
+  // callQuality influences success
+  const infoBonus = state.callQuality || 0;
+
+  // travel/resolve time: base on severity + unit speed + urgency
+  const sev = SEVERITY[inc.severity];
+  const baseTravel = (inc.severity==="grave" ? 18_000 : inc.severity==="media" ? 22_000 : inc.severity==="leve" ? 26_000 : 20_000);
+  const zonePenalty = (unit.zone === inc.zone) ? 0.85 : 1.12;
+  const speedFactor = 1 / unit.speed;
+  const travel = Math.floor(baseTravel * zonePenalty * speedFactor);
+
+  const resolveBase = (inc.severity==="grave" ? 22_000 : inc.severity==="media" ? 18_000 : 14_000);
+  const resolve = Math.floor(resolveBase * (1.0 + (inc.baseUrgency-1)*0.25));
+
+  // set unit busy
+  unit.status = "em atendimento";
+  unit.busyUntil = now() + travel + resolve;
+
+  inc.status = "em andamento";
+  inc.dispatchedUnitId = unit.id;
+
+  log(`Despacho: ${unit.name} → ${inc.title} (${inc.id}) | ETA ~${formatMMSS(travel)}.`);
+
+  // Evaluate outcome after "arrival + resolve"
+  setTimeout(()=>{
+    // if shift ended, stop outcomes to avoid weirdness
+    if(!state.shiftActive) return;
+
+    // outcome score:
+    // hits: 0..N
+    // infoBonus: -6..8
+    // risk handling threshold: if incident is grave and unit cannot handle highrisk => fail
+    const needsHighRisk = inc.requiredTags.includes("highrisk");
+    const needsBomb = inc.requiredTags.includes("bomb");
+    const needsFire = inc.requiredTags.includes("fire");
+    const needsExtr = inc.requiredTags.includes("extrication");
+    const needsMedical = inc.requiredTags.includes("medical") || inc.requiredTags.includes("ems");
+
+    let hardFail = false;
+    if(needsHighRisk && unit.riskHandle < 3) hardFail = true;
+    if(needsBomb && !unit.tags.includes("bomb")) hardFail = true;
+    if(needsFire && !(unit.tags.includes("fire") || unit.role==="fire")) hardFail = true;
+
+    // For extrication/medical calls: sending only patrol is poor
+    if(needsExtr && !(unit.tags.includes("extrication") || unit.tags.includes("rescue"))) hardFail = true;
+    if(needsMedical && unit.role==="police" && !unit.tags.includes("medical")) hardFail = true;
+
+    // scoring
+    const sevCfg = SEVERITY[inc.severity];
+    const base = sevCfg.baseScore;
+
+    // compute quality score
+    const qualityScore = hits * 6 + infoBonus * 2 - unit.cost * 2;
+
+    const successThreshold = (inc.severity==="grave" ? 10 : inc.severity==="media" ? 6 : 3);
+    const isSuccess = !hardFail && (qualityScore >= successThreshold);
+
+    if(isSuccess){
+      resolveIncident(inc, unit, base, qualityScore);
+    }else{
+      failIncident(inc, `Despacho inadequado. Consequências no local. (Qualidade: ${qualityScore})`);
+    }
+
+    // unit becomes available again
+    unit.status = "disponível";
+    unit.busyUntil = 0;
+
+    renderAll();
+  }, travel + resolve);
+
+  renderAll();
+}
+
+function resolveIncident(inc, unit, baseScore, qualityScore){
+  inc.status = "resolvido";
+  state.resolved += 1;
+
+  // better quality gives more points
+  const bonus = clamp(Math.floor(qualityScore / 2), 0, 20);
+  const gain = baseScore + bonus;
+
+  state.score += gain;
+  state.rep = clamp(state.rep + SEVERITY[inc.severity].repDeltaOk, 0, 100);
+
+  log(`✅ RESOLVIDO: ${inc.title} (${inc.id}) | Unidade: ${unit.name} | +${gain} pontos.`);
+}
+
+function failIncident(inc, reason){
+  inc.status = "falhou";
+  state.failed += 1;
+
+  // penalty based on severity
+  const sevCfg = SEVERITY[inc.severity];
+  const loss = inc.severity==="grave" ? 18 : inc.severity==="media" ? 12 : 8;
+
+  state.score = Math.max(0, state.score - loss);
+  state.rep = clamp(state.rep + sevCfg.repDeltaBad, 0, 100);
+
+  // For grave failures, simulate fatality line
+  let extra = "";
+  if(inc.severity==="grave") extra = " Resultado: possível óbito / dano crítico.";
+  if(inc.severity==="trote") extra = " Resultado: recurso desperdiçado por trote.";
+
+  log(`❌ FALHA: ${inc.title} (${inc.id}) | -${loss} pontos. ${reason}${extra}`);
+}
+
+/* ==========================
+   Background Tick: deadlines, unit states
+========================== */
+function tick(){
+  // update shift time
+  renderShiftTime();
+
+  if(state.shiftActive){
+    // handle incident deadlines
+    state.incidents.forEach(inc=>{
+      if(inc.status === "aguardando" && now() > inc.deadlineAt){
+        // auto-fail
+        inc.status = "falhou";
+        state.failed += 1;
+
+        const sevCfg = SEVERITY[inc.severity];
+        const loss = inc.severity==="grave" ? 18 : inc.severity==="media" ? 12 : 8;
+        state.score = Math.max(0, state.score - loss);
+        state.rep = clamp(state.rep + sevCfg.repDeltaBad, 0, 100);
+
+        log(`⏱ PRAZO ESTOURADO: ${inc.title} (${inc.id}) | -${loss} pontos. Atendimento atrasou.`);
+      }
+    });
+
+    // cleanup: remove resolved/failed incidents after some time (keep UI clean)
+    const keepMs = 45_000;
+    state.incidents = state.incidents.filter(inc=>{
+      if(inc.status === "aguardando" || inc.status === "em andamento") return true;
+      return (now() - inc.createdAt) < keepMs;
+    });
+
+    // show unit busy countdown subtly
+    state.units.forEach(u=>{
+      if(u.status === "em atendimento"){
+        const rem = u.busyUntil - now();
+        if(rem <= 0){
+          u.status = "disponível";
+          u.busyUntil = 0;
+        }
+      }
+    });
+
+    renderStats();
+    renderIncidents();
+    renderUnits();
+    renderPins();
+    updateDispatchButton();
+  }
+
+  requestAnimationFrame(tick);
+}
+
+/* ==========================
+   Event Handlers
+========================== */
+citySelect.addEventListener("change", ()=>{
+  loadCity(citySelect.value);
+});
+
+startShiftBtn.addEventListener("click", startShift);
+endShiftBtn.addEventListener("click", ()=>endShift("Encerrado manualmente."));
+newCallBtn.addEventListener("click", startCall);
+dispatchBtn.addEventListener("click", dispatchSelected);
+
+/* ==========================
+   Init
+========================== */
+(function init(){
+  // initial log and setup
+  log("Sistema carregado. Pronto para iniciar turno.");
+  loadCity(citySelect.value);
+  renderAll();
+  requestAnimationFrame(tick);
+
+  // initial screen
+  typeText(callTextEl,
+`Bem-vindo ao Last Call Dispatch Operator (FASE 2).
+
+✅ Agora o jogo tem:
+- Turno (Iniciar/Encerrar)
+- Chamadas gerando incidentes
+- Despacho com unidades especializadas por cidade
+- Pontuação + reputação + patente
+
+Como jogar:
+1) Inicie o turno
+2) Clique em “Nova Chamada”
+3) Atenda a ligação (as escolhas melhoram a qualidade)
+4) Vá em “Despacho” e selecione incidente + unidade
+5) Clique em “Despachar Unidade”
+
+Dica:
+- GRAVE → Tática (ROTA/SWAT) ou Bombeiros em incêndio
+- BOMBA → GATE / equipe anti-bomba
+- ACIDENTE COM PRESOS → Resgate + Ambulância (aqui você envia uma por vez; na próxima fase vamos permitir envio múltiplo)
+`, 12);
+})();
+</script>
 </body>
 </html>
