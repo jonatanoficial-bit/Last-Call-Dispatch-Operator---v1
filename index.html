@@ -20,6 +20,7 @@
     --ok:#22c55e;
     --btn:#2563eb;
     --btn2:#1d4ed8;
+    --ghost:#2b3b56;
   }
   *{ box-sizing:border-box; }
   body{
@@ -39,7 +40,7 @@
     flex-wrap:wrap;
   }
   .brand{
-    font-weight:800;
+    font-weight:900;
     letter-spacing:0.4px;
     color:var(--accent);
     display:flex; align-items:center; gap:10px;
@@ -60,7 +61,7 @@
     border:1px solid #233047;
     color:var(--text);
     padding:8px 10px;
-    border-radius:10px;
+    border-radius:12px;
     outline:none;
     font-size:14px;
   }
@@ -70,10 +71,10 @@
     color:#fff;
     padding:10px 12px;
     border-radius:12px;
-    font-weight:700;
+    font-weight:800;
     cursor:pointer;
     font-size:14px;
-    transition: transform .05s ease, background .15s ease;
+    transition: transform .05s ease, background .15s ease, opacity .15s ease;
   }
   button:active{ transform: scale(0.98); }
   button:hover{ background: var(--btn2); }
@@ -83,23 +84,21 @@
   }
   .btn-ghost{
     background: transparent;
-    border:1px solid #2b3b56;
+    border:1px solid var(--ghost);
     color: var(--text);
   }
-  .btn-ghost:hover{
-    background: rgba(99,179,237,0.10);
-  }
-  .btn-danger{
-    background: #b91c1c;
-  }
+  .btn-ghost:hover{ background: rgba(99,179,237,0.10); }
+  .btn-danger{ background:#b91c1c; }
   .btn-danger:hover{ background:#991b1b; }
+  .btn-ok{ background:#15803d; }
+  .btn-ok:hover{ background:#166534; }
 
   main{
     padding:12px;
     display:grid;
     grid-template-columns: 1.05fr 0.95fr;
     gap:12px;
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
   }
   @media (max-width: 920px){
@@ -109,7 +108,7 @@
   .panel{
     background: linear-gradient(180deg, rgba(20,26,36,0.98), rgba(14,18,26,0.98));
     border:1px solid var(--line);
-    border-radius:16px;
+    border-radius:18px;
     overflow:hidden;
     box-shadow: 0 12px 30px rgba(0,0,0,0.22);
   }
@@ -124,14 +123,12 @@
   }
   .panel-header h3{
     margin:0;
-    font-size:14px;
+    font-size:13px;
     color: var(--accent2);
-    letter-spacing:0.4px;
+    letter-spacing:0.6px;
     text-transform: uppercase;
   }
-  .panel-body{
-    padding:12px;
-  }
+  .panel-body{ padding:12px; }
 
   .grid2{
     display:grid;
@@ -147,45 +144,56 @@
   }
   .stat{
     flex: 1;
-    min-width: 140px;
+    min-width: 150px;
     background: rgba(8,12,18,0.55);
     border:1px solid #202b40;
-    border-radius:14px;
+    border-radius:16px;
     padding:10px;
   }
   .stat .k{ font-size:12px; color:var(--muted); }
-  .stat .v{ font-size:16px; font-weight:800; margin-top:3px; }
-  .v .small{ font-size:12px; font-weight:700; color:var(--muted); }
+  .stat .v{ font-size:16px; font-weight:900; margin-top:3px; }
+  .v .small{ font-size:12px; font-weight:800; color:var(--muted); }
+
+  .divider{
+    height:1px;
+    background: rgba(255,255,255,0.08);
+    margin:10px 0;
+  }
 
   /* Call UI */
   .callbox{
     background: rgba(7,10,16,0.55);
     border:1px solid #202b40;
-    border-radius:14px;
+    border-radius:16px;
     padding:12px;
   }
   .calltitle{
     display:flex; align-items:center; justify-content:space-between;
     gap:10px; margin-bottom:10px;
+    flex-wrap:wrap;
   }
   .badge{
     font-size:12px;
-    padding:4px 8px;
+    padding:4px 10px;
     border-radius:999px;
     border:1px solid #2b3b56;
     color:#dbeafe;
     background: rgba(37,99,235,0.12);
+    font-weight:900;
+    letter-spacing:0.3px;
   }
   .badge.badge-danger{ border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.12); }
   .badge.badge-warn{ border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.12); }
   .badge.badge-ok{ border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.12); }
+
   #callText{
-    min-height: 120px;
+    min-height: 140px;
     white-space: pre-wrap;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
     font-size: 14px;
     line-height: 1.35;
   }
+
   .options{
     display:flex;
     flex-direction: column;
@@ -198,11 +206,18 @@
     border:1px solid rgba(99,179,237,0.35);
     color:#eaf3ff;
   }
-  .optbtn:hover{
-    background: rgba(37,99,235,0.25);
+  .optbtn:hover{ background: rgba(37,99,235,0.25); }
+
+  .hint{
+    font-size:12px;
+    color: var(--muted);
+    background: rgba(99,179,237,0.08);
+    border:1px solid rgba(99,179,237,0.20);
+    padding:10px;
+    border-radius:16px;
   }
 
-  /* Dispatch */
+  /* Dispatch lists */
   .subtle{
     font-size:12px;
     color: var(--muted);
@@ -215,7 +230,7 @@
   .card{
     background: rgba(8,12,18,0.55);
     border:1px solid #202b40;
-    border-radius:14px;
+    border-radius:16px;
     padding:10px;
     display:flex;
     gap:10px;
@@ -226,6 +241,10 @@
     outline: 2px solid rgba(79,209,197,0.35);
     border-color: rgba(79,209,197,0.25);
   }
+  .card.locked{
+    opacity:0.55;
+    filter: grayscale(0.25);
+  }
   .left{
     display:flex;
     flex-direction: column;
@@ -233,7 +252,7 @@
     min-width:0;
   }
   .title{
-    font-weight:900;
+    font-weight:950;
     font-size:14px;
     overflow:hidden;
     text-overflow:ellipsis;
@@ -248,11 +267,12 @@
   }
   .pill{
     font-size:12px;
-    padding:3px 8px;
+    padding:3px 9px;
     border-radius:999px;
     border:1px solid #2b3b56;
     background: rgba(16,21,33,0.55);
     color:#dbeafe;
+    font-weight:800;
   }
   .pill.ok{ border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.10); color:#d1fae5;}
   .pill.warn{ border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.12); color:#ffedd5;}
@@ -264,16 +284,38 @@
     align-items:flex-end;
     flex-shrink:0;
   }
+  .minirow{
+    display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;
+  }
   .tinybtn{
     padding:8px 10px;
     font-size:13px;
     border-radius:12px;
   }
 
+  /* Unit selection checkbox-ish */
+  .check{
+    width:18px; height:18px;
+    border-radius:6px;
+    border:1px solid #2b3b56;
+    background: rgba(16,21,33,0.55);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    font-weight:950;
+    color:#dbeafe;
+  }
+  .check.on{
+    border-color: rgba(79,209,197,0.55);
+    background: rgba(79,209,197,0.14);
+    color:#d1fae5;
+  }
+
   /* Map placeholder */
   .map{
-    height: 220px;
-    border-radius:16px;
+    height: 230px;
+    border-radius:18px;
     border:1px solid #202b40;
     background:
       radial-gradient(800px 300px at 10% 10%, rgba(79,209,197,0.15), transparent 60%),
@@ -301,7 +343,7 @@
     display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
   }
   .maptitle{
-    font-weight:900;
+    font-weight:950;
     letter-spacing:0.5px;
     color:#dbeafe;
   }
@@ -332,9 +374,9 @@
   }
 
   .log{
-    max-height: 180px;
+    max-height: 190px;
     overflow:auto;
-    border-radius:14px;
+    border-radius:16px;
     border:1px solid #202b40;
     background: rgba(7,10,16,0.55);
     padding:10px;
@@ -344,19 +386,67 @@
     white-space: pre-wrap;
   }
 
-  .divider{
-    height:1px;
-    background: rgba(255,255,255,0.08);
-    margin:10px 0;
+  .filters{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
   }
-
-  .hint{
+  .tabs{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .tab{
+    padding:8px 10px;
+    border-radius:999px;
+    border:1px solid #2b3b56;
+    background: rgba(16,21,33,0.55);
+    color:#dbeafe;
     font-size:12px;
-    color: var(--muted);
-    background: rgba(99,179,237,0.08);
-    border:1px solid rgba(99,179,237,0.20);
+    font-weight:900;
+    cursor:pointer;
+    user-select:none;
+  }
+  .tab.on{
+    border-color: rgba(79,209,197,0.55);
+    background: rgba(79,209,197,0.14);
+    color:#d1fae5;
+  }
+  .recbox{
+    background: rgba(8,12,18,0.55);
+    border:1px solid #202b40;
+    border-radius:16px;
     padding:10px;
-    border-radius:14px;
+    margin-top:10px;
+  }
+  .recline{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    padding:8px 0;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+  .recline:first-child{ border-top:none; }
+  .recl{
+    display:flex; flex-direction:column; gap:2px; min-width:0;
+  }
+  .recl .nm{
+    font-weight:950; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .recl .why{ font-size:12px; color:var(--muted); }
+  .xpbar{
+    height:10px;
+    border-radius:999px;
+    border:1px solid #2b3b56;
+    background: rgba(16,21,33,0.55);
+    overflow:hidden;
+    margin-top:6px;
+  }
+  .xpfill{
+    height:100%;
+    background: rgba(79,209,197,0.45);
+    width:0%;
   }
 </style>
 </head>
@@ -366,7 +456,7 @@
   <div class="topbar">
     <div class="brand">
       <span>Last Call Dispatch Operator</span>
-      <span class="chip" id="buildTag">FASE 2 — Despacho</span>
+      <span class="chip" id="buildTag">FASE 3 — Multi-Despacho + Carreira</span>
     </div>
 
     <div class="controls">
@@ -378,36 +468,65 @@
       <button id="startShiftBtn">Iniciar Turno</button>
       <button id="endShiftBtn" class="btn-danger" disabled>Encerrar Turno</button>
       <button id="newCallBtn" class="btn-ghost" disabled>Nova Chamada</button>
+      <button id="resetCareerBtn" class="btn-ghost" title="Apaga progresso salvo no aparelho">Reset Carreira</button>
     </div>
   </div>
 </header>
 
 <main>
 
-  <!-- LEFT: Calls -->
+  <!-- LEFT: Calls + Career -->
   <section class="panel">
     <div class="panel-header">
-      <h3>Atendimento</h3>
+      <h3>Atendimento + Carreira</h3>
       <div class="subtle" id="callStatus">Turno não iniciado</div>
     </div>
 
     <div class="panel-body">
       <div class="statrow">
         <div class="stat">
-          <div class="k">Pontuação</div>
+          <div class="k">Pontuação (turno)</div>
           <div class="v" id="scoreEl">0</div>
         </div>
         <div class="stat">
-          <div class="k">Reputação</div>
+          <div class="k">Reputação (turno)</div>
           <div class="v" id="repEl">50 <span class="small">/100</span></div>
         </div>
         <div class="stat">
-          <div class="k">Patente</div>
+          <div class="k">Patente (turno)</div>
           <div class="v" id="rankEl">Recruta</div>
         </div>
         <div class="stat">
           <div class="k">Tempo de turno</div>
           <div class="v" id="shiftTimeEl">--:--</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="statrow">
+        <div class="stat">
+          <div class="k">Carreira — Nível</div>
+          <div class="v" id="careerLevelEl">1</div>
+          <div class="xpbar" aria-label="XP">
+            <div class="xpfill" id="careerXpFill"></div>
+          </div>
+          <div class="subtle" id="careerXpText" style="margin-top:6px;">XP: 0/100</div>
+        </div>
+        <div class="stat">
+          <div class="k">Carreira — Créditos</div>
+          <div class="v" id="careerCreditsEl">0</div>
+          <div class="subtle" id="careerUnlockHint" style="margin-top:6px;">Desbloqueios por nível: Tática, Anti-bomba, Aéreo…</div>
+        </div>
+        <div class="stat">
+          <div class="k">Carreira — Melhor Pontuação</div>
+          <div class="v" id="careerBestEl">0</div>
+          <div class="subtle" id="careerCityBestEl" style="margin-top:6px;">SP: 0 • NY: 0</div>
+        </div>
+        <div class="stat">
+          <div class="k">Carreira — Conclusões</div>
+          <div class="v" id="careerStatsEl">0</div>
+          <div class="subtle" id="careerFailEl" style="margin-top:6px;">Falhas: 0</div>
         </div>
       </div>
 
@@ -428,7 +547,7 @@
         <div class="divider"></div>
 
         <div class="hint" id="callHint">
-          Dica: Atenda rápido, colete dados essenciais e gere um despacho correto. Chamadas graves exigem resposta adequada.
+          Dica: Em casos graves, primeiro garanta segurança do chamador e local. Depois despache a unidade CERTA.
         </div>
       </div>
 
@@ -448,13 +567,13 @@
           <div class="maptop">
             <div>
               <div class="maptitle" id="mapTitle">Cidade</div>
-              <div class="mapzone" id="mapZone">Zonas: Centro • Norte • Sul • Leste • Oeste</div>
+              <div class="mapzone" id="mapZone">Zonas</div>
             </div>
             <div class="pill" id="activeIncidentsPill">0 incidentes</div>
           </div>
 
           <div class="subtle">
-            Mapa estilizado (placeholder). Na próxima fase, dá para plugar mapa real (Leaflet/OSM) sem quebrar a arquitetura.
+            Mapa estilizado (placeholder). Próxima fase: mapa real (Leaflet/OSM) sem quebrar a arquitetura.
           </div>
         </div>
 
@@ -467,18 +586,47 @@
         <div>
           <div class="subtle" style="margin-bottom:8px;">Fila de incidentes (selecione 1)</div>
           <div class="list" id="incidentList"></div>
+
+          <div class="recbox" id="recommendBox" style="display:none;">
+            <div style="font-weight:950; color:#dbeafe; margin-bottom:6px;">Recomendado (1 toque para selecionar)</div>
+            <div id="recommendList"></div>
+          </div>
         </div>
 
         <div>
-          <div class="subtle" style="margin-bottom:8px;">Unidades disponíveis (selecione 1)</div>
+          <div class="filters">
+            <div class="tabs" id="unitTabs">
+              <div class="tab on" data-role="all">TODAS</div>
+              <div class="tab" data-role="police">POLÍCIA</div>
+              <div class="tab" data-role="fire">BOMBEIROS</div>
+              <div class="tab" data-role="ems">EMS</div>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <label class="subtle" style="display:flex; gap:6px; align-items:center;">
+                <input type="checkbox" id="onlyAvailableChk" checked />
+                Disponível
+              </label>
+              <input id="unitSearch" placeholder="Buscar unidade…" />
+            </div>
+          </div>
+
+          <div class="subtle" style="margin-bottom:8px;">
+            Unidades (toque para marcar várias). Selecionadas: <b id="selCount">0</b>
+          </div>
+
           <div class="list" id="unitList"></div>
+
+          <div class="divider"></div>
+
+          <div class="controls" style="justify-content:space-between;">
+            <button id="clearUnitsBtn" class="btn-ghost">Limpar Seleção</button>
+            <button id="dispatchBtn" disabled>Despachar Selecionadas</button>
+          </div>
+
+          <div class="hint" id="dispatchHint" style="margin-top:10px;">
+            Regra AAA: incidentes podem exigir 2+ unidades. Ex.: acidente com preso → Resgate + Ambulância.
+          </div>
         </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="controls" style="justify-content:flex-end;">
-        <button id="dispatchBtn" disabled>Despachar Unidade</button>
       </div>
 
       <div class="divider"></div>
@@ -498,21 +646,18 @@ const $ = (id) => document.getElementById(id);
 const now = () => Date.now();
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const pad2 = (n) => String(n).padStart(2, "0");
-
 function formatMMSS(ms){
   const s = Math.max(0, Math.floor(ms / 1000));
   const m = Math.floor(s / 60);
   const ss = s % 60;
   return `${pad2(m)}:${pad2(ss)}`;
 }
-
 function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
 
 /* ==========================
-   Simple Audio (no assets)
+   Tiny Audio (no assets)
 ========================== */
 let audioEnabled = true;
-
 function beep(freq=700, dur=60, type="square", gain=0.02){
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -521,31 +666,27 @@ function beep(freq=700, dur=60, type="square", gain=0.02){
     o.type = type;
     o.frequency.value = freq;
     g.gain.value = gain;
-    o.connect(g);
-    g.connect(ctx.destination);
+    o.connect(g); g.connect(ctx.destination);
     o.start();
     setTimeout(()=>{ o.stop(); ctx.close(); }, dur);
   }catch(e){}
 }
-
 function ringOnce(){
-  // telefonema: 3 bipes com pausa
   if(!audioEnabled) return;
   beep(880, 90, "sine", 0.03);
   setTimeout(()=>beep(880, 90, "sine", 0.03), 150);
   setTimeout(()=>beep(880, 90, "sine", 0.03), 300);
 }
-
 function tickType(){
   if(!audioEnabled) return;
-  beep(1200, 20, "square", 0.008);
+  beep(1200, 18, "square", 0.008);
 }
 
 /* ==========================
    Typewriter
 ========================== */
 let typingHandle = null;
-function typeText(el, text, speed=18, onDone=null){
+function typeText(el, text, speed=16, onDone=null){
   if(typingHandle) clearInterval(typingHandle);
   el.textContent = "";
   let i = 0;
@@ -562,6 +703,89 @@ function typeText(el, text, speed=18, onDone=null){
 }
 
 /* ==========================
+   Career Persistence
+========================== */
+const CAREER_KEY = "lcdo_career_v1";
+
+function defaultCareer(){
+  return {
+    level: 1,
+    xp: 0,
+    xpToNext: 100,
+    credits: 0,
+    bestScore: 0,
+    cityBest: { sao_paulo: 0, new_york: 0 },
+    totalResolved: 0,
+    totalFailed: 0
+  };
+}
+
+function loadCareer(){
+  try{
+    const raw = localStorage.getItem(CAREER_KEY);
+    if(!raw) return defaultCareer();
+    const parsed = JSON.parse(raw);
+    // safe merge
+    const base = defaultCareer();
+    return {
+      ...base,
+      ...parsed,
+      cityBest: { ...base.cityBest, ...(parsed.cityBest||{}) }
+    };
+  }catch(e){
+    return defaultCareer();
+  }
+}
+
+function saveCareer(){
+  try{
+    localStorage.setItem(CAREER_KEY, JSON.stringify(career));
+  }catch(e){}
+}
+
+function resetCareer(){
+  career = defaultCareer();
+  saveCareer();
+  log("Carreira resetada (progresso apagado do aparelho).");
+  renderCareer();
+  loadCity(state.cityKey);
+}
+
+function gainXP(amount){
+  career.xp += Math.max(0, amount);
+  while(career.xp >= career.xpToNext){
+    career.xp -= career.xpToNext;
+    career.level += 1;
+    // escalate requirement a bit
+    career.xpToNext = Math.floor(career.xpToNext * 1.18 + 30);
+    career.credits += 25; // bonus per level
+    log(`⭐ Subiu de nível! Agora: Nível ${career.level}. Novos desbloqueios disponíveis.`);
+  }
+  saveCareer();
+  renderCareer();
+}
+
+function awardShiftRewards(){
+  // based on score and performance
+  const baseXP = Math.floor(state.score * 0.55) + state.resolved * 8;
+  const penalty = state.failed * 6;
+  const xp = Math.max(0, baseXP - penalty);
+  const credits = Math.max(0, Math.floor(state.score * 0.25) + state.resolved * 3 - state.failed * 2);
+
+  career.credits += credits;
+  career.totalResolved += state.resolved;
+  career.totalFailed += state.failed;
+
+  if(state.score > career.bestScore) career.bestScore = state.score;
+  if(state.score > (career.cityBest[state.cityKey]||0)) career.cityBest[state.cityKey] = state.score;
+
+  gainXP(xp); // calls save+render inside
+  saveCareer();
+
+  return { xp, credits };
+}
+
+/* ==========================
    Game Data
 ========================== */
 const CITY_CONFIG = {
@@ -569,35 +793,46 @@ const CITY_CONFIG = {
     name: "São Paulo",
     zones: ["Centro","Norte","Sul","Leste","Oeste"],
     unitTemplates: [
-      { id:"sp_area_1", name:"Polícia de Área A-01", role:"police", tags:["patrol","area"], speed:1.00, riskHandle:1, cost:1, zone:"Centro" },
-      { id:"sp_area_2", name:"Polícia de Área A-02", role:"police", tags:["patrol","area"], speed:1.05, riskHandle:1, cost:1, zone:"Leste" },
-      { id:"sp_rota",   name:"ROTA (Resposta Tática)", role:"police", tags:["tactical","highrisk"], speed:1.15, riskHandle:3, cost:3, zone:"Oeste" },
-      { id:"sp_gate",   name:"GATE (Anti-bomba/Crises)", role:"police", tags:["bomb","hostage","highrisk"], speed:0.95, riskHandle:4, cost:4, zone:"Centro" },
-      { id:"sp_choque", name:"Choque (Controle Distúrbios)", role:"police", tags:["riot","highrisk"], speed:0.90, riskHandle:3, cost:3, zone:"Norte" },
-      { id:"sp_aguia",  name:"Águia (Helicóptero)", role:"police", tags:["air","pursuit","highrisk"], speed:1.35, riskHandle:3, cost:5, zone:"Sul" },
-      { id:"sp_resgate",name:"Bombeiros Resgate R-01", role:"fire", tags:["rescue","extrication"], speed:0.95, riskHandle:2, cost:3, zone:"Centro" },
-      { id:"sp_ambul",  name:"Ambulância (Suporte Básico)", role:"ems", tags:["medical","ems"], speed:1.05, riskHandle:2, cost:2, zone:"Leste" }
+      // unlockLevel: 1 basic
+      { id:"sp_area_1", name:"Polícia de Área A-01", role:"police", tags:["patrol","area"], speed:1.00, riskHandle:1, cost:1, zone:"Centro", unlockLevel:1 },
+      { id:"sp_area_2", name:"Polícia de Área A-02", role:"police", tags:["patrol","area"], speed:1.05, riskHandle:1, cost:1, zone:"Leste", unlockLevel:1 },
+
+      // level 3 tactical
+      { id:"sp_rota",   name:"ROTA (Resposta Tática)", role:"police", tags:["tactical","highrisk"], speed:1.15, riskHandle:3, cost:3, zone:"Oeste", unlockLevel:3 },
+
+      // level 4 bomb/crises
+      { id:"sp_gate",   name:"GATE (Anti-bomba/Crises)", role:"police", tags:["bomb","hostage","highrisk","tactical"], speed:0.95, riskHandle:4, cost:4, zone:"Centro", unlockLevel:4 },
+
+      // level 3 riot
+      { id:"sp_choque", name:"Choque (Distúrbios)", role:"police", tags:["riot","highrisk","tactical"], speed:0.90, riskHandle:3, cost:3, zone:"Norte", unlockLevel:3 },
+
+      // level 5 air
+      { id:"sp_aguia",  name:"Águia (Helicóptero)", role:"police", tags:["air","pursuit","highrisk","tactical"], speed:1.35, riskHandle:3, cost:5, zone:"Sul", unlockLevel:5 },
+
+      // fire/ems unlock 2
+      { id:"sp_resgate",name:"Bombeiros Resgate R-01", role:"fire", tags:["rescue","extrication","fire"], speed:0.95, riskHandle:2, cost:3, zone:"Centro", unlockLevel:2 },
+      { id:"sp_ambul",  name:"Ambulância (Suporte Básico)", role:"ems", tags:["medical","ems"], speed:1.05, riskHandle:2, cost:2, zone:"Leste", unlockLevel:2 }
     ]
   },
   new_york: {
     name: "New York",
     zones: ["Downtown","Uptown","Queens","Brooklyn","Bronx"],
     unitTemplates: [
-      { id:"ny_patrol_1", name:"NYPD Patrol P-12", role:"police", tags:["patrol","area"], speed:1.05, riskHandle:1, cost:1, zone:"Downtown" },
-      { id:"ny_patrol_2", name:"NYPD Patrol P-21", role:"police", tags:["patrol","area"], speed:1.00, riskHandle:1, cost:1, zone:"Brooklyn" },
-      { id:"ny_swat",     name:"SWAT (High Risk)", role:"police", tags:["tactical","highrisk","hostage"], speed:1.10, riskHandle:4, cost:4, zone:"Queens" },
-      { id:"ny_fbi",      name:"FBI Liaison (Federal)", role:"police", tags:["federal","cyber","organized"], speed:0.95, riskHandle:3, cost:4, zone:"Downtown" },
-      { id:"ny_sheriff",  name:"Sheriff Unit (Warrants)", role:"police", tags:["warrants","area"], speed:0.90, riskHandle:2, cost:2, zone:"Bronx" },
-      { id:"ny_ems",      name:"EMS Ambulance E-08", role:"ems", tags:["medical","ems"], speed:1.10, riskHandle:3, cost:3, zone:"Uptown" },
-      { id:"ny_fire",     name:"Fire Engine F-03", role:"fire", tags:["fire","rescue"], speed:1.00, riskHandle:3, cost:3, zone:"Queens" }
+      { id:"ny_patrol_1", name:"NYPD Patrol P-12", role:"police", tags:["patrol","area"], speed:1.05, riskHandle:1, cost:1, zone:"Downtown", unlockLevel:1 },
+      { id:"ny_patrol_2", name:"NYPD Patrol P-21", role:"police", tags:["patrol","area"], speed:1.00, riskHandle:1, cost:1, zone:"Brooklyn", unlockLevel:1 },
+
+      { id:"ny_swat",     name:"SWAT (High Risk)", role:"police", tags:["tactical","highrisk","hostage"], speed:1.10, riskHandle:4, cost:4, zone:"Queens", unlockLevel:3 },
+      { id:"ny_fbi",      name:"FBI Liaison (Federal)", role:"police", tags:["federal","organized","highrisk"], speed:0.95, riskHandle:3, cost:4, zone:"Downtown", unlockLevel:4 },
+      { id:"ny_sheriff",  name:"Sheriff Unit (Warrants)", role:"police", tags:["warrants","area"], speed:0.90, riskHandle:2, cost:2, zone:"Bronx", unlockLevel:2 },
+
+      { id:"ny_ems",      name:"EMS Ambulance E-08", role:"ems", tags:["medical","ems"], speed:1.10, riskHandle:3, cost:3, zone:"Uptown", unlockLevel:2 },
+      { id:"ny_fire",     name:"Fire Engine F-03", role:"fire", tags:["fire","rescue"], speed:1.00, riskHandle:3, cost:3, zone:"Queens", unlockLevel:2 }
     ]
   }
 };
 
-// Call pool: Each call creates an incident that must be dispatched correctly.
-// requiredTags: what dispatch expects for best outcome.
+// Incident requirements are now evaluated across MULTIPLE UNITS.
 const CALL_POOL = [
-  // Trote
   {
     id:"prank_kid",
     severity:"trote",
@@ -606,71 +841,79 @@ const CALL_POOL = [
     first: "Ô moço... tem um dinossauro na rua aqui 😂",
     steps: [
       {
-        text:"O chamador parece rindo e não fornece endereço real.",
-        options:[
+        text: "O chamador parece rindo e não fornece informações coerentes.",
+        options: [
           { label:"Confirmar endereço e natureza real", effect:{quality:+1}, next:1 },
           { label:"Despachar patrulha imediatamente", effect:{quality:-2}, end:"Você despachou sem confirmar. Recurso desperdiçado." }
         ]
       },
       {
-        text:"A pessoa responde com informações inconsistentes e muda a história.",
-        options:[
+        text: "Ele muda a história e dá um endereço inexistente.",
+        options: [
           { label:"Encerrar por trote e registrar", end:"Trote identificado. Boa triagem." },
-          { label:"Manter na linha e insistir", effect:{quality:-1}, end:"Tempo perdido. Outras chamadas podem ficar sem resposta." }
+          { label:"Insistir e manter na linha", effect:{quality:-1}, end:"Tempo perdido. Outras chamadas podem ficar sem resposta." }
         ]
       }
     ],
     incident: (city) => ({
       type:"trote",
       zone: pick(city.zones),
-      requiredTags: ["triage"],
-      baseUrgency: 0.6
+      required: {
+        anyOfTags: ["triage", "patrol"], // qualquer patrulha serve (ideal é encerrar sem despacho)
+        mustHaveTags: [],               // nada obrigatório
+        minRiskHandle: 0,
+        minUnits: 0
+      },
+      baseUrgency: 0.7
     })
   },
 
-  // Leves
   {
     id:"noise_neighbor",
     severity:"leve",
     title:"Perturbação do sossego",
     intro: (city) => `Central de emergência, ${city.name}. Qual sua ocorrência?`,
-    first:"Meu vizinho tá com som alto desde cedo. Não consigo dormir.",
-    steps:[
+    first: "Meu vizinho tá com som alto desde cedo. Não consigo dormir.",
+    steps: [
       {
-        text:"Ocorrência sem risco imediato. Precisa triagem e registro.",
-        options:[
+        text: "Ocorrência sem risco imediato. Precisa triagem e registro.",
+        options: [
           { label:"Coletar endereço e orientar", effect:{quality:+2}, next:1 },
           { label:"Enviar unidade tática", effect:{quality:-2}, end:"Resposta exagerada. Custo alto sem necessidade." }
         ]
       },
       {
-        text:"O chamador fornece endereço e confirma que não há ameaça.",
-        options:[
+        text: "O chamador confirma que não há ameaça ou armas.",
+        options: [
           { label:"Registrar como baixa prioridade", end:"Registrado. Orientação correta." },
-          { label:"Pedir que resolva sozinho", effect:{quality:-1}, end:"Postura inadequada. Reputação caiu." }
+          { label:"Mandar resolver sozinho", effect:{quality:-1}, end:"Postura inadequada. Reputação caiu." }
         ]
       }
     ],
     incident: (city) => ({
       type:"police_low",
       zone: pick(city.zones),
-      requiredTags: ["patrol","area"],
+      required: {
+        anyOfTags: ["patrol","area"],
+        mustHaveTags: [],
+        minRiskHandle: 1,
+        minUnits: 1
+      },
       baseUrgency: 1.0
     })
   },
 
-  // Médio - acidente
   {
     id:"traffic_injury",
     severity:"media",
-    title:"Acidente com feridos",
+    title:"Acidente com feridos (possível preso)",
     intro:(city)=>`Central de emergência, ${city.name}. Diga o que aconteceu.`,
     first:"Teve uma colisão e uma pessoa tá sangrando!",
     steps:[
       {
-        text:"Você precisa confirmar localização e estado das vítimas.",
+        text:"Confirme localização e número de vítimas.",
         options:[
-          { label:"Perguntar endereço e número de feridos", effect:{quality:+2}, next:1 },
+          { label:"Perguntar endereço e nº de feridos", effect:{quality:+2}, next:1 },
           { label:"Mandar aguardar e desligar", effect:{quality:-3}, end:"Erro: risco de vida sem orientação." }
         ]
       },
@@ -682,9 +925,9 @@ const CALL_POOL = [
         ]
       },
       {
-        text:"O cheiro de combustível aumentou. Pode haver risco de incêndio.",
+        text:"Cheiro de combustível aumentou. Pode haver risco de incêndio.",
         options:[
-          { label:"Orientar afastar curiosos e desligar ignição", effect:{quality:+2}, end:"Boa orientação. Agora despache unidades corretas." },
+          { label:"Orientar afastar curiosos e desligar ignição", effect:{quality:+2}, end:"Boa orientação. Agora despache RESGATE + AMBULÂNCIA." },
           { label:"Ignorar e pedir silêncio", effect:{quality:-2}, end:"Orientação fraca. Risco aumentou." }
         ]
       }
@@ -692,12 +935,17 @@ const CALL_POOL = [
     incident:(city)=>({
       type:"accident_extrication",
       zone: pick(city.zones),
-      requiredTags: ["rescue","extrication","medical","ems"], // ideal: resgate + ambulância
-      baseUrgency: 1.4
+      required: {
+        // precisa: 1 resgate/extrication + 1 ems/medical (mínimo 2 unidades)
+        anyOfTags: ["rescue","extrication","medical","ems"],
+        mustHaveTags: ["extrication","ems"],
+        minRiskHandle: 2,
+        minUnits: 2
+      },
+      baseUrgency: 1.5
     })
   },
 
-  // Grave - tiros
   {
     id:"shots_fired",
     severity:"grave",
@@ -706,36 +954,40 @@ const CALL_POOL = [
     first:"SOCORRO! Tem alguém atirando aqui perto!",
     steps:[
       {
-        text:"Você ouve gritos ao fundo. Precisa proteger o chamador e obter local.",
+        text:"Você ouve gritos ao fundo. Prioridade: segurança do chamador + local.",
         options:[
           { label:"Orientar: se abrigue e diga o local", effect:{quality:+2}, next:1 },
-          { label:"Pedir que enfrente o suspeito", effect:{quality:-4}, end:"Erro gravíssimo. Risco extremo." }
+          { label:"Pedir que confronte o suspeito", effect:{quality:-4}, end:"Erro gravíssimo. Risco extremo." }
         ]
       },
       {
-        text:"O chamador diz que o suspeito está armado e há pessoas feridas.",
+        text:"O chamador relata suspeito armado e possíveis feridos.",
         options:[
-          { label:"Perguntar descrição do suspeito e direção de fuga", effect:{quality:+2}, next:2 },
+          { label:"Perguntar descrição e direção", effect:{quality:+2}, next:2 },
           { label:"Mandar desligar e correr", effect:{quality:-2}, next:2 }
         ]
       },
       {
-        text:"A situação piora: 'Ele entrou no prédio!'",
+        text:"Situação piora: 'Ele entrou no prédio!'",
         options:[
-          { label:"Manter na linha e reforçar segurança", effect:{quality:+2}, end:"Ok. Agora o despacho precisa ser tático." },
-          { label:"Demorar perguntando detalhes irrelevantes", effect:{quality:-2}, end:"Tempo perdido. Chance de vítimas aumentou." }
+          { label:"Manter na linha e reforçar segurança", effect:{quality:+2}, end:"Ok. Despache unidade TÁTICA imediatamente." },
+          { label:"Insistir em detalhes irrelevantes", effect:{quality:-2}, end:"Tempo perdido. Chance de vítimas aumentou." }
         ]
       }
     ],
     incident:(city)=>({
       type:"active_threat",
       zone: pick(city.zones),
-      requiredTags: ["tactical","highrisk"], // ideal: ROTA/SWAT
-      baseUrgency: 1.7
+      required: {
+        anyOfTags: ["tactical","highrisk"],
+        mustHaveTags: ["tactical"],
+        minRiskHandle: 3,
+        minUnits: 1
+      },
+      baseUrgency: 1.8
     })
   },
 
-  // Grave - incêndio
   {
     id:"house_fire",
     severity:"grave",
@@ -753,7 +1005,7 @@ const CALL_POOL = [
       {
         text:"O chamador diz que há uma criança no quarto.",
         options:[
-          { label:"Orientar sair e fechar portas ao sair", effect:{quality:+2}, end:"Orientação correta. Despache bombeiros imediatamente." },
+          { label:"Orientar sair e fechar portas ao sair", effect:{quality:+2}, end:"Orientação correta. Despache BOMBEIROS." },
           { label:"Mandar voltar sozinho", effect:{quality:-4}, end:"Erro grave: risco de morte." }
         ]
       }
@@ -761,52 +1013,59 @@ const CALL_POOL = [
     incident:(city)=>({
       type:"fire",
       zone: pick(city.zones),
-      requiredTags: ["fire","rescue"],
-      baseUrgency: 1.8
+      required: {
+        anyOfTags: ["fire","rescue"],
+        mustHaveTags: ["fire"],
+        minRiskHandle: 2,
+        minUnits: 1
+      },
+      baseUrgency: 1.9
     })
   },
 
-  // Médio - bomba suspeita (usa GATE / SWAT)
   {
     id:"suspicious_package",
     severity:"media",
-    title:"Objeto suspeito",
+    title:"Objeto suspeito (possível bomba)",
     intro:(city)=>`Central de emergência, ${city.name}.`,
-    first:"Tem uma mochila abandonada na estação e tá todo mundo assustado.",
+    first:"Tem uma mochila abandonada na estação. Ouvi um bip…",
     steps:[
       {
-        text:"Você precisa isolar área e avaliar risco sem pânico.",
+        text:"Você precisa isolar área e evitar pânico.",
         options:[
           { label:"Orientar afastar pessoas e manter distância", effect:{quality:+2}, next:1 },
           { label:"Mandar alguém abrir a mochila", effect:{quality:-4}, end:"Erro crítico. Risco altíssimo." }
         ]
       },
       {
-        text:"O chamador diz que ouviu um bip. Pode ser alarme ou nada.",
+        text:"O chamador confirma que o objeto está próximo de grande fluxo.",
         options:[
-          { label:"Manter distância e aguardar equipe especializada", effect:{quality:+2}, end:"Boa decisão. Agora despacho especializado." },
-          { label:"Enviar patrulha comum só", effect:{quality:-2}, end:"Resposta possivelmente inadequada." }
+          { label:"Manter distância e aguardar equipe especializada", effect:{quality:+2}, end:"Boa decisão. Despache ANTI-BOMBA." },
+          { label:"Enviar patrulha comum apenas", effect:{quality:-2}, end:"Resposta inadequada para ameaça de bomba." }
         ]
       }
     ],
     incident:(city)=>({
       type:"bomb_threat",
       zone: pick(city.zones),
-      requiredTags: ["bomb","highrisk"], // GATE / SWAT
-      baseUrgency: 1.5
+      required: {
+        anyOfTags: ["bomb","tactical","highrisk"],
+        mustHaveTags: ["bomb"],
+        minRiskHandle: 4,
+        minUnits: 1
+      },
+      baseUrgency: 1.6
     })
   }
 ];
 
-// severity config impacts deadlines and scoring
 const SEVERITY = {
-  trote: { badge:"TROTE", pill:"warn", deadlineMs: 40_000, baseScore: 6, repDeltaOk:+2, repDeltaBad:-4 },
-  leve:  { badge:"LEVE",  pill:"ok",   deadlineMs: 55_000, baseScore: 10, repDeltaOk:+3, repDeltaBad:-6 },
-  media: { badge:"MÉDIO", pill:"warn", deadlineMs: 45_000, baseScore: 18, repDeltaOk:+4, repDeltaBad:-10 },
-  grave: { badge:"GRAVE", pill:"danger",deadlineMs: 35_000, baseScore: 28, repDeltaOk:+6, repDeltaBad:-18 }
+  trote: { badge:"TROTE", pill:"warn", deadlineMs: 45_000, baseScore: 6,  repDeltaOk:+2, repDeltaBad:-4 },
+  leve:  { badge:"LEVE",  pill:"ok",   deadlineMs: 65_000, baseScore: 10, repDeltaOk:+3, repDeltaBad:-6 },
+  media: { badge:"MÉDIO", pill:"warn", deadlineMs: 55_000, baseScore: 18, repDeltaOk:+4, repDeltaBad:-10 },
+  grave: { badge:"GRAVE", pill:"danger",deadlineMs: 45_000, baseScore: 28, repDeltaOk:+6, repDeltaBad:-18 }
 };
 
-// rank from reputation/score
 function computeRank(score, rep){
   if(rep < 20) return "Em avaliação";
   if(score < 40) return "Recruta";
@@ -816,34 +1075,37 @@ function computeRank(score, rep){
 }
 
 /* ==========================
-   Game State
+   State
 ========================== */
+let career = loadCareer();
+
 const state = {
   cityKey: "sao_paulo",
   shiftActive: false,
   shiftStart: 0,
-  shiftDurationMs: 10 * 60 * 1000, // 10 minutes
-  lastTick: 0,
+  shiftDurationMs: 10 * 60 * 1000,
 
   score: 0,
   rep: 50,
 
-  // call
   callActive: false,
   callStart: 0,
   callTimerHandle: null,
-  callQuality: 0, // influenced by choices
+  callQuality: 0,
   currentCall: null,
 
-  // incidents/units
   incidents: [],
   units: [],
   selectedIncidentId: null,
-  selectedUnitId: null,
+  selectedUnitIds: new Set(),
 
-  // stats
   resolved: 0,
   failed: 0,
+
+  // unit filters
+  unitRoleFilter: "all",
+  onlyAvailable: true,
+  unitSearch: ""
 };
 
 let incidentCounter = 1;
@@ -855,6 +1117,7 @@ const citySelect = $("citySelect");
 const startShiftBtn = $("startShiftBtn");
 const endShiftBtn = $("endShiftBtn");
 const newCallBtn = $("newCallBtn");
+const resetCareerBtn = $("resetCareerBtn");
 
 const scoreEl = $("scoreEl");
 const repEl = $("repEl");
@@ -870,6 +1133,15 @@ const callTextEl = $("callText");
 const optionsEl = $("options");
 const callHint = $("callHint");
 
+const careerLevelEl = $("careerLevelEl");
+const careerXpFill = $("careerXpFill");
+const careerXpText = $("careerXpText");
+const careerCreditsEl = $("careerCreditsEl");
+const careerBestEl = $("careerBestEl");
+const careerCityBestEl = $("careerCityBestEl");
+const careerStatsEl = $("careerStatsEl");
+const careerFailEl = $("careerFailEl");
+
 const mapTitle = $("mapTitle");
 const mapZone = $("mapZone");
 const activeIncidentsPill = $("activeIncidentsPill");
@@ -878,8 +1150,18 @@ const pinsEl = $("pins");
 const incidentListEl = $("incidentList");
 const unitListEl = $("unitList");
 const dispatchBtn = $("dispatchBtn");
+const clearUnitsBtn = $("clearUnitsBtn");
 
 const logEl = $("logEl");
+
+const unitTabs = $("unitTabs");
+const onlyAvailableChk = $("onlyAvailableChk");
+const unitSearchEl = $("unitSearch");
+const selCountEl = $("selCount");
+
+const recommendBox = $("recommendBox");
+const recommendList = $("recommendList");
+const dispatchHint = $("dispatchHint");
 
 /* ==========================
    Logging
@@ -890,27 +1172,52 @@ function log(msg){
 }
 
 /* ==========================
-   City Load
+   Career Render
+========================== */
+function renderCareer(){
+  careerLevelEl.textContent = career.level;
+  careerCreditsEl.textContent = career.credits;
+  careerBestEl.textContent = career.bestScore;
+  careerCityBestEl.textContent = `SP: ${career.cityBest.sao_paulo||0} • NY: ${career.cityBest.new_york||0}`;
+  careerStatsEl.textContent = career.totalResolved;
+  careerFailEl.textContent = `Falhas: ${career.totalFailed}`;
+  const pct = clamp(Math.floor((career.xp / career.xpToNext) * 100), 0, 100);
+  careerXpFill.style.width = pct + "%";
+  careerXpText.textContent = `XP: ${career.xp}/${career.xpToNext}`;
+
+  $("careerUnlockHint").textContent =
+    career.level < 2 ? "Nível 2: EMS + Bombeiros" :
+    career.level < 3 ? "Nível 3: Unidades táticas (ROTA/SWAT/Choque)" :
+    career.level < 4 ? "Nível 4: Anti-bomba (GATE) / Federal (FBI)" :
+    career.level < 5 ? "Nível 5: Aéreo (Águia)" :
+    "Desbloqueios máximos nesta versão (próxima fase: upgrades e compra).";
+}
+
+/* ==========================
+   City Load with Unlocks
 ========================== */
 function loadCity(cityKey){
   state.cityKey = cityKey;
   const city = CITY_CONFIG[cityKey];
   mapTitle.textContent = city.name;
   mapZone.textContent = `Zonas: ${city.zones.join(" • ")}`;
+
   state.units = city.unitTemplates.map(u => ({
     ...u,
     status: "disponível",
-    busyUntil: 0
+    busyUntil: 0,
+    locked: career.level < u.unlockLevel
   }));
 
-  // reset selections
   state.selectedIncidentId = null;
-  state.selectedUnitId = null;
+  state.selectedUnitIds = new Set();
 
   renderUnits();
   renderIncidents();
   renderPins();
-  log(`Cenário carregado: ${city.name}.`);
+  renderRecommend();
+
+  log(`Cenário carregado: ${city.name}. (Carreira nível ${career.level})`);
 }
 
 /* ==========================
@@ -920,6 +1227,7 @@ function renderStats(){
   scoreEl.textContent = state.score;
   repEl.textContent = `${state.rep} /100`;
   rankEl.textContent = computeRank(state.score, state.rep);
+  selCountEl.textContent = state.selectedUnitIds.size;
 }
 
 function renderShiftTime(){
@@ -940,6 +1248,34 @@ function severityBadge(sev){
   callBadge.className = "badge " + (s.pill === "danger" ? "badge-danger" : s.pill === "warn" ? "badge-warn" : "badge-ok");
 }
 
+function reqHintText(incident){
+  const r = incident.required;
+  const must = r.mustHaveTags || [];
+  const minUnits = r.minUnits || 1;
+
+  let parts = [];
+  if(must.includes("extrication") && must.includes("ems")){
+    parts.push("Precisa: Resgate/Desencarceramento + Ambulância (mín. 2 unidades)");
+  }
+  if(must.includes("fire")){
+    parts.push("Precisa: Bombeiros (Fire)");
+  }
+  if(must.includes("bomb")){
+    parts.push("Precisa: Anti-bomba (GATE/SWAT-bomb)");
+  }
+  if(must.includes("tactical")){
+    parts.push("Precisa: Tática (ROTA/SWAT)");
+  }
+  if(r.minRiskHandle >= 4) parts.push("Risco: Altíssimo (nível 4+)");
+  else if(r.minRiskHandle >= 3) parts.push("Risco: Alto (nível 3+)");
+  else if(r.minRiskHandle >= 2) parts.push("Risco: Médio (nível 2+)");
+
+  if(parts.length === 0){
+    parts.push(`Mínimo: ${minUnits} unidade(s) apropriada(s).`);
+  }
+  return parts.join(" • ");
+}
+
 function renderIncidents(){
   incidentListEl.innerHTML = "";
 
@@ -957,7 +1293,11 @@ function renderIncidents(){
         card.className = "card" + (state.selectedIncidentId === inc.id ? " sel" : "");
         card.onclick = ()=>{
           state.selectedIncidentId = inc.id;
+          // limpa seleção anterior (pra evitar despachar errado)
+          state.selectedUnitIds = new Set();
           renderIncidents();
+          renderUnits();
+          renderRecommend();
           updateDispatchButton();
         };
 
@@ -987,23 +1327,23 @@ function renderIncidents(){
         meta.appendChild(zonePill);
         meta.appendChild(statusPill);
 
+        const req = document.createElement("div");
+        req.className = "subtle";
+        req.textContent = reqHintText(inc);
+
         const right = document.createElement("div");
         right.className = "right";
 
         const timeLeft = Math.max(0, inc.deadlineAt - now());
         const timePill = document.createElement("span");
-        timePill.className = "pill " + (timeLeft < 10_000 ? "danger" : timeLeft < 20_000 ? "warn" : "");
+        timePill.className = "pill " + (timeLeft < 12_000 ? "danger" : timeLeft < 22_000 ? "warn" : "");
         timePill.textContent = `⏱ ${formatMMSS(timeLeft)}`;
 
-        const mini = document.createElement("div");
-        mini.className = "subtle";
-        mini.textContent = inc.requiredHint;
-
         right.appendChild(timePill);
-        right.appendChild(mini);
 
         left.appendChild(title);
         left.appendChild(meta);
+        left.appendChild(req);
 
         card.appendChild(left);
         card.appendChild(right);
@@ -1015,75 +1355,130 @@ function renderIncidents(){
   activeIncidentsPill.textContent = `${state.incidents.length} incidentes`;
 }
 
+function filteredUnits(){
+  const q = (state.unitSearch || "").trim().toLowerCase();
+  return state.units.filter(u=>{
+    if(state.unitRoleFilter !== "all" && u.role !== state.unitRoleFilter) return false;
+    if(state.onlyAvailable && u.status !== "disponível") return false;
+    if(q){
+      const hay = `${u.name} ${u.role} ${u.zone} ${u.tags.join(" ")}`.toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
 function renderUnits(){
   unitListEl.innerHTML = "";
 
-  state.units.forEach(u=>{
-    const card = document.createElement("div");
-    card.className = "card" + (state.selectedUnitId === u.id ? " sel" : "");
-    card.onclick = ()=>{
-      state.selectedUnitId = u.id;
-      renderUnits();
-      updateDispatchButton();
-    };
+  const units = filteredUnits();
+  if(units.length === 0){
+    const empty = document.createElement("div");
+    empty.className = "subtle";
+    empty.textContent = "Nenhuma unidade encontrada com os filtros.";
+    unitListEl.appendChild(empty);
+  }else{
+    units.forEach(u=>{
+      const selected = state.selectedUnitIds.has(u.id);
+      const card = document.createElement("div");
+      card.className = "card" + (selected ? " sel" : "") + (u.locked ? " locked" : "");
+      card.onclick = ()=>{
+        if(u.locked){
+          log(`🔒 Unidade bloqueada: precisa nível ${u.unlockLevel}.`);
+          return;
+        }
+        if(u.status !== "disponível"){
+          log("Unidade indisponível no momento.");
+          return;
+        }
+        if(selected) state.selectedUnitIds.delete(u.id);
+        else state.selectedUnitIds.add(u.id);
+        renderUnits();
+        renderStats();
+        updateDispatchButton();
+      };
 
-    const left = document.createElement("div");
-    left.className = "left";
+      const left = document.createElement("div");
+      left.className = "left";
 
-    const title = document.createElement("div");
-    title.className = "title";
-    title.textContent = u.name;
+      const top = document.createElement("div");
+      top.style.display = "flex";
+      top.style.gap = "8px";
+      top.style.alignItems = "center";
 
-    const meta = document.createElement("div");
-    meta.className = "meta";
+      const check = document.createElement("span");
+      check.className = "check" + (selected ? " on" : "");
+      check.textContent = selected ? "✓" : "";
+      top.appendChild(check);
 
-    const rolePill = document.createElement("span");
-    rolePill.className = "pill";
-    rolePill.textContent = u.role.toUpperCase();
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = u.name + (u.locked ? ` (Nível ${u.unlockLevel})` : "");
+      top.appendChild(title);
 
-    const zonePill = document.createElement("span");
-    zonePill.className = "pill";
-    zonePill.textContent = u.zone;
+      const meta = document.createElement("div");
+      meta.className = "meta";
 
-    const statusPill = document.createElement("span");
-    statusPill.className = "pill " + (u.status==="disponível" ? "ok" : "warn");
-    statusPill.textContent = u.status;
+      const rolePill = document.createElement("span");
+      rolePill.className = "pill";
+      rolePill.textContent = u.role.toUpperCase();
 
-    meta.appendChild(rolePill);
-    meta.appendChild(zonePill);
-    meta.appendChild(statusPill);
+      const zonePill = document.createElement("span");
+      zonePill.className = "pill";
+      zonePill.textContent = u.zone;
 
-    const right = document.createElement("div");
-    right.className = "right";
+      const statusPill = document.createElement("span");
+      statusPill.className = "pill " + (u.status==="disponível" ? "ok" : "warn");
+      statusPill.textContent = u.status;
 
-    const tags = document.createElement("div");
-    tags.className = "subtle";
-    tags.textContent = "Tags: " + u.tags.join(", ");
+      meta.appendChild(rolePill);
+      meta.appendChild(zonePill);
+      meta.appendChild(statusPill);
 
-    const cost = document.createElement("span");
-    cost.className = "pill";
-    cost.textContent = `Custo ${u.cost}`;
+      const right = document.createElement("div");
+      right.className = "right";
 
-    right.appendChild(cost);
-    right.appendChild(tags);
+      const cost = document.createElement("span");
+      cost.className = "pill";
+      cost.textContent = `Custo ${u.cost}`;
 
-    left.appendChild(title);
-    left.appendChild(meta);
+      const risk = document.createElement("span");
+      risk.className = "pill";
+      risk.textContent = `Risco ${u.riskHandle}`;
 
-    card.appendChild(left);
-    card.appendChild(right);
+      const mini = document.createElement("div");
+      mini.className = "subtle";
+      mini.textContent = "Tags: " + u.tags.join(", ");
 
-    unitListEl.appendChild(card);
-  });
+      const mini2 = document.createElement("div");
+      mini2.className = "subtle";
+      mini2.textContent = u.locked ? `Bloqueado (nível ${u.unlockLevel})` : `Velocidade ${u.speed.toFixed(2)} • Zona ${u.zone}`;
+
+      const row = document.createElement("div");
+      row.className = "minirow";
+      row.appendChild(cost);
+      row.appendChild(risk);
+
+      right.appendChild(row);
+      right.appendChild(mini);
+      right.appendChild(mini2);
+
+      left.appendChild(top);
+      left.appendChild(meta);
+
+      card.appendChild(left);
+      card.appendChild(right);
+
+      unitListEl.appendChild(card);
+    });
+  }
 }
 
 function renderPins(){
   pinsEl.innerHTML = "";
-  // place random pins for each incident
   state.incidents.forEach((inc, idx)=>{
     const p = document.createElement("div");
     p.className = "pin" + (inc.status === "resolvido" ? " ok" : "");
-    // pseudo coords
     const x = 12 + (idx*19 % 70);
     const y = 25 + (idx*23 % 55);
     p.style.left = x + "%";
@@ -1093,21 +1488,188 @@ function renderPins(){
 }
 
 function updateDispatchButton(){
-  const can = state.shiftActive &&
-              state.selectedIncidentId &&
-              state.selectedUnitId &&
-              state.incidents.some(i=>i.id===state.selectedIncidentId && i.status==="aguardando") &&
-              state.units.some(u=>u.id===state.selectedUnitId && u.status==="disponível");
+  const inc = state.incidents.find(i=>i.id===state.selectedIncidentId);
+  const hasIncident = !!inc && inc.status === "aguardando";
+  const selectedUnits = [...state.selectedUnitIds].map(id=>state.units.find(u=>u.id===id)).filter(Boolean);
+  const allAvailable = selectedUnits.length > 0 && selectedUnits.every(u => u.status === "disponível" && !u.locked);
+  const minUnits = inc ? (inc.required.minUnits || 1) : 1;
+
+  const can = state.shiftActive && hasIncident && allAvailable && selectedUnits.length >= minUnits;
   dispatchBtn.disabled = !can;
+
+  if(inc){
+    const need = reqHintText(inc);
+    dispatchHint.textContent = `Requisito do incidente: ${need}`;
+  }else{
+    dispatchHint.textContent = "Selecione um incidente para ver recomendações e requisitos.";
+  }
 }
 
 function renderAll(){
+  renderCareer();
   renderStats();
   renderShiftTime();
   renderIncidents();
   renderUnits();
   renderPins();
+  renderRecommend();
   updateDispatchButton();
+}
+
+/* ==========================
+   Recommender
+========================== */
+function incidentNeeds(inc){
+  const must = new Set(inc.required.mustHaveTags || []);
+  const minRisk = inc.required.minRiskHandle || 0;
+
+  const flags = {
+    needFire: must.has("fire"),
+    needBomb: must.has("bomb"),
+    needTactical: must.has("tactical"),
+    needExtrication: must.has("extrication"),
+    needEms: must.has("ems"),
+    minRisk
+  };
+  return flags;
+}
+
+function scoreUnitForIncident(unit, inc){
+  // higher is better
+  const must = inc.required.mustHaveTags || [];
+  const any = inc.required.anyOfTags || [];
+
+  let score = 0;
+  let why = [];
+
+  if(unit.locked) return { score:-999, why:"Bloqueado na carreira." };
+  if(unit.status !== "disponível") return { score:-999, why:"Indisponível." };
+
+  // tag matches
+  const tags = new Set(unit.tags);
+
+  let mustHits = 0;
+  must.forEach(t=>{
+    if(tags.has(t)) mustHits++;
+  });
+
+  let anyHits = 0;
+  any.forEach(t=>{
+    if(tags.has(t)) anyHits++;
+  });
+
+  score += mustHits * 30 + anyHits * 8;
+
+  if(mustHits > 0) why.push(`cobre obrigatório (${mustHits})`);
+  if(anyHits > 0) why.push(`cobre útil (${anyHits})`);
+
+  // risk capability
+  if(unit.riskHandle >= (inc.required.minRiskHandle||0)){
+    score += 15;
+    why.push(`risco ok (${unit.riskHandle})`);
+  }else{
+    score -= 30;
+    why.push(`risco baixo (${unit.riskHandle})`);
+  }
+
+  // zone advantage
+  if(unit.zone === inc.zone){
+    score += 10;
+    why.push("na mesma zona");
+  }
+
+  // speed
+  score += Math.floor((unit.speed - 1) * 40); // modest bonus
+  if(unit.speed > 1.05) why.push("rápida");
+
+  // cost penalty (avoid overkill)
+  score -= unit.cost * 6;
+
+  // severity sensitivity: in grave, speed & risk matter more
+  if(inc.severity === "grave"){
+    score += unit.riskHandle * 5;
+    score += Math.floor(unit.speed * 8);
+  }
+
+  if(why.length === 0) why.push("opção padrão");
+
+  return { score, why: why.join(" • ") };
+}
+
+function renderRecommend(){
+  const inc = state.incidents.find(i=>i.id===state.selectedIncidentId);
+  if(!inc || inc.status !== "aguardando"){
+    recommendBox.style.display = "none";
+    recommendList.innerHTML = "";
+    return;
+  }
+
+  // for multi requirements, we show top police/fire/ems candidates
+  // and let player tap to select.
+  const candidates = state.units
+    .map(u => ({ u, ...scoreUnitForIncident(u, inc) }))
+    .filter(x => x.score > -500)
+    .sort((a,b)=>b.score-a.score);
+
+  if(candidates.length === 0){
+    recommendBox.style.display = "none";
+    recommendList.innerHTML = "";
+    return;
+  }
+
+  recommendBox.style.display = "block";
+  recommendList.innerHTML = "";
+
+  // show top 4
+  candidates.slice(0,4).forEach(item=>{
+    const line = document.createElement("div");
+    line.className = "recline";
+
+    const left = document.createElement("div");
+    left.className = "recl";
+    const nm = document.createElement("div");
+    nm.className = "nm";
+    nm.textContent = item.u.name;
+
+    const why = document.createElement("div");
+    why.className = "why";
+    why.textContent = item.why;
+
+    left.appendChild(nm);
+    left.appendChild(why);
+
+    const right = document.createElement("div");
+    right.style.display = "flex";
+    right.style.gap = "8px";
+    right.style.alignItems = "center";
+
+    const pill = document.createElement("span");
+    pill.className = "pill";
+    pill.textContent = `Score ${item.score}`;
+
+    const btn = document.createElement("button");
+    btn.className = "tinybtn btn-ok";
+    btn.textContent = "Selecionar";
+    btn.onclick = (e)=>{
+      e.stopPropagation();
+      if(item.u.locked || item.u.status !== "disponível") return;
+      // toggle select
+      if(state.selectedUnitIds.has(item.u.id)) state.selectedUnitIds.delete(item.u.id);
+      else state.selectedUnitIds.add(item.u.id);
+
+      renderUnits();
+      renderStats();
+      updateDispatchButton();
+    };
+
+    right.appendChild(pill);
+    right.appendChild(btn);
+
+    line.appendChild(left);
+    line.appendChild(right);
+
+    recommendList.appendChild(line);
+  });
 }
 
 /* ==========================
@@ -1117,18 +1679,20 @@ function startShift(){
   if(state.shiftActive) return;
   state.shiftActive = true;
   state.shiftStart = now();
+
   state.score = 0;
   state.rep = 50;
   state.resolved = 0;
   state.failed = 0;
   state.incidents = [];
   state.selectedIncidentId = null;
-  state.selectedUnitId = null;
+  state.selectedUnitIds = new Set();
 
-  // reset units
+  // reset unit statuses (keep lock rules)
   state.units.forEach(u=>{
     u.status = "disponível";
     u.busyUntil = 0;
+    u.locked = career.level < u.unlockLevel;
   });
 
   callStatus.textContent = "Turno ativo — pronto para atender";
@@ -1139,12 +1703,13 @@ function startShift(){
 
   log("Turno iniciado. Central operacional.");
   ringOnce();
-  typeText(callTextEl, "Turno iniciado.\n\nClique em “Nova Chamada” para atender a próxima ligação.", 16);
+  typeText(callTextEl, "Turno iniciado.\n\nClique em “Nova Chamada” para atender.\nDepois selecione o incidente e envie 1 ou MAIS unidades.", 14);
+
   callBadge.textContent = "AGUARDANDO";
   callBadge.className = "badge";
   callTimerEl.textContent = "Tempo de chamada: --";
   optionsEl.innerHTML = "";
-  callHint.textContent = "Dica: Uma chamada bem atendida aumenta a qualidade da informação e melhora o resultado do despacho.";
+  callHint.textContent = "Dica AAA: a ligação abre o ticket e você despacha pela fila. Casos complexos pedem 2+ unidades.";
 
   renderAll();
 }
@@ -1165,18 +1730,26 @@ function endShift(reason="Turno encerrado."){
   callStatus.textContent = "Turno não iniciado";
   dispatchStatus.textContent = "Aguardando turno";
 
+  const rewards = awardShiftRewards();
+
   const summary =
 `TURNO ENCERRADO
 Motivo: ${reason}
 
-Resultados:
+Resultados do turno:
 - Pontuação: ${state.score}
 - Reputação: ${state.rep}/100
-- Incidentes resolvidos: ${state.resolved}
+- Resolvidos: ${state.resolved}
 - Falhas: ${state.failed}
 - Patente: ${computeRank(state.score, state.rep)}
 
-Dica: No próximo passo vamos adicionar modo carreira persistente (salvar progresso).`;
+Recompensas da carreira:
+- +${rewards.xp} XP
+- +${rewards.credits} Créditos
+
+Dica:
+Suba de nível para liberar unidades avançadas (Tática, Anti-bomba, Aéreo).
+`;
 
   typeText(callTextEl, summary, 12);
   callBadge.textContent = "ENCERRADO";
@@ -1194,54 +1767,25 @@ function createIncidentFromCall(call){
   const city = CITY_CONFIG[state.cityKey];
   const incSpec = call.incident(city);
 
-  const sev = call.severity;
-  const sevCfg = SEVERITY[sev];
+  const sevCfg = SEVERITY[call.severity];
   const id = `INC-${incidentCounter++}`;
-
-  // required hint is adapted by city
-  const hint = buildRequiredHint(incSpec.requiredTags);
 
   const incident = {
     id,
     title: call.title,
-    severity: sev,
+    severity: call.severity,
     zone: incSpec.zone,
-    requiredTags: incSpec.requiredTags.slice(),
-    requiredHint: hint,
+    required: incSpec.required,
     status: "aguardando",
     createdAt: now(),
     deadlineAt: now() + sevCfg.deadlineMs,
     baseUrgency: incSpec.baseUrgency,
-    dispatchedUnitId: null,
+    dispatchedUnitIds: []
   };
 
   state.incidents.push(incident);
   log(`Incidente criado (${id}): ${incident.title} [${incident.severity}] — Zona ${incident.zone}.`);
   renderAll();
-}
-
-function buildRequiredHint(requiredTags){
-  // Provide a human readable hint
-  // Important: some incidents accept multiple tags; show what matters.
-  if(requiredTags.includes("tactical") || requiredTags.includes("highrisk")){
-    return "Recomendado: unidade tática (ROTA/SWAT) + alta prioridade";
-  }
-  if(requiredTags.includes("bomb")){
-    return "Recomendado: equipe anti-bomba / crises (GATE/SWAT)";
-  }
-  if(requiredTags.includes("fire")){
-    return "Recomendado: bombeiros (fire engine) / resgate";
-  }
-  if(requiredTags.includes("extrication")){
-    return "Recomendado: resgate desencarceramento + ambulância";
-  }
-  if(requiredTags.includes("medical") || requiredTags.includes("ems")){
-    return "Recomendado: ambulância / suporte médico";
-  }
-  if(requiredTags.includes("patrol")){
-    return "Recomendado: patrulha de área";
-  }
-  return "Recomendado: triagem e unidade apropriada";
 }
 
 function startCall(){
@@ -1259,22 +1803,19 @@ function startCall(){
   const city = CITY_CONFIG[state.cityKey];
   ringOnce();
 
-  const sevCfg = SEVERITY[state.currentCall.severity];
   severityBadge(state.currentCall.severity);
 
   callStatus.textContent = "Chamada em andamento";
   callTimerEl.textContent = "Tempo de chamada: 00:00";
   optionsEl.innerHTML = "";
 
-  // create incident immediately when the call begins (realistic: CAD opens a ticket)
+  // create ticket immediately
   createIncidentFromCall(state.currentCall);
 
   const intro = `${state.currentCall.intro(city)}\n\nChamador: ${state.currentCall.first}`;
-  typeText(callTextEl, intro, 16, ()=>{
-    showCallStep(0);
-  });
+  typeText(callTextEl, intro, 14, ()=> showCallStep(0));
 
-  callHint.textContent = "Objetivo: colher info essencial e orientar. A qualidade do atendimento influencia o resultado do despacho.";
+  callHint.textContent = "A qualidade do atendimento melhora o resultado do incidente. Você pode despachar enquanto atende.";
 
   if(state.callTimerHandle) clearInterval(state.callTimerHandle);
   state.callTimerHandle = setInterval(()=>{
@@ -1286,9 +1827,7 @@ function startCall(){
     }
     const elapsed = now() - state.callStart;
     callTimerEl.textContent = `Tempo de chamada: ${formatMMSS(elapsed)}`;
-
-    // pressure: after 70s, rep penalty if still on call
-    if(elapsed > 75_000){
+    if(elapsed > 80_000){
       state.rep = clamp(state.rep - 1, 0, 100);
       renderStats();
     }
@@ -1302,26 +1841,20 @@ function showCallStep(stepIndex){
   const step = call.steps[stepIndex];
 
   optionsEl.innerHTML = "";
-
-  typeText(callTextEl, step.text, 16);
+  typeText(callTextEl, step.text, 14);
 
   step.options.forEach(opt=>{
     const b = document.createElement("button");
     b.className = "optbtn";
     b.textContent = opt.label;
     b.onclick = ()=>{
-      // apply quality effect
       if(opt.effect && typeof opt.effect.quality === "number"){
         state.callQuality += opt.effect.quality;
       }
-
-      // go next or end
       if(typeof opt.next === "number"){
         showCallStep(opt.next);
       }else{
-        // end call
-        const endText = opt.end || "Chamada encerrada.";
-        finishCall(endText);
+        finishCall(opt.end || "Chamada encerrada.");
       }
     };
     optionsEl.appendChild(b);
@@ -1331,112 +1864,101 @@ function showCallStep(stepIndex){
 function finishCall(endText){
   state.callActive = false;
   optionsEl.innerHTML = "";
+  state.callQuality = clamp(state.callQuality, -6, 10);
 
-  // quality clamp
-  state.callQuality = clamp(state.callQuality, -6, 8);
-
-  // small rep adjustment based on call quality
   if(state.callQuality >= 4) state.rep = clamp(state.rep + 1, 0, 100);
   if(state.callQuality <= -2) state.rep = clamp(state.rep - 2, 0, 100);
 
-  callStatus.textContent = "Chamada finalizada — aguarde despacho";
-  typeText(callTextEl, `${endText}\n\nQualidade do atendimento: ${state.callQuality}\n(Influenciará o resultado do incidente)`, 14);
+  callStatus.textContent = "Chamada finalizada — despache corretamente";
+  typeText(callTextEl, `${endText}\n\nQualidade do atendimento: ${state.callQuality}\n(Dica: selecione o incidente e use a recomendação.)`, 12);
 
   renderAll();
 }
 
 /* ==========================
-   Dispatch Logic
+   Multi-Dispatch Logic
 ========================== */
 function dispatchSelected(){
   const inc = state.incidents.find(i=>i.id===state.selectedIncidentId);
-  const unit = state.units.find(u=>u.id===state.selectedUnitId);
-  if(!inc || !unit) return;
-  if(inc.status !== "aguardando") return;
-  if(unit.status !== "disponível") return;
+  if(!inc || inc.status !== "aguardando") return;
 
-  // If missed deadline: auto fail
+  // check deadline
   if(now() > inc.deadlineAt){
-    failIncident(inc, "Despacho tardio: incidente estourou o prazo.");
+    failIncident(inc, "Despacho tardio: estourou o prazo.");
     renderAll();
     return;
   }
 
-  // Determine match quality: does unit have at least one of required tags?
-  const required = inc.requiredTags;
-  const unitTags = unit.tags;
+  const selectedUnits = [...state.selectedUnitIds]
+    .map(id=>state.units.find(u=>u.id===id))
+    .filter(Boolean);
 
-  // For incidents that want rescue+ems, we accept either but best if match many
-  let hits = 0;
-  required.forEach(t=>{
-    if(unitTags.includes(t)) hits++;
+  const minUnits = inc.required.minUnits || 1;
+  if(selectedUnits.length < minUnits){
+    log(`Precisa selecionar no mínimo ${minUnits} unidade(s) para este incidente.`);
+    return;
+  }
+
+  // validate availability and lock
+  if(selectedUnits.some(u => u.locked)){
+    log("Há unidade bloqueada na seleção. Suba nível para liberar.");
+    return;
+  }
+  if(selectedUnits.some(u => u.status !== "disponível")){
+    log("Há unidade indisponível na seleção.");
+    return;
+  }
+
+  // mark incident in progress
+  inc.status = "em andamento";
+  inc.dispatchedUnitIds = selectedUnits.map(u=>u.id);
+
+  // compute combined capability
+  const combined = evaluateCombinedCapability(selectedUnits, inc);
+
+  // compute travel time: use fastest selected unit adjusted by zone match
+  const baseTravel = (inc.severity==="grave" ? 18_000 : inc.severity==="media" ? 22_000 : inc.severity==="leve" ? 26_000 : 20_000);
+  const bestSpeed = Math.max(...selectedUnits.map(u=>u.speed));
+  const bestZoneMatch = selectedUnits.some(u=>u.zone === inc.zone) ? 0.85 : 1.12;
+  const travel = Math.floor(baseTravel * bestZoneMatch * (1 / bestSpeed));
+
+  // resolve time: depends on severity and capability (better = faster)
+  const resolveBase = (inc.severity==="grave" ? 26_000 : inc.severity==="media" ? 20_000 : 16_000);
+  const capabilityBoost = clamp(combined.capabilityScore / 40, 0, 0.35); // up to 35% faster
+  const resolve = Math.floor(resolveBase * (1 - capabilityBoost));
+
+  // set units busy
+  selectedUnits.forEach(u=>{
+    u.status = "em atendimento";
+    u.busyUntil = now() + travel + resolve;
   });
 
-  // callQuality influences success
-  const infoBonus = state.callQuality || 0;
+  // log
+  const names = selectedUnits.map(u=>u.name).join(" + ");
+  log(`Despacho MULTI: ${names} → ${inc.title} (${inc.id}) | ETA ~${formatMMSS(travel)} | Unidades: ${selectedUnits.length}.`);
 
-  // travel/resolve time: base on severity + unit speed + urgency
-  const sev = SEVERITY[inc.severity];
-  const baseTravel = (inc.severity==="grave" ? 18_000 : inc.severity==="media" ? 22_000 : inc.severity==="leve" ? 26_000 : 20_000);
-  const zonePenalty = (unit.zone === inc.zone) ? 0.85 : 1.12;
-  const speedFactor = 1 / unit.speed;
-  const travel = Math.floor(baseTravel * zonePenalty * speedFactor);
+  // Clear selection for next
+  state.selectedUnitIds = new Set();
+  renderUnits();
+  renderStats();
+  updateDispatchButton();
 
-  const resolveBase = (inc.severity==="grave" ? 22_000 : inc.severity==="media" ? 18_000 : 14_000);
-  const resolve = Math.floor(resolveBase * (1.0 + (inc.baseUrgency-1)*0.25));
-
-  // set unit busy
-  unit.status = "em atendimento";
-  unit.busyUntil = now() + travel + resolve;
-
-  inc.status = "em andamento";
-  inc.dispatchedUnitId = unit.id;
-
-  log(`Despacho: ${unit.name} → ${inc.title} (${inc.id}) | ETA ~${formatMMSS(travel)}.`);
-
-  // Evaluate outcome after "arrival + resolve"
+  // outcome later
   setTimeout(()=>{
-    // if shift ended, stop outcomes to avoid weirdness
     if(!state.shiftActive) return;
 
-    // outcome score:
-    // hits: 0..N
-    // infoBonus: -6..8
-    // risk handling threshold: if incident is grave and unit cannot handle highrisk => fail
-    const needsHighRisk = inc.requiredTags.includes("highrisk");
-    const needsBomb = inc.requiredTags.includes("bomb");
-    const needsFire = inc.requiredTags.includes("fire");
-    const needsExtr = inc.requiredTags.includes("extrication");
-    const needsMedical = inc.requiredTags.includes("medical") || inc.requiredTags.includes("ems");
+    // after dispatch, free units
+    selectedUnits.forEach(u=>{
+      u.status = "disponível";
+      u.busyUntil = 0;
+    });
 
-    let hardFail = false;
-    if(needsHighRisk && unit.riskHandle < 3) hardFail = true;
-    if(needsBomb && !unit.tags.includes("bomb")) hardFail = true;
-    if(needsFire && !(unit.tags.includes("fire") || unit.role==="fire")) hardFail = true;
-
-    // For extrication/medical calls: sending only patrol is poor
-    if(needsExtr && !(unit.tags.includes("extrication") || unit.tags.includes("rescue"))) hardFail = true;
-    if(needsMedical && unit.role==="police" && !unit.tags.includes("medical")) hardFail = true;
-
-    // scoring
-    const sevCfg = SEVERITY[inc.severity];
-    const base = sevCfg.baseScore;
-
-    // compute quality score
-    const qualityScore = hits * 6 + infoBonus * 2 - unit.cost * 2;
-
-    const successThreshold = (inc.severity==="grave" ? 10 : inc.severity==="media" ? 6 : 3);
-    const isSuccess = !hardFail && (qualityScore >= successThreshold);
-
-    if(isSuccess){
-      resolveIncident(inc, unit, base, qualityScore);
+    const outcome = decideOutcome(combined, inc);
+    if(outcome.success){
+      resolveIncident(inc, selectedUnits, outcome);
     }else{
-      failIncident(inc, `Despacho inadequado. Consequências no local. (Qualidade: ${qualityScore})`);
+      failIncident(inc, outcome.reason);
     }
-
-    // unit becomes available again
-    unit.status = "disponível";
-    unit.busyUntil = 0;
 
     renderAll();
   }, travel + resolve);
@@ -1444,32 +1966,118 @@ function dispatchSelected(){
   renderAll();
 }
 
-function resolveIncident(inc, unit, baseScore, qualityScore){
+function evaluateCombinedCapability(units, inc){
+  const must = inc.required.mustHaveTags || [];
+  const any = inc.required.anyOfTags || [];
+  const minRisk = inc.required.minRiskHandle || 0;
+
+  const unionTags = new Set();
+  let maxRisk = 0;
+  let totalCost = 0;
+  let zoneMatch = 0;
+
+  units.forEach(u=>{
+    u.tags.forEach(t=>unionTags.add(t));
+    maxRisk = Math.max(maxRisk, u.riskHandle);
+    totalCost += u.cost;
+    if(u.zone === inc.zone) zoneMatch += 1;
+  });
+
+  // must tags coverage:
+  // special rule: extrication + ems must be covered by possibly different units
+  let mustCovered = 0;
+  must.forEach(t=>{
+    if(unionTags.has(t)) mustCovered += 1;
+  });
+
+  // any coverage
+  let anyCovered = 0;
+  any.forEach(t=>{
+    if(unionTags.has(t)) anyCovered += 1;
+  });
+
+  // call quality helps
+  const infoBonus = clamp(state.callQuality || 0, -6, 10);
+
+  // capability score
+  let capabilityScore = 0;
+  capabilityScore += mustCovered * 40;
+  capabilityScore += anyCovered * 10;
+  capabilityScore += (maxRisk >= minRisk ? 20 : -40);
+  capabilityScore += zoneMatch > 0 ? 8 : 0;
+  capabilityScore += infoBonus * 5;
+  capabilityScore -= totalCost * 6; // cost matters, prevents always using elite
+
+  // hard requirements check
+  let hardFail = false;
+  if(maxRisk < minRisk) hardFail = true;
+
+  // if must includes extrication or ems, ensure present
+  if(must.includes("extrication") && !unionTags.has("extrication") && !unionTags.has("rescue")) hardFail = true;
+  if(must.includes("ems") && !unionTags.has("ems") && !unionTags.has("medical")) hardFail = true;
+  if(must.includes("fire") && !unionTags.has("fire")) hardFail = true;
+  if(must.includes("bomb") && !unionTags.has("bomb")) hardFail = true;
+  if(must.includes("tactical") && !unionTags.has("tactical")) hardFail = true;
+
+  return {
+    unionTags,
+    maxRisk,
+    totalCost,
+    mustCovered,
+    anyCovered,
+    infoBonus,
+    capabilityScore,
+    hardFail
+  };
+}
+
+function decideOutcome(combined, inc){
+  if(combined.hardFail){
+    return { success:false, reason:"Despacho não atendeu requisitos mínimos (tags/risco). Consequências graves." };
+  }
+
+  // thresholds by severity
+  const threshold =
+    inc.severity === "grave" ? 40 :
+    inc.severity === "media" ? 18 :
+    inc.severity === "leve" ? 6 :
+    10;
+
+  const success = combined.capabilityScore >= threshold;
+
+  if(success){
+    return { success:true, quality: combined.capabilityScore };
+  }
+
+  // not hard fail but below threshold
+  return { success:false, reason:`Despacho insuficiente (qualidade ${combined.capabilityScore} < ${threshold}).` };
+}
+
+function resolveIncident(inc, units, outcome){
   inc.status = "resolvido";
   state.resolved += 1;
 
-  // better quality gives more points
-  const bonus = clamp(Math.floor(qualityScore / 2), 0, 20);
-  const gain = baseScore + bonus;
+  const sevCfg = SEVERITY[inc.severity];
+  const base = sevCfg.baseScore;
+
+  // bonus from quality
+  const bonus = clamp(Math.floor((outcome.quality || 0) / 4), 0, 22);
+  const gain = base + bonus;
 
   state.score += gain;
-  state.rep = clamp(state.rep + SEVERITY[inc.severity].repDeltaOk, 0, 100);
+  state.rep = clamp(state.rep + sevCfg.repDeltaOk, 0, 100);
 
-  log(`✅ RESOLVIDO: ${inc.title} (${inc.id}) | Unidade: ${unit.name} | +${gain} pontos.`);
+  log(`✅ RESOLVIDO: ${inc.title} (${inc.id}) | +${gain} pontos | Unidades: ${units.length}.`);
 }
 
 function failIncident(inc, reason){
   inc.status = "falhou";
   state.failed += 1;
 
-  // penalty based on severity
-  const sevCfg = SEVERITY[inc.severity];
   const loss = inc.severity==="grave" ? 18 : inc.severity==="media" ? 12 : 8;
-
   state.score = Math.max(0, state.score - loss);
-  state.rep = clamp(state.rep + sevCfg.repDeltaBad, 0, 100);
+  state.rep = clamp(state.rep + SEVERITY[inc.severity].repDeltaBad, 0, 100);
 
-  // For grave failures, simulate fatality line
   let extra = "";
   if(inc.severity==="grave") extra = " Resultado: possível óbito / dano crítico.";
   if(inc.severity==="trote") extra = " Resultado: recurso desperdiçado por trote.";
@@ -1478,37 +2086,34 @@ function failIncident(inc, reason){
 }
 
 /* ==========================
-   Background Tick: deadlines, unit states
+   Background Tick
 ========================== */
 function tick(){
-  // update shift time
   renderShiftTime();
 
   if(state.shiftActive){
-    // handle incident deadlines
+    // deadlines
     state.incidents.forEach(inc=>{
       if(inc.status === "aguardando" && now() > inc.deadlineAt){
-        // auto-fail
         inc.status = "falhou";
         state.failed += 1;
 
-        const sevCfg = SEVERITY[inc.severity];
         const loss = inc.severity==="grave" ? 18 : inc.severity==="media" ? 12 : 8;
         state.score = Math.max(0, state.score - loss);
-        state.rep = clamp(state.rep + sevCfg.repDeltaBad, 0, 100);
+        state.rep = clamp(state.rep + SEVERITY[inc.severity].repDeltaBad, 0, 100);
 
-        log(`⏱ PRAZO ESTOURADO: ${inc.title} (${inc.id}) | -${loss} pontos. Atendimento atrasou.`);
+        log(`⏱ PRAZO ESTOURADO: ${inc.title} (${inc.id}) | -${loss} pontos. Atraso crítico.`);
       }
     });
 
-    // cleanup: remove resolved/failed incidents after some time (keep UI clean)
-    const keepMs = 45_000;
+    // cleanup
+    const keepMs = 55_000;
     state.incidents = state.incidents.filter(inc=>{
       if(inc.status === "aguardando" || inc.status === "em andamento") return true;
       return (now() - inc.createdAt) < keepMs;
     });
 
-    // show unit busy countdown subtly
+    // unit busy reset safeguard
     state.units.forEach(u=>{
       if(u.status === "em atendimento"){
         const rem = u.busyUntil - now();
@@ -1517,12 +2122,15 @@ function tick(){
           u.busyUntil = 0;
         }
       }
+      // update lock if leveled up
+      u.locked = career.level < u.unlockLevel;
     });
 
     renderStats();
     renderIncidents();
     renderUnits();
     renderPins();
+    renderRecommend();
     updateDispatchButton();
   }
 
@@ -1540,38 +2148,73 @@ startShiftBtn.addEventListener("click", startShift);
 endShiftBtn.addEventListener("click", ()=>endShift("Encerrado manualmente."));
 newCallBtn.addEventListener("click", startCall);
 dispatchBtn.addEventListener("click", dispatchSelected);
+clearUnitsBtn.addEventListener("click", ()=>{
+  state.selectedUnitIds = new Set();
+  renderUnits();
+  renderStats();
+  updateDispatchButton();
+  log("Seleção de unidades limpa.");
+});
+
+resetCareerBtn.addEventListener("click", ()=>{
+  resetCareer();
+});
+
+unitTabs.addEventListener("click", (e)=>{
+  const t = e.target.closest(".tab");
+  if(!t) return;
+  const role = t.dataset.role;
+  state.unitRoleFilter = role;
+
+  [...unitTabs.querySelectorAll(".tab")].forEach(x=>x.classList.remove("on"));
+  t.classList.add("on");
+
+  renderUnits();
+});
+
+onlyAvailableChk.addEventListener("change", ()=>{
+  state.onlyAvailable = !!onlyAvailableChk.checked;
+  renderUnits();
+});
+
+unitSearchEl.addEventListener("input", ()=>{
+  state.unitSearch = unitSearchEl.value || "";
+  renderUnits();
+});
 
 /* ==========================
    Init
 ========================== */
 (function init(){
-  // initial log and setup
-  log("Sistema carregado. Pronto para iniciar turno.");
+  renderCareer();
+  log("Sistema carregado. Carreira persistente ativa (salva no aparelho).");
   loadCity(citySelect.value);
   renderAll();
   requestAnimationFrame(tick);
 
-  // initial screen
   typeText(callTextEl,
-`Bem-vindo ao Last Call Dispatch Operator (FASE 2).
+`Bem-vindo ao Last Call Dispatch Operator (FASE 3).
 
-✅ Agora o jogo tem:
-- Turno (Iniciar/Encerrar)
-- Chamadas gerando incidentes
-- Despacho com unidades especializadas por cidade
-- Pontuação + reputação + patente
+✅ Novidades:
+- MULTI-DESPACHO (envie 2+ unidades)
+- Recomendações automáticas por incidente
+- Filtros de unidades (Polícia/Bombeiros/EMS)
+- Carreira persistente (Nível + XP + Créditos)
+- Unidades avançadas DESBLOQUEADAS por nível
 
 Como jogar:
 1) Inicie o turno
 2) Clique em “Nova Chamada”
-3) Atenda a ligação (as escolhas melhoram a qualidade)
-4) Vá em “Despacho” e selecione incidente + unidade
-5) Clique em “Despachar Unidade”
+3) Atenda e finalize
+4) Selecione o incidente
+5) Selecione 1 ou MAIS unidades (toque para marcar)
+6) Clique “Despachar Selecionadas”
 
 Dica:
-- GRAVE → Tática (ROTA/SWAT) ou Bombeiros em incêndio
-- BOMBA → GATE / equipe anti-bomba
-- ACIDENTE COM PRESOS → Resgate + Ambulância (aqui você envia uma por vez; na próxima fase vamos permitir envio múltiplo)
+Acidente com preso = Resgate + Ambulância
+Ameaça armada = Tática (ROTA/SWAT)
+Bomba = Anti-bomba (GATE) / alto risco
+Incêndio = Bombeiros (Fire)
 `, 12);
 })();
 </script>
