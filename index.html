@@ -1,20 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Last Call Dispatch Operator</title>
 
-  <link rel="stylesheet" href="./styles.css?v=40" />
+  <!-- Forçar não-cache (ajuda, mas o principal é o ?v nos scripts) -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <link rel="stylesheet" href="./styles.css?v=2025-12-26-01" />
 </head>
+
 <body>
-
-  <div id="app">
-
+  <div class="app">
     <header class="topbar">
       <div class="brand">
-        <div class="logoDot"></div>
-        <div>
+        <div class="logo"></div>
+        <div class="brandText">
           <div class="title">Last Call Dispatch Operator</div>
           <div class="subtitle">Simulador de Central de Emergência</div>
         </div>
@@ -40,117 +44,103 @@
       </div>
     </header>
 
-    <main class="layout">
+    <main class="grid">
+      <section class="card">
+        <div class="cardTitle">Configuração</div>
 
-      <!-- ESQUERDA -->
-      <section class="panel">
-        <h2 class="panelTitle">Configuração</h2>
-
-        <div class="card">
+        <div class="formRow">
           <label class="label">Cidade</label>
           <select id="citySelect" class="select"></select>
+        </div>
 
-          <label class="label mt12">Agência</label>
+        <div class="formRow">
+          <label class="label">Agência</label>
           <select id="agencySelect" class="select">
             <option value="police">Polícia</option>
             <option value="fire">Bombeiros</option>
           </select>
+        </div>
 
-          <label class="label mt12">Dificuldade</label>
+        <div class="formRow">
+          <label class="label">Dificuldade</label>
           <select id="difficultySelect" class="select">
             <option value="easy">Fácil</option>
             <option value="normal" selected>Normal</option>
-            <option value="hard">Hardcore</option>
+            <option value="hard">Difícil</option>
           </select>
-
-          <div class="row mt12">
-            <button id="btnStartShift" class="btn primary">Iniciar Turno</button>
-            <button id="btnEndShift" class="btn danger" disabled>Encerrar Turno</button>
-          </div>
-
-          <div class="hint mt10">
-            Regra do jogo: você <b>atende</b> e depois faz <b>despacho manual</b>.
-            Se for <b>trote</b>, o correto é <b>encerrar</b>.
-          </div>
         </div>
 
-        <h2 class="panelTitle mt16">Unidades</h2>
-        <div class="card">
-          <div id="unitsList" class="unitsList"></div>
-          <div class="hint mt10">Dica: cada unidade tem função (role). Enviar errado dá penalidade.</div>
+        <div class="btnRow">
+          <button id="btnStartShift" class="btnPrimary">Iniciar Turno</button>
+          <button id="btnEndShift" class="btnGhost" disabled>Encerrar Turno</button>
         </div>
 
-        <h2 class="panelTitle mt16">Registro</h2>
-        <div class="card logCard">
-          <div id="log" class="log"></div>
+        <div class="hint">
+          Regra do jogo: você <b>atende</b> e depois faz <b>despacho manual</b>. Se for trote, o correto é <b>encerrar</b>.
         </div>
       </section>
 
-      <!-- DIREITA -->
-      <section class="panel">
-        <h2 class="panelTitle">Operação</h2>
-
-        <div class="card">
-          <div class="row">
-            <div class="pill" id="pillStatus">Turno parado</div>
-            <div class="pill warn" id="pillCallTimer">Sem chamada</div>
-          </div>
-
-          <div class="split mt12">
-
-            <!-- CHAMADA -->
-            <div class="box">
-              <div class="boxTitle">📞 Chamada Atual</div>
-              <div id="callMeta" class="meta">—</div>
-              <div id="callText" class="callText">Inicie um turno para receber chamadas.</div>
-
-              <div class="row mt12">
-                <button id="btnAnswer" class="btn" disabled>Atender próxima</button>
-                <button id="btnHold" class="btn" disabled>Colocar em espera</button>
-              </div>
-            </div>
-
-            <!-- DESPACHO -->
-            <div class="box">
-              <div class="boxTitle">🚓 Despacho Manual</div>
-              <div id="dispatchInfo" class="meta">—</div>
-
-              <label class="label mt12">Escolha a unidade</label>
-              <select id="dispatchUnitSelect" class="select" disabled></select>
-
-              <div class="row mt12">
-                <button id="btnDispatch" class="btn primary" disabled>Despachar</button>
-                <button id="btnDismiss" class="btn" disabled>Encerrar chamada</button>
-              </div>
-
-              <div class="hint mt10">
-                Você pontua por escolher a unidade certa (ou encerrar trote) dentro do tempo.
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <h2 class="panelTitle mt16">Fila de Chamadas</h2>
-        <div class="card">
-          <div id="queueList" class="queueList">—</div>
-        </div>
-
-        <h2 class="panelTitle mt16">Resumo do Turno</h2>
-        <div class="card">
-          <div id="shiftSummary" class="summary">Nenhum turno ativo.</div>
-        </div>
-
+      <section class="card">
+        <div class="cardTitle">Unidades</div>
+        <div id="unitsList" class="list"></div>
+        <div class="hint">Dica: cada unidade tem função (role). Enviar errado dá penalidade.</div>
       </section>
 
+      <section class="card">
+        <div class="cardTitle">Registro</div>
+        <pre id="log" class="log"></pre>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">Operação</div>
+
+        <div class="pills">
+          <div class="pill" id="pillStatus">Turno parado</div>
+          <div class="pill pillWarn" id="pillCallTimer">Sem chamada</div>
+        </div>
+
+        <div class="subCard">
+          <div class="subTitle">📞 Chamada Atual</div>
+          <div class="meta" id="callMeta">—</div>
+          <div class="callBox" id="callText">Inicie um turno para receber chamadas.</div>
+
+          <div class="btnRow">
+            <button id="btnAnswer" class="btnPrimary" disabled>Atender próxima</button>
+            <button id="btnHold" class="btnGhost" disabled>Colocar em espera</button>
+          </div>
+        </div>
+
+        <div class="subCard">
+          <div class="subTitle">🚓 Despacho Manual</div>
+          <div class="meta" id="dispatchInfo">—</div>
+
+          <label class="label" style="margin-top:8px;">Escolha a unidade</label>
+          <select id="dispatchUnitSelect" class="select" disabled></select>
+
+          <div class="btnRow">
+            <button id="btnDispatch" class="btnPrimary" disabled>Despachar</button>
+            <button id="btnDismiss" class="btnGhost" disabled>Encerrar chamada</button>
+          </div>
+
+          <div class="hint">Você pontua por escolher a unidade certa (ou encerrar trote) dentro do tempo.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">Fila de Chamadas</div>
+        <div id="queueList" class="queue">—</div>
+      </section>
+
+      <section class="card">
+        <div class="cardTitle">Resumo do Turno</div>
+        <div id="shiftSummary" class="summary">Nenhum turno ativo.</div>
+      </section>
     </main>
   </div>
 
-  <!-- DADOS (PRECISA EXISTIR NA PASTA data) -->
-  <script src="./data/cities.js?v=40"></script>
-  <script src="./data/calls.js?v=40"></script>
-
-  <!-- GAME -->
-  <script src="./script.js?v=40"></script>
+  <!-- MUITO IMPORTANTE: ordem e cache-busting -->
+  <script src="./data/cities.js?v=2025-12-26-01"></script>
+  <script src="./data/calls.js?v=2025-12-26-01"></script>
+  <script src="./script.js?v=2025-12-26-01"></script>
 </body>
 </html>
