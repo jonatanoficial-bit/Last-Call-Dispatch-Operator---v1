@@ -1,11 +1,88 @@
 // data/calls.js
 // Banco de chamadas com perguntas (FASE A).
-// Cada chamada tem "truth" (verdade real) e "questions" (o que o jogador pode descobrir).
-// IMPORTANTE: Não é aconselhamento real de emergência. Conteúdo educativo/simulador.
+// Todas as chamadas aqui possuem questions.address/situation/danger definidas.
 
 window.CALLS = [
   // =========================
-  // BRASIL - POLÍCIA (190)
+  // BRASIL - POLÍCIA (190) - LEVES
+  // =========================
+  {
+    id: "br_pol_lost_child_01",
+    locale: "BR",
+    title: "Criança perdida em local público",
+    severity: "leve",
+    text: "Perdi meu filho por alguns minutos no shopping. Estou na entrada principal.",
+    truth: {
+      type: "police",
+      isPrank: false,
+      address: "Shopping Aurora - Entrada Principal",
+      situation: "Responsável perdeu contato visual com a criança. Local público com grande fluxo.",
+      danger: "Risco moderado (criança pode se afastar). Não há ameaça direta relatada.",
+      flags: { weapon: false, injured: false, fire: false, multiple: false }
+    },
+    recommended: {
+      police: ["pm_area"], // patrulha/área resolve
+      fire: []
+    },
+    questions: {
+      required: ["address", "situation", "danger"],
+      address: {
+        q: "Perguntar: Qual é o local exato (shopping/entrada/andar)?",
+        a: "É no Shopping Aurora, entrada principal. Eu tô bem na porta da frente."
+      },
+      situation: {
+        q: "Perguntar: Como a criança se perdeu e há quanto tempo?",
+        a: "Foi rapidinho, uns 3 minutos. Eu virei e ele sumiu no meio das pessoas."
+      },
+      danger: {
+        q: "Perguntar: Idade/roupa da criança e se alguém suspeito se aproximou?",
+        a: "Ele tem 6 anos, camiseta azul e tênis branco. Não vi ninguém suspeito."
+      },
+      optional: [
+        {
+          id: "desc",
+          q: "Perguntar: Nome da criança e características (altura/cabelo)?",
+          a: "O nome dele é Lucas, baixinho, cabelo castanho curto.",
+          reveals: { description: true }
+        },
+        {
+          id: "last_seen",
+          q: "Perguntar: Onde foi visto pela última vez?",
+          a: "Perto da praça de alimentação, do lado do quiosque de sorvete.",
+          reveals: { lastSeen: true }
+        }
+      ]
+    }
+  },
+
+  {
+    id: "br_pol_noise_01",
+    locale: "BR",
+    title: "Perturbação do sossego (som alto)",
+    severity: "leve",
+    text: "Meu vizinho está com som altíssimo e não deixa ninguém dormir.",
+    truth: {
+      type: "police",
+      isPrank: false,
+      address: "Rua das Acácias, 88 - Apto 12",
+      situation: "Som alto em residência/apartamento. Possível conflito entre vizinhos.",
+      danger: "Baixo risco imediato, mas pode escalar para discussão/agressão.",
+      flags: { weapon: false, injured: false, fire: false, multiple: false }
+    },
+    recommended: { police: ["pm_area"], fire: [] },
+    questions: {
+      required: ["address", "situation", "danger"],
+      address: { q: "Perguntar: Qual o endereço exato?", a: "Rua das Acácias, 88, apartamento 12." },
+      situation: { q: "Perguntar: O que está acontecendo?", a: "Som muito alto e gritaria desde cedo." },
+      danger: { q: "Perguntar: Houve ameaça ou briga?", a: "Ainda não, mas já discutimos e ele xingou." },
+      optional: [
+        { id: "time", q: "Perguntar: Há quanto tempo está assim?", a: "Há umas 2 horas.", reveals: { duration: true } }
+      ]
+    }
+  },
+
+  // =========================
+  // BRASIL - POLÍCIA (190) - MÉDIOS / GRAVES
   // =========================
   {
     id: "br_pol_suspect_01",
@@ -21,10 +98,7 @@ window.CALLS = [
       danger: "Possível tentativa de invasão. Chamador está dentro da casa.",
       flags: { weapon: false, injured: false, fire: false, multiple: false }
     },
-    recommended: {
-      police: ["pm_area"], // patrulhamento de área resolve na maioria
-      fire: []
-    },
+    recommended: { police: ["pm_area"], fire: [] },
     questions: {
       required: ["address", "situation", "danger"],
       address: {
@@ -37,11 +111,11 @@ window.CALLS = [
       },
       danger: {
         q: "Perguntar: Há risco imediato? Você está segura aí dentro?",
-        a: "Estou trancada. Ele ainda está aqui fora. Não consigo ver se tem arma."
+        a: "Estou trancada. Ele ainda está aqui fora. Não vi arma, mas tô com medo."
       },
       optional: [
-        { id: "weapon", q: "Perguntar: Você viu alguma arma?", a: "Não vi arma. Mas ele está com as mãos no bolso e olhando pros lados.", reveals: { weaponUnknown: true } },
-        { id: "desc", q: "Perguntar: Descreva a pessoa (roupa, altura).", a: "Homem alto, moletom escuro, boné. Parece estar nervoso.", reveals: { description: true } }
+        { id: "weapon", q: "Perguntar: Você viu alguma arma?", a: "Não vi arma. Ele está com as mãos no bolso.", reveals: { weaponUnknown: true } },
+        { id: "desc", q: "Perguntar: Descreva a pessoa (roupa, altura).", a: "Homem alto, moletom escuro, boné.", reveals: { description: true } }
       ]
     }
   },
@@ -60,27 +134,15 @@ window.CALLS = [
       danger: "Risco imediato de morte. Suspeitos armados e agressivos.",
       flags: { weapon: true, injured: false, fire: false, multiple: true }
     },
-    recommended: {
-      police: ["rota", "choque"], // força tática / controle
-      fire: []
-    },
+    recommended: { police: ["rota", "choque"], fire: [] },
     questions: {
       required: ["address", "situation", "danger"],
-      address: {
-        q: "Perguntar: Qual é o endereço exato?",
-        a: "Avenida Central, número 55, loja de eletrônicos, bem em frente ao ponto de ônibus."
-      },
-      situation: {
-        q: "Perguntar: O que está acontecendo agora?",
-        a: "Dois homens estão pegando tudo, gritando e mandando deitar no chão."
-      },
-      danger: {
-        q: "Perguntar: Tem arma? Alguém ferido?",
-        a: "Sim, um deles está com uma pistola. Ninguém ferido ainda, mas estão muito agressivos."
-      },
+      address: { q: "Perguntar: Qual é o endereço exato?", a: "Avenida Central, 55, loja de eletrônicos, em frente ao ponto." },
+      situation: { q: "Perguntar: O que está acontecendo agora?", a: "Dois homens pegando tudo, gritando e mandando deitar no chão." },
+      danger: { q: "Perguntar: Tem arma? Alguém ferido?", a: "Sim, um com pistola. Ninguém ferido ainda, mas estão agressivos." },
       optional: [
-        { id: "suspects", q: "Perguntar: Quantos suspeitos e como estão vestidos?", a: "São dois. Um com jaqueta cinza, outro com camisa preta. Um tem tatuagem no braço.", reveals: { multiple: true } },
-        { id: "hostages", q: "Perguntar: Tem reféns / pessoas presas?", a: "Tem uns clientes no chão. Acho que ninguém preso em sala fechada.", reveals: { hostages: true } }
+        { id: "suspects", q: "Perguntar: Quantos suspeitos e como estão vestidos?", a: "Dois. Um jaqueta cinza, outro camisa preta. Um tem tatuagem.", reveals: { multiple: true } },
+        { id: "hostages", q: "Perguntar: Tem reféns / pessoas presas?", a: "Tem clientes no chão. Acho que ninguém trancado.", reveals: { hostages: true } }
       ]
     }
   },
@@ -99,26 +161,14 @@ window.CALLS = [
       danger: "Possível artefato explosivo. Necessidade de isolamento.",
       flags: { weapon: true, injured: false, fire: false, multiple: false }
     },
-    recommended: {
-      police: ["gate", "choque"], // GATE antibomba + choque para isolamento
-      fire: []
-    },
+    recommended: { police: ["gate", "choque"], fire: [] },
     questions: {
       required: ["address", "situation", "danger"],
-      address: {
-        q: "Perguntar: Onde exatamente está o objeto?",
-        a: "Na entrada principal, ao lado da porta giratória. Rua do Comércio, 900."
-      },
-      situation: {
-        q: "Perguntar: Por que suspeitam que é perigoso?",
-        a: "O segurança viu fios aparentes e tem gente dizendo que ouviram um bip."
-      },
-      danger: {
-        q: "Perguntar: Tem gente perto? Dá pra isolar?",
-        a: "Tem muita gente entrando e saindo. O segurança está tentando afastar, mas tá difícil."
-      },
+      address: { q: "Perguntar: Onde exatamente está o objeto?", a: "Na entrada principal, Rua do Comércio, 900, ao lado da porta." },
+      situation: { q: "Perguntar: Por que suspeitam que é perigoso?", a: "O segurança viu fios aparentes e disseram que ouviram bip." },
+      danger: { q: "Perguntar: Tem gente perto? Dá pra isolar?", a: "Tem muita gente. Segurança tenta afastar, mas tá difícil." },
       optional: [
-        { id: "evac", q: "Perguntar: O prédio já foi evacuado?", a: "Ainda não, só mandaram as pessoas se afastarem da entrada.", reveals: { evacuation: false } }
+        { id: "evac", q: "Perguntar: O prédio já foi evacuado?", a: "Ainda não, só afastaram da entrada.", reveals: { evacuation: false } }
       ]
     }
   },
@@ -137,24 +187,12 @@ window.CALLS = [
       danger: "Sem risco real.",
       flags: { weapon: false, injured: false, fire: false, multiple: false }
     },
-    recommended: {
-      police: [],
-      fire: []
-    },
+    recommended: { police: [], fire: [] },
     questions: {
-      required: ["address", "situation"], // “danger” pode ser opcional em trote
-      address: {
-        q: "Perguntar: Qual é o endereço?",
-        a: "Ah… é… na rua da sua casa! (risos) — (som de gente ao fundo)."
-      },
-      situation: {
-        q: "Perguntar: O que aconteceu?",
-        a: "Tem um dinossauro! (risadas altas)."
-      },
-      danger: {
-        q: "Perguntar: Há alguém ferido? Qual o risco?",
-        a: "Ferido nada, tio… (mais risadas)."
-      },
+      required: ["address", "situation"],
+      address: { q: "Perguntar: Qual é o endereço?", a: "Ah… é… na rua da sua casa! (risos) — tem gente ao fundo." },
+      situation: { q: "Perguntar: O que aconteceu?", a: "Tem um dinossauro! (risadas altas)." },
+      danger: { q: "Perguntar: Há alguém ferido? Qual o risco?", a: "Ferido nada, tio… (mais risadas)." },
       optional: [
         { id: "callback", q: "Perguntar: Qual seu nome e número para retorno?", a: "… (desligou)", reveals: { hungUp: true } }
       ]
@@ -178,26 +216,14 @@ window.CALLS = [
       danger: "Risco de propagação e intoxicação por fumaça.",
       flags: { weapon: false, injured: false, fire: true, multiple: false }
     },
-    recommended: {
-      police: ["pm_area"],
-      fire: ["fire_engine", "rescue"]
-    },
+    recommended: { police: ["pm_area"], fire: ["fire_engine", "rescue"] },
     questions: {
       required: ["address", "situation", "danger"],
-      address: {
-        q: "Perguntar: Qual o endereço e apartamento?",
-        a: "Rua Horizonte, 1200, Bloco B, apartamento 34. O cheiro tá forte!"
-      },
-      situation: {
-        q: "Perguntar: Você vê fogo ou só fumaça?",
-        a: "Eu vejo fumaça saindo pela porta. Não consigo ver chama daqui."
-      },
-      danger: {
-        q: "Perguntar: Tem gente lá dentro? Alguém passou mal?",
-        a: "Acho que o vizinho está lá dentro. Tem gente tossindo no corredor!"
-      },
+      address: { q: "Perguntar: Qual o endereço e apartamento?", a: "Rua Horizonte, 1200, Bloco B, apartamento 34." },
+      situation: { q: "Perguntar: Você vê fogo ou só fumaça?", a: "Só fumaça saindo pela porta. Não vejo chama daqui." },
+      danger: { q: "Perguntar: Tem gente lá dentro? Alguém passou mal?", a: "Acho que ele tá lá dentro. Gente tossindo no corredor." },
       optional: [
-        { id: "gas", q: "Perguntar: Você sente cheiro de gás?", a: "Sim, um pouco. Parece gás mesmo!", reveals: { gas: true } }
+        { id: "gas", q: "Perguntar: Você sente cheiro de gás?", a: "Sim, parece gás!", reveals: { gas: true } }
       ]
     }
   },
@@ -219,90 +245,14 @@ window.CALLS = [
       danger: "Risco imediato de asfixia.",
       flags: { weapon: false, injured: true, fire: false, multiple: false }
     },
-    recommended: {
-      police: ["pm_area"],
-      fire: ["ambulance", "rescue"]
-    },
+    recommended: { police: ["pm_area"], fire: ["ambulance", "rescue"] },
     questions: {
       required: ["address", "situation", "danger"],
-      address: {
-        q: "Ask: What's the exact address?",
-        a: "24 Maple Street, apartment 2! Please hurry!"
-      },
-      situation: {
-        q: "Ask: Is he choking on food? Can he speak or cough?",
-        a: "He was eating meat… he can't speak, he can't cough!"
-      },
-      danger: {
-        q: "Ask: Is he conscious? Is he turning blue?",
-        a: "He's still conscious but getting worse—his face is changing color!"
-      },
+      address: { q: "Ask: What's the exact address?", a: "24 Maple Street, apartment 2! Please hurry!" },
+      situation: { q: "Ask: Can he speak or cough?", a: "No! He can't speak, he can't cough!" },
+      danger: { q: "Ask: Is he conscious? Turning blue?", a: "Still conscious but getting worse—color is changing!" },
       optional: [
-        { id: "instructions", q: "Give instructions: Are you able to do abdominal thrusts (Heimlich)?", a: "I think so—tell me what to do!", reveals: { preArrival: true } }
-      ]
-    }
-  },
-
-  // =========================
-  // EU - 112
-  // =========================
-  {
-    id: "eu_pol_domestic_01",
-    locale: "EU",
-    title: "Violência doméstica (gritos e ameaça)",
-    severity: "grave",
-    text: "112, emergency… I can hear screaming next door. I think someone is being attacked!",
-    truth: {
-      type: "police",
-      isPrank: false,
-      address: "12 River Road, Flat 5",
-      situation: "Gritos e possível agressão doméstica.",
-      danger: "Risco imediato, possível agressor armado com objeto.",
-      flags: { weapon: false, injured: true, fire: false, multiple: false }
-    },
-    recommended: {
-      police: ["pm_area", "choque"],
-      fire: []
-    },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: { q: "Ask: What's the address / building / flat?", a: "River Road 12, flat 5. I'm in flat 4." },
-      situation: { q: "Ask: What exactly do you hear or see?", a: "Loud screams and banging. A man shouting threats." },
-      danger: { q: "Ask: Any weapons? Any injuries?", a: "I can't see a weapon, but the screams sound like someone is hurt!" },
-      optional: [
-        { id: "children", q: "Ask: Are there children involved?", a: "Yes—there's a child crying.", reveals: { children: true } }
-      ]
-    }
-  },
-
-  // =========================
-  // AU - 000 (Triagem)
-  // =========================
-  {
-    id: "au_000_fire_01",
-    locale: "AU",
-    title: "000 - Preciso de Bombeiros (fogo em mato)",
-    severity: "medio",
-    text: "000… I need Fire, there’s a grass fire near the road!",
-    truth: {
-      type: "fire",
-      isPrank: false,
-      address: "Near Highway 3, Mile 18",
-      situation: "Fogo em vegetação próximo à via.",
-      danger: "Risco de espalhar com vento e atingir carros.",
-      flags: { weapon: false, injured: false, fire: true, multiple: false }
-    },
-    recommended: {
-      police: ["pm_area"],
-      fire: ["fire_engine"]
-    },
-    questions: {
-      required: ["address", "situation", "danger"],
-      address: { q: "Ask: Where exactly is it (nearest marker)?", a: "Highway 3, around mile 18, close to the gas station!" },
-      situation: { q: "Ask: How big is the fire? Flames or smoke?", a: "Small flames but spreading fast in the dry grass." },
-      danger: { q: "Ask: Is anyone trapped or cars in danger?", a: "Cars are slowing down; the smoke is crossing the road." },
-      optional: [
-        { id: "wind", q: "Ask: Wind direction / speed?", a: "Wind is strong, pushing it toward the trees!", reveals: { wind: true } }
+        { id: "instructions", q: "Give instructions: Are you able to do abdominal thrusts?", a: "I think so—tell me what to do!", reveals: { preArrival: true } }
       ]
     }
   }
