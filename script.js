@@ -1,10 +1,9 @@
 /* =========================================================
-   Last Call Dispatch Operator - Fase 2B (DINÂMICAS)
-   - Perguntas dinâmicas por caso (CALLS.protocol.questions)
-   - Despacho só libera após perguntas obrigatórias (required)
-   - Severidade evolui (baseSeverity + efeitos das perguntas)
-   - Fila pausa enquanto há chamada ativa (mobile-friendly)
-   - Chamada ativa não some: se atrasar => penaliza, mas continua
+   Last Call Dispatch Operator - Fase 2C
+   - Resultados reais (sucesso/falha/agravamento)
+   - Relatório pós-chamada (painel)
+   - Carreira inicial: XP + Rank + Advertências
+   - Mantém: perguntas dinâmicas + despacho bloqueado até protocolo
    ========================================================= */
 
 (function () {
@@ -17,6 +16,13 @@
   const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
   const pad2 = (n) => String(n).padStart(2, "0");
   const fmtTime = (sec) => `${pad2(Math.floor(sec / 60))}:${pad2(sec % 60)}`;
+  const escapeHtml = (str) =>
+    String(str ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
 
   function nowStamp() {
     const d = new Date();
@@ -42,16 +48,6 @@
       setTimeout(tick, speed);
     }
     tick();
-  }
-
-  // Escape
-  function escapeHtml(str) {
-    return String(str ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
   }
 
   // ----------------------------
@@ -91,13 +87,11 @@
     shiftSummary: $("shiftSummary"),
   };
 
-  // Cria UI dinâmica de perguntas dentro da área de Operação
+  // Painel dinâmico (perguntas)
   function ensureDynamicQuestionsUI() {
     let panel = document.getElementById("dynamicQuestionsPanel");
     if (panel) return panel;
 
-    // tenta colocar dentro do card "Operação"
-    // Achando o card que contém "Operação" pelo botão de despacho ou callText
     const operationCard = el.callText ? el.callText.closest(".card") : null;
     if (!operationCard) return null;
 
@@ -109,11 +103,10 @@
       <div class="meta" id="dqMeta">Nenhuma chamada ativa</div>
       <div id="dqButtons" class="btnRow" style="margin-top:8px;"></div>
       <div class="hint" id="dqHint" style="margin-top:10px;">
-        Dica: Faça as perguntas obrigatórias para liberar o despacho. Em casos graves, priorize endereço e risco.
+        Faça as perguntas obrigatórias para liberar o despacho.
       </div>
     `;
 
-    // Inserir após a subCard da chamada (a primeira subCard dentro do card Operação)
     const subCards = operationCard.querySelectorAll(".subCard");
     if (subCards && subCards.length) {
       subCards[0].insertAdjacentElement("afterend", panel);
@@ -123,19 +116,52 @@
     return panel;
   }
 
-  const dq = {
-    panel: null,
-    meta: null,
-    buttons: null,
-    hint: null,
-  };
+  // Painel dinâmico (RELATÓRIO)
+  function ensureReportUI() {
+    let panel = document.getElementById("reportPanel");
+    if (panel) return panel;
+
+    const operationCard = el.callText ? el.callText.closest(".card") : null;
+    if (!operationCard) return null;
+
+    panel = document.createElement("div");
+    panel.id = "reportPanel";
+    panel.className = "subCard";
+    panel.style.marginTop = "12px";
+    panel.innerHTML = `
+      <div class="subTitle">Relatório da Ocorrência</div>
+      <div class="meta" id="rpMeta">Nenhum relatório ainda</div>
+      <div id="rpBody" style="margin-top:8px; font-size:13px; color:rgba(233,240,255,0.85); line-height:1.4;">
+        Atenda uma chamada e finalize para gerar relatório.
+      </div>
+      <div id="rpCareer" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
+    `;
+
+    // coloca abaixo do painel de perguntas, se existir
+    const dqPanel = document.getElementById("dynamicQuestionsPanel");
+    if (dqPanel) dqPanel.insertAdjacentElement("afterend", panel);
+    else operationCard.appendChild(panel);
+
+    return panel;
+  }
+
+  const dq = { panel: null, meta: null, buttons: null, hint: null };
+  const rp = { panel: null, meta: null, body: null, career: null };
 
   function bindDynamicUI() {
     dq.panel = ensureDynamicQuestionsUI();
-    if (!dq.panel) return;
-    dq.meta = document.getElementById("dqMeta");
-    dq.buttons = document.getElementById("dqButtons");
-    dq.hint = document.getElementById("dqHint");
+    if (dq.panel) {
+      dq.meta = document.getElementById("dqMeta");
+      dq.buttons = document.getElementById("dqButtons");
+      dq.hint = document.getElementById("dqHint");
+    }
+
+    rp.panel = ensureReportUI();
+    if (rp.panel) {
+      rp.meta = document.getElementById("rpMeta");
+      rp.body = document.getElementById("rpBody");
+      rp.career = document.getElementById("rpCareer");
+    }
   }
 
   // ----------------------------
@@ -164,7 +190,7 @@
   // ----------------------------
   const state = {
     shiftActive: false,
-    pauseQueueWhileActiveCall: true, // regra do modo B (mobile)
+    pauseQueueWhileActiveCall: true, // modo B
     difficulty: "normal",
     agency: "police",
     cityId: null,
@@ -175,6 +201,18 @@
     queue: [],
     activeCall: null,
     units: [],
+
+    lastReport: null,
+
+    // Carreira
+    career: {
+      xp: 0,
+      rank: "Recruta",
+      warnings: 0,
+      totalSuccess: 0,
+      totalFail: 0,
+      totalLivesSaved: 0,
+    },
 
     stats: {
       handled: 0,
@@ -193,47 +231,13 @@
 
   let uidCounter = 0;
 
-  // callInstance:
-  // {
-  //   uid, def,
-  //   severity, confidenceTrote,
-  //   queueTTL, callTTL,
-  //   overdue, overduePenalized,
-  //   asked: { [questionId]: true },
-  //   dispatchUnlocked
-  // }
-  function makeCallInstance(def) {
-    uidCounter += 1;
-
-    const baseSev = (def.baseSeverity || "leve").toLowerCase();
-    const inst = {
-      uid: `call_${uidCounter}_${Date.now()}`,
-      def,
-      severity: baseSev,
-      confidenceTrote: baseSev === "trote" ? 2 : 0,
-
-      queueTTL: queueTTLBySeverity(baseSev, state.difficulty),
-      callTTL: callTTLBySeverity(baseSev, state.difficulty),
-
-      overdue: false,
-      overduePenalized: false,
-
-      asked: {},
-      dispatchUnlocked: false,
-    };
-    return inst;
-  }
-
-  // ----------------------------
-  // Log
-  // ----------------------------
   function log(msg) {
     if (!el.log) return;
     el.log.textContent = `${nowStamp()} ${msg}\n` + el.log.textContent;
   }
 
   // ----------------------------
-  // Severidade / Score
+  // Severidade / Score / Rank
   // ----------------------------
   function humanSeverity(sev) {
     const s = String(sev || "leve").toLowerCase();
@@ -259,8 +263,34 @@
     return `<span class="pill" style="border-color:rgba(60,220,160,0.25); box-shadow:0 0 0 1px rgba(60,220,160,0.10)">LEVE</span>`;
   }
 
+  function rankByXp(xp) {
+    if (xp >= 220) return "Supervisor";
+    if (xp >= 120) return "Sênior";
+    if (xp >= 50) return "Operador";
+    return "Recruta";
+  }
+
+  function addXp(amount) {
+    state.career.xp = clamp(state.career.xp + amount, 0, 999999);
+    const newRank = rankByXp(state.career.xp);
+    if (newRank !== state.career.rank) {
+      state.career.rank = newRank;
+      log(`🏅 Promoção: agora você é ${newRank}!`);
+    }
+  }
+
+  function addWarning(reason) {
+    state.career.warnings += 1;
+    log(`⚠️ ADVERTÊNCIA (${state.career.warnings}/3): ${reason}`);
+    if (state.career.warnings >= 3) {
+      // demissão virtual do turno
+      log("🛑 DEMISSÃO VIRTUAL: 3 advertências no turno. Turno encerrado.");
+      endShift();
+    }
+  }
+
   // ----------------------------
-  // Timers (fila e chamada ativa)
+  // Timers
   // ----------------------------
   function spawnIntervalByDifficulty(diff) {
     if (diff === "easy") return 10;
@@ -275,10 +305,8 @@
     if (s === "medio") base = 30;
     if (s === "grave") base = 25;
     if (s === "trote") base = 20;
-
     if (diff === "easy") base += 10;
     if (diff === "hard") base -= 5;
-
     return clamp(base, 10, 90);
   }
 
@@ -289,15 +317,13 @@
     if (s === "medio") base = 60;
     if (s === "grave") base = 75;
     if (s === "trote") base = 40;
-
     if (diff === "easy") base += 15;
     if (diff === "hard") base -= 10;
-
     return clamp(base, 25, 180);
   }
 
   // ----------------------------
-  // Linha / Abertura
+  // Abertura por região
   // ----------------------------
   function lineByRegion(region, agency) {
     const r = (region || "BR").toUpperCase();
@@ -321,7 +347,7 @@
   }
 
   // ----------------------------
-  // Unidades (roles)
+  // Unidades
   // ----------------------------
   function getUnitsFor(cityId, agency) {
     if (agency === "police") {
@@ -428,7 +454,154 @@
   }
 
   // ----------------------------
-  // UI: HUD / Pills / Queue / Summary
+  // Protocolo / Instância de chamada
+  // ----------------------------
+  function getProtocolDef(callDef) {
+    return callDef && callDef.protocol ? callDef.protocol : { required: [], questions: [] };
+  }
+
+  function makeCallInstance(def) {
+    uidCounter += 1;
+    const baseSev = (def.baseSeverity || "leve").toLowerCase();
+    return {
+      uid: `call_${uidCounter}_${Date.now()}`,
+      def,
+      severity: baseSev,
+      confidenceTrote: baseSev === "trote" ? 2 : 0,
+
+      queueTTL: queueTTLBySeverity(baseSev, state.difficulty),
+      callTTL: callTTLBySeverity(baseSev, state.difficulty),
+
+      overdue: false,
+      overduePenalized: false,
+
+      asked: {},
+      dispatchUnlocked: false,
+      timeToDispatch: 0, // tempo de atendimento (seg)
+      startedAt: state.timeSec,
+    };
+  }
+
+  function updateDispatchUnlock() {
+    if (!state.activeCall) return;
+    const protocol = getProtocolDef(state.activeCall.def);
+    const required = Array.isArray(protocol.required) ? protocol.required : [];
+    const ok = required.every((qid) => !!state.activeCall.asked[qid]);
+    state.activeCall.dispatchUnlocked = ok;
+  }
+
+  function applyQuestionEffect(effect) {
+    if (!state.activeCall || !effect) return;
+
+    if (typeof effect.confidenceTrote === "number") {
+      state.activeCall.confidenceTrote += effect.confidenceTrote;
+      state.activeCall.confidenceTrote = clamp(state.activeCall.confidenceTrote, 0, 10);
+    }
+
+    if (effect.severity) {
+      const rank = { trote: 0, leve: 1, medio: 2, grave: 3 };
+      const cur = state.activeCall.severity || "leve";
+      const next = String(effect.severity).toLowerCase();
+      if (rank[next] >= rank[cur]) state.activeCall.severity = next;
+    }
+  }
+
+  // ----------------------------
+  // Perguntas dinâmicas (UI)
+  // ----------------------------
+  function askQuestion(questionId) {
+    if (!state.shiftActive || !state.activeCall) return;
+    const protocol = getProtocolDef(state.activeCall.def);
+    const q = (protocol.questions || []).find((x) => x.id === questionId);
+    if (!q) return;
+
+    if (state.activeCall.asked[questionId]) {
+      log(`ℹ️ Pergunta já feita: ${q.label}`);
+      return;
+    }
+
+    state.activeCall.asked[questionId] = true;
+    state.score += 1; // micro-recompensa educativa
+    applyQuestionEffect(q.effect);
+
+    log(`🧾 Perguntou: ${q.label} (+1)`);
+    updateDispatchUnlock();
+    renderActiveCall();
+    renderDynamicQuestions();
+    renderAll();
+  }
+
+  function renderDynamicQuestions() {
+    if (!dq.panel || !dq.meta || !dq.buttons || !dq.hint) return;
+
+    if (!state.activeCall) {
+      dq.meta.textContent = "Nenhuma chamada ativa";
+      dq.buttons.innerHTML = "";
+      dq.hint.textContent = "Faça as perguntas obrigatórias para liberar o despacho.";
+      return;
+    }
+
+    const protocol = getProtocolDef(state.activeCall.def);
+    const required = Array.isArray(protocol.required) ? protocol.required : [];
+    const questions = Array.isArray(protocol.questions) ? protocol.questions : [];
+
+    const checklist = required.map((qid) => (state.activeCall.asked[qid] ? `✅ ${qid}` : `⬜ ${qid}`)).join(" | ");
+    dq.meta.textContent = `Obrigatórias: ${checklist || "nenhuma"} • Gravidade atual: ${humanSeverity(state.activeCall.severity)}`;
+
+    dq.buttons.innerHTML = questions
+      .map((q) => {
+        const asked = !!state.activeCall.asked[q.id];
+        const cls = asked ? "btnGhost" : "btnPrimary";
+        const disabled = asked ? "disabled" : "";
+        return `<button class="${cls}" data-qid="${escapeHtml(q.id)}" ${disabled}>${escapeHtml(q.label)}</button>`;
+      })
+      .join("");
+
+    dq.hint.textContent = state.activeCall.def.hint || "Colete dados, libere despacho e envie a unidade correta.";
+
+    const btns = dq.buttons.querySelectorAll("button[data-qid]");
+    btns.forEach((b) => {
+      b.addEventListener("click", () => {
+        const qid = b.getAttribute("data-qid");
+        askQuestion(qid);
+      });
+    });
+  }
+
+  // ----------------------------
+  // Relatório pós-chamada
+  // ----------------------------
+  function setReport(report) {
+    state.lastReport = report;
+
+    if (!rp.panel || !rp.meta || !rp.body || !rp.career) return;
+
+    rp.meta.textContent = report
+      ? `${report.title} • ${report.outcomeLabel} • Gravidade: ${humanSeverity(report.severity)}`
+      : "Nenhum relatório ainda";
+
+    rp.body.innerHTML = report
+      ? `
+        <div><b>Tempo total em atendimento:</b> ${fmtTime(report.handleTime)}</div>
+        <div><b>Unidade enviada:</b> ${escapeHtml(report.unitName || "—")} (${escapeHtml(report.unitRole || "—")})</div>
+        <div><b>Resultado:</b> ${escapeHtml(report.description)}</div>
+        <div style="margin-top:8px;"><b>Pontos:</b> ${report.scoreDelta >= 0 ? "+" : ""}${report.scoreDelta}</div>
+        <div><b>XP:</b> ${report.xpDelta >= 0 ? "+" : ""}${report.xpDelta}</div>
+      `
+      : "Atenda uma chamada e finalize para gerar relatório.";
+
+    rp.career.innerHTML = `
+      <div class="pill">Rank: ${escapeHtml(state.career.rank)}</div>
+      <div class="pill">XP: ${state.career.xp}</div>
+      <div class="pill">Advertências: ${state.career.warnings}/3</div>
+      <div class="pill">Sucessos: ${state.career.totalSuccess}</div>
+      <div class="pill">Falhas: ${state.career.totalFail}</div>
+      <div class="pill">Vidas salvas: ${state.career.totalLivesSaved}</div>
+    `;
+  }
+
+  // ----------------------------
+  // HUD / Queue / Summary
   // ----------------------------
   function updateHud() {
     if (el.hudShift) el.hudShift.textContent = state.shiftActive ? "ATIVO" : "—";
@@ -439,15 +612,14 @@
 
   function updatePills() {
     if (el.pillStatus) el.pillStatus.textContent = state.shiftActive ? "Turno em andamento" : "Turno parado";
-
     if (!el.pillCallTimer) return;
+
     if (!state.activeCall) {
       el.pillCallTimer.textContent = "Sem chamada";
       return;
     }
-    const sec = state.activeCall.callTTL;
     const overdue = state.activeCall.overdue;
-    el.pillCallTimer.textContent = overdue ? `Tempo excedido` : `Tempo da chamada: ${fmtTime(sec)}`;
+    el.pillCallTimer.textContent = overdue ? `Tempo excedido` : `Tempo da chamada: ${fmtTime(state.activeCall.callTTL)}`;
   }
 
   function setButtons() {
@@ -481,7 +653,7 @@
               ${idx + 1}. ${escapeHtml(c.def.title)}
             </div>
             <div style="font-size:12px; color:rgba(233,240,255,0.65)">
-              Restante: ${ttl} • Gravidade (atual): ${escapeHtml(humanSeverity(c.severity))}
+              Restante: ${ttl} • Gravidade: ${escapeHtml(humanSeverity(c.severity))}
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
@@ -512,111 +684,9 @@
         <div class="pill">Atrasos: ${s.overtime}</div>
       </div>
       <div style="margin-top:10px; font-size:12px; color:rgba(233,240,255,0.70)">
-        (Modo B) Enquanto você atende uma chamada, a fila pausa — a chamada não some antes do despacho.
+        Carreira: ${escapeHtml(state.career.rank)} • XP ${state.career.xp} • Advertências ${state.career.warnings}/3
       </div>
     `;
-  }
-
-  // ----------------------------
-  // Perguntas dinâmicas
-  // ----------------------------
-  function getProtocolDef(callDef) {
-    return callDef && callDef.protocol ? callDef.protocol : { required: [], questions: [] };
-  }
-
-  function updateDispatchUnlock() {
-    if (!state.activeCall) return;
-
-    const protocol = getProtocolDef(state.activeCall.def);
-    const required = Array.isArray(protocol.required) ? protocol.required : [];
-
-    // "dismiss_only" em trote: despacho deve ser evitado, mas desbloqueio existe para encerrar
-    const ok = required.every((qid) => !!state.activeCall.asked[qid]);
-    state.activeCall.dispatchUnlocked = ok;
-  }
-
-  function applyQuestionEffect(effect) {
-    if (!state.activeCall || !effect) return;
-
-    if (typeof effect.confidenceTrote === "number") {
-      state.activeCall.confidenceTrote += effect.confidenceTrote;
-      state.activeCall.confidenceTrote = clamp(state.activeCall.confidenceTrote, 0, 10);
-    }
-
-    if (effect.severity) {
-      // só sobe ou ajusta conforme regra simples:
-      // trote < leve < medio < grave
-      const rank = { trote: 0, leve: 1, medio: 2, grave: 3 };
-      const cur = state.activeCall.severity || "leve";
-      const next = String(effect.severity).toLowerCase();
-      if (rank[next] >= rank[cur]) state.activeCall.severity = next;
-    }
-  }
-
-  function askQuestion(questionId) {
-    if (!state.shiftActive || !state.activeCall) return;
-
-    const protocol = getProtocolDef(state.activeCall.def);
-    const q = (protocol.questions || []).find((x) => x.id === questionId);
-    if (!q) return;
-
-    if (state.activeCall.asked[questionId]) {
-      log(`ℹ️ Pergunta já feita: ${q.label}`);
-      return;
-    }
-
-    state.activeCall.asked[questionId] = true;
-
-    // recompensa leve por coletar dados (educativo)
-    state.score += 1;
-
-    // aplica efeito na severidade/trote confidence etc
-    if (q.effect) applyQuestionEffect(q.effect);
-
-    log(`🧾 Perguntou: ${q.label} (+1)`);
-    updateDispatchUnlock();
-    renderActiveCall();
-    renderDynamicQuestions();
-    updateHud();
-    setButtons();
-  }
-
-  function renderDynamicQuestions() {
-    if (!dq.panel || !dq.meta || !dq.buttons || !dq.hint) return;
-
-    if (!state.activeCall) {
-      dq.meta.textContent = "Nenhuma chamada ativa";
-      dq.buttons.innerHTML = "";
-      dq.hint.textContent = "Dica: Faça as perguntas obrigatórias para liberar o despacho.";
-      return;
-    }
-
-    const protocol = getProtocolDef(state.activeCall.def);
-    const required = Array.isArray(protocol.required) ? protocol.required : [];
-    const questions = Array.isArray(protocol.questions) ? protocol.questions : [];
-
-    const checklist = required.map((qid) => (state.activeCall.asked[qid] ? `✅ ${qid}` : `⬜ ${qid}`)).join(" | ");
-    dq.meta.textContent = `Obrigatórias: ${checklist || "nenhuma"} • Gravidade atual: ${humanSeverity(state.activeCall.severity)}`;
-
-    dq.buttons.innerHTML = questions
-      .map((q) => {
-        const asked = !!state.activeCall.asked[q.id];
-        const cls = asked ? "btnGhost" : "btnPrimary";
-        const disabled = asked ? "disabled" : "";
-        return `<button class="${cls}" data-qid="${escapeHtml(q.id)}" ${disabled}>${escapeHtml(q.label)}</button>`;
-      })
-      .join("");
-
-    dq.hint.textContent = state.activeCall.def.hint || "Colete dados, libere despacho e envie a unidade correta.";
-
-    // bind clicks
-    const btns = dq.buttons.querySelectorAll("button[data-qid]");
-    btns.forEach((b) => {
-      b.addEventListener("click", () => {
-        const qid = b.getAttribute("data-qid");
-        askQuestion(qid);
-      });
-    });
   }
 
   // ----------------------------
@@ -637,13 +707,11 @@
     const def = c.def;
 
     const line = lineByRegion(def.region, state.agency);
-    el.callMeta.textContent =
-      `Linha: ${line} • Caso: ${def.title} • Gravidade atual: ${humanSeverity(c.severity)}`;
+    el.callMeta.textContent = `Linha: ${line} • Caso: ${def.title} • Gravidade: ${humanSeverity(c.severity)}`;
 
     const opener = defaultOpener(def.region, state.agency);
     const protocol = getProtocolDef(def);
 
-    // cria transcrição com o que já foi perguntado
     let convo = `${opener}\n\nChamador: ${def.title}\n\n`;
 
     const askedIds = Object.keys(c.asked).filter((k) => c.asked[k]);
@@ -670,7 +738,7 @@
   }
 
   // ----------------------------
-  // Escolha de caso (variedade + chance de trote)
+  // Seleção de caso
   // ----------------------------
   function pickCallDef() {
     const calls = getCalls();
@@ -702,6 +770,69 @@
   }
 
   // ----------------------------
+  // Resultado real (modelo)
+  // ----------------------------
+  function computeOutcome({ isTrote, correctRole, overdue, severity }) {
+    const s = String(severity || "leve").toLowerCase();
+
+    if (isTrote) {
+      return {
+        outcome: "trote",
+        outcomeLabel: "TROTE",
+        description: "Chamado falso/indevido. Recursos não devem ser mobilizados.",
+        livesSaved: 0,
+        penalty: true,
+      };
+    }
+
+    if (!correctRole) {
+      // despacho errado: falha, pode piorar conforme gravidade
+      let desc = "Despacho incorreto. Resposta inadequada gerou falha operacional.";
+      let lives = 0;
+      if (s === "grave") desc = "Despacho incorreto em ocorrência GRAVE. Possível vítima/risco não atendido a tempo.";
+      if (s === "medio") desc = "Despacho incorreto. Ocorrência não controlada corretamente.";
+      return {
+        outcome: "fail",
+        outcomeLabel: "FALHA",
+        description: desc,
+        livesSaved: lives,
+        penalty: true,
+      };
+    }
+
+    // despacho correto, mas atrasou:
+    if (overdue) {
+      if (s === "grave") {
+        return {
+          outcome: "partial",
+          outcomeLabel: "ATRASO CRÍTICO",
+          description: "Unidade correta foi enviada, mas o atraso agravou o cenário. Alto risco de consequências.",
+          livesSaved: 0,
+          penalty: true,
+        };
+      }
+      return {
+        outcome: "partial",
+        outcomeLabel: "ATRASO",
+        description: "Unidade correta foi enviada, porém com atraso. O caso foi controlado com dificuldade.",
+        livesSaved: 0,
+        penalty: true,
+      };
+    }
+
+    // sucesso
+    let livesSaved = 0;
+    if (s === "grave") livesSaved = 1; // simplificado (pode evoluir no futuro)
+    return {
+      outcome: "success",
+      outcomeLabel: "SUCESSO",
+      description: "Ocorrência atendida com sucesso. Procedimentos seguidos e resposta adequada.",
+      livesSaved,
+      penalty: false,
+    };
+  }
+
+  // ----------------------------
   // Ações do jogador
   // ----------------------------
   function startShift() {
@@ -720,13 +851,17 @@
 
     state.stats = { handled: 0, dispatched: 0, correct: 0, wrong: 0, expired: 0, dismissedTrote: 0, overtime: 0 };
 
+    // reset advertências por turno (opcional — aqui mantemos acumulado para "carreira")
+    // Se quiser por turno: state.career.warnings = 0;
+
     if (el.btnStartShift) el.btnStartShift.disabled = true;
     if (el.btnEndShift) el.btnEndShift.disabled = false;
 
     renderUnits();
 
     log(`✅ Turno iniciado em ${flagByCityId(state.cityId)} ${cityNameById(state.cityId)} • Agência: ${state.agency} • Dificuldade: ${state.difficulty}`);
-    log(`🧠 Fase 2B ativa: perguntas DINÂMICAS por caso + severidade evolutiva.`);
+    log(`🎓 Carreira: ${state.career.rank} (XP ${state.career.xp}) • Advertências ${state.career.warnings}/3`);
+    log(`🧠 Fase 2C: Relatório + resultados + início de carreira.`);
 
     spawnCall();
     spawnCall();
@@ -765,7 +900,7 @@
     updateDispatchUnlock();
     log(`📞 Atendeu: "${state.activeCall.def.title}" (${humanSeverity(state.activeCall.severity)})`);
 
-    renderUnits(); // atualiza select de despacho
+    renderUnits();
     renderAll();
   }
 
@@ -775,7 +910,6 @@
     const call = state.activeCall;
     state.activeCall = null;
 
-    // ao voltar pra fila, diminui um pouco o TTL (pessoa pode desligar)
     call.queueTTL = clamp(call.queueTTL, 10, 25);
     state.queue.unshift(call);
 
@@ -789,14 +923,46 @@
     const c = state.activeCall;
     const isTrote = (c.severity === "trote") || (c.confidenceTrote >= 6);
 
+    let scoreDelta = 0;
+    let xpDelta = 0;
+
     if (isTrote) {
-      state.score += 8;
+      scoreDelta = 8;
+      xpDelta = 4;
+      state.score += scoreDelta;
       state.stats.dismissedTrote += 1;
-      log(`✅ Encerrado como trote corretamente. (+8)`);
+      addXp(xpDelta);
+      log(`✅ Encerrado como trote corretamente. (+${scoreDelta}) XP +${xpDelta}`);
+      setReport({
+        title: c.def.title,
+        severity: c.severity,
+        outcomeLabel: "TROTE IDENTIFICADO",
+        description: "Você identificou corretamente uma chamada falsa/indevida e evitou gasto de recursos.",
+        unitName: "—",
+        unitRole: "—",
+        scoreDelta,
+        xpDelta,
+        handleTime: state.timeSec - c.startedAt,
+      });
     } else {
-      state.score -= 8;
+      scoreDelta = -10;
+      xpDelta = -2;
+      state.score += scoreDelta;
       state.stats.wrong += 1;
-      log(`❌ Encerrar chamada real gera penalidade. (-8)`);
+      addXp(xpDelta);
+      addWarning("Encerramento indevido de chamada real.");
+      log(`❌ Encerramento indevido. (${scoreDelta}) XP ${xpDelta}`);
+      setReport({
+        title: c.def.title,
+        severity: c.severity,
+        outcomeLabel: "ENCERRAMENTO INDEVIDO",
+        description: "Você encerrou uma chamada real. Isso é considerado falha grave.",
+        unitName: "—",
+        unitRole: "—",
+        scoreDelta,
+        xpDelta,
+        handleTime: state.timeSec - c.startedAt,
+      });
     }
 
     state.activeCall = null;
@@ -806,7 +972,9 @@
   function dispatchSelectedUnit() {
     if (!state.shiftActive || !state.activeCall) return;
 
-    if (!state.activeCall.dispatchUnlocked) {
+    const c = state.activeCall;
+
+    if (!c.dispatchUnlocked) {
       log("⛔ Despacho bloqueado: faça as perguntas obrigatórias.");
       return;
     }
@@ -823,58 +991,108 @@
       return;
     }
 
-    const def = state.activeCall.def;
-    const severityNow = state.activeCall.severity;
+    const def = c.def;
+    const severityNow = c.severity;
 
     const correctRoles = (def.dispatch && Array.isArray(def.dispatch.correctRoles)) ? def.dispatch.correctRoles : ["any"];
+    const isTrote = (severityNow === "trote") || (c.confidenceTrote >= 6);
 
-    const isTrote = (severityNow === "trote") || (state.activeCall.confidenceTrote >= 6);
-    if (isTrote) {
-      state.score -= 10;
-      state.stats.wrong += 1;
-      log(`❌ Era trote. Você despachou e perdeu recursos. (-10)`);
-      state.activeCall = null;
-      renderAll();
-      return;
-    }
-
-    // unidade ocupada por 5s (simulação)
+    // Marca unidade como ocupada por alguns segundos
     unit.status = "busy";
     setTimeout(() => {
       unit.status = "available";
       renderUnits();
+      renderAll();
     }, 5000);
 
     state.stats.dispatched += 1;
 
-    // penalidade por atraso (não some, mas pune)
-    if (state.activeCall.overdue && !state.activeCall.overduePenalized) {
-      state.activeCall.overduePenalized = true;
+    // atraso
+    if (c.overdue && !c.overduePenalized) {
+      c.overduePenalized = true;
       state.stats.overtime += 1;
-      state.score -= 5;
-      log(`⏱️ Demora crítica: penalidade por atraso. (-5)`);
     }
 
-    const ok = correctRoles.includes(unit.role) || correctRoles.includes("any");
-    if (ok) {
-      const bonus = severityScore(severityNow);
-      state.score += bonus;
-      state.stats.correct += 1;
-      log(`✅ Despacho correto: ${unit.role} (+${bonus})`);
-      log(`📄 Resultado: ocorrência tratada com sucesso (simulado).`);
-    } else {
-      state.score -= 12;
+    const correctRole = !isTrote && (correctRoles.includes(unit.role) || correctRoles.includes("any"));
+
+    // Calcula outcome
+    const outcome = computeOutcome({
+      isTrote,
+      correctRole,
+      overdue: c.overdue,
+      severity: severityNow,
+    });
+
+    // Aplica pontuação/XP
+    let scoreDelta = 0;
+    let xpDelta = 0;
+
+    if (outcome.outcome === "trote") {
+      scoreDelta = -12;
+      xpDelta = -2;
       state.stats.wrong += 1;
-      log(`❌ Despacho incorreto: ${unit.role} (-12)`);
-      log(`📄 Resultado: falha operacional (simulado).`);
+      addWarning("Despacho indevido em trote.");
+    } else if (outcome.outcome === "fail") {
+      scoreDelta = -12;
+      xpDelta = -3;
+      state.stats.wrong += 1;
+      addWarning("Despacho incorreto (falha operacional).");
+      state.career.totalFail += 1;
+    } else if (outcome.outcome === "partial") {
+      // correto porém atrasou => ainda pontua, mas menos
+      scoreDelta = Math.max(4, severityScore(severityNow) - 10);
+      scoreDelta -= 5; // penalidade de atraso
+      xpDelta = 3;
+      state.stats.correct += 1;
+      state.career.totalSuccess += 1;
+    } else {
+      // success
+      scoreDelta = severityScore(severityNow);
+      xpDelta = severityNow === "grave" ? 8 : 5;
+      state.stats.correct += 1;
+      state.career.totalSuccess += 1;
     }
+
+    // Vidas salvas (simples)
+    if (outcome.livesSaved > 0) {
+      state.career.totalLivesSaved += outcome.livesSaved;
+      // bônus extra
+      scoreDelta += 6;
+      xpDelta += 4;
+    }
+
+    // atraso crítico em grave: aumenta advertência
+    if (!isTrote && c.overdue && String(severityNow).toLowerCase() === "grave") {
+      addWarning("Atraso crítico em ocorrência GRAVE.");
+    }
+
+    state.score += scoreDelta;
+    addXp(xpDelta);
+
+    // log e relatório
+    if (outcome.outcome === "success") log(`✅ SUCESSO: despacho correto (+${scoreDelta}) XP +${xpDelta}`);
+    if (outcome.outcome === "partial") log(`⚠️ ${outcome.outcomeLabel}: (+${scoreDelta}) XP +${xpDelta}`);
+    if (outcome.outcome === "fail") log(`❌ FALHA: (${scoreDelta}) XP ${xpDelta}`);
+    if (outcome.outcome === "trote") log(`❌ TROTE: despacho indevido (${scoreDelta}) XP ${xpDelta}`);
+
+    setReport({
+      title: def.title,
+      severity: severityNow,
+      outcomeLabel: outcome.outcomeLabel,
+      description: outcome.description + (outcome.livesSaved ? ` (Vidas salvas: ${outcome.livesSaved})` : ""),
+      unitName: unit.name,
+      unitRole: unit.role,
+      scoreDelta,
+      xpDelta,
+      handleTime: state.timeSec - c.startedAt,
+    });
 
     state.activeCall = null;
     renderAll();
   }
 
   // ----------------------------
-  // Tick
+  // Tick (tempo)
   // ----------------------------
   function tick() {
     if (!state.shiftActive) return;
@@ -884,7 +1102,6 @@
     const hasActive = !!state.activeCall;
     const pauseQueue = state.pauseQueueWhileActiveCall && hasActive;
 
-    // fila só conta quando não há chamada ativa (modo B)
     if (!pauseQueue) {
       for (let i = state.queue.length - 1; i >= 0; i--) {
         const c = state.queue[i];
@@ -893,12 +1110,24 @@
           state.queue.splice(i, 1);
           state.stats.expired += 1;
           state.score -= 10;
+          addXp(-1);
+          addWarning("Falha em atender chamada na fila (expirada).");
           log(`⏳ Expirou na fila: "${c.def.title}" (-10)`);
+          setReport({
+            title: c.def.title,
+            severity: c.severity,
+            outcomeLabel: "EXPIRADA NA FILA",
+            description: "A ocorrência ficou sem atendimento e expirou. Isso é falha grave.",
+            unitName: "—",
+            unitRole: "—",
+            scoreDelta: -10,
+            xpDelta: -1,
+            handleTime: 0,
+          });
         }
       }
     }
 
-    // chamada ativa nunca some
     if (hasActive) {
       state.activeCall.callTTL -= 1;
       if (state.activeCall.callTTL <= 0) {
@@ -908,7 +1137,6 @@
       updateDispatchUnlock();
     }
 
-    // spawn
     const interval = spawnIntervalByDifficulty(state.difficulty);
     state.spawnAccumulator += 1;
     if (state.spawnAccumulator >= interval) {
@@ -920,7 +1148,7 @@
   }
 
   // ----------------------------
-  // Render Geral
+  // Render geral
   // ----------------------------
   function renderAll() {
     updateHud();
@@ -931,6 +1159,18 @@
     renderActiveCall();
     renderDynamicQuestions();
     renderSummary();
+
+    // garante que painel de carreira aparece mesmo sem relatório novo
+    if (rp.career && (!state.lastReport)) {
+      rp.career.innerHTML = `
+        <div class="pill">Rank: ${escapeHtml(state.career.rank)}</div>
+        <div class="pill">XP: ${state.career.xp}</div>
+        <div class="pill">Advertências: ${state.career.warnings}/3</div>
+        <div class="pill">Sucessos: ${state.career.totalSuccess}</div>
+        <div class="pill">Falhas: ${state.career.totalFail}</div>
+        <div class="pill">Vidas salvas: ${state.career.totalLivesSaved}</div>
+      `;
+    }
   }
 
   // ----------------------------
@@ -942,6 +1182,7 @@
         state.cityId = el.citySelect.value;
         log(`🏙️ Cidade: ${flagByCityId(state.cityId)} ${cityNameById(state.cityId)}`);
         renderUnits();
+        renderAll();
       });
     }
 
@@ -988,7 +1229,7 @@
     renderAll();
 
     log("✅ Sistema pronto. Clique em INICIAR TURNO.");
-    log("ℹ️ Se as perguntas não aparecerem, confira se você substituiu data/calls.js corretamente.");
+    log("📌 Fase 2C ativa: relatório + resultados + carreira (XP, rank, advertências).");
   }
 
   window.__LCDO = { state };
