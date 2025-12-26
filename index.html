@@ -1,198 +1,225 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Last Call Dispatch Operator</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last Call Dispatch Operator</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #0b0e13;
+  color: #eaeaea;
+}
+
+header {
+  background: #111826;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  color: #4fd1c5;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 10px;
+}
+
+.panel {
+  background: #161b22;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.panel h3 {
+  margin: 0 0 8px 0;
+  color: #63b3ed;
+}
+
+#callText {
+  min-height: 80px;
+  font-family: "Courier New", monospace;
+  white-space: pre-wrap;
+}
+
+button {
+  background: #2563eb;
+  border: none;
+  color: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+button:disabled {
+  background: #444;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+footer {
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.6;
+}
+</style>
 </head>
+
 <body>
-  <div id="game-container">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-title">Last Call Dispatch Operator</div>
-        <div class="brand-subtitle">Simulador de atendimento e despacho • Protótipo evolutivo</div>
-      </div>
 
-      <div class="topbar-actions">
-        <div class="setup">
-          <label class="field">
-            <span>Cidade</span>
-            <select id="city-select">
-              <option value="saopaulo" selected>São Paulo (BR)</option>
-              <option value="newyork">Nova York (EUA)</option>
-            </select>
-          </label>
+<header>
+Last Call Dispatch Operator — Chamadas AAA
+</header>
 
-          <label class="field">
-            <span>Agência</span>
-            <select id="agency-select">
-              <option value="police" selected>Polícia</option>
-              <option value="fire">Bombeiros/Resgate</option>
-            </select>
-          </label>
+<main>
 
-          <label class="field">
-            <span>Dificuldade</span>
-            <select id="difficulty-select">
-              <option value="easy">Fácil</option>
-              <option value="normal" selected>Normal</option>
-              <option value="hard">Hardcore</option>
-            </select>
-          </label>
-        </div>
+<div class="panel">
+  <h3>Chamada Ativa</h3>
+  <div id="callText"></div>
+</div>
 
-        <div class="buttons">
-          <button id="start-btn" class="btn primary">Iniciar turno</button>
-          <button id="pause-btn" class="btn ghost" disabled>Pausar</button>
-          <button id="restart-btn" class="btn ghost hidden">Reiniciar</button>
-        </div>
+<div class="panel">
+  <h3>Ações do Operador</h3>
+  <div class="options" id="options"></div>
+</div>
 
-        <div class="hud">
-          <div class="hud-item">
-            <div class="hud-label">Turno</div>
-            <div id="shift-timer" class="hud-value">00:00</div>
-          </div>
-          <div class="hud-item">
-            <div class="hud-label">Chamada</div>
-            <div id="call-timer" class="hud-value">--:--</div>
-          </div>
-          <div class="hud-item">
-            <div class="hud-label">Pontos</div>
-            <div id="score" class="hud-value">0</div>
-          </div>
-          <div class="hud-item">
-            <div class="hud-label">Atendidas</div>
-            <div id="calls-handled" class="hud-value">0</div>
-          </div>
-        </div>
-      </div>
-    </header>
+<button id="startBtn">Iniciar Nova Chamada</button>
 
-    <nav class="mobile-tabs" aria-label="Navegação">
-      <button class="tab-btn active" data-tab="call">Chamada</button>
-      <button class="tab-btn" data-tab="cad">CAD</button>
-      <button class="tab-btn" data-tab="map">Mapa</button>
-      <button class="tab-btn" data-tab="units">Unidades</button>
-    </nav>
+</main>
 
-    <main id="main" class="layout">
-      <!-- CALL PANEL -->
-      <section id="panel-call" class="panel panel-call" data-panel="call">
-        <div class="panel-header">
-          <div class="panel-title">Atendimento</div>
-          <div class="panel-pill" id="call-pill">Aguardando...</div>
-        </div>
+<footer>
+Simulador educativo — versão protótipo
+</footer>
 
-        <div id="call-dialogue" class="call-dialogue" aria-live="polite"></div>
+<script>
+const callTextEl = document.getElementById("callText");
+const optionsEl = document.getElementById("options");
+const startBtn = document.getElementById("startBtn");
 
-        <div class="call-meta">
-          <div class="meta-item">
-            <div class="meta-label">Local</div>
-            <div id="call-location" class="meta-value">—</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Tipo</div>
-            <div id="call-type" class="meta-value">—</div>
-          </div>
-          <div class="meta-item">
-            <div class="meta-label">Prioridade</div>
-            <div id="call-priority" class="meta-value">—</div>
-          </div>
-        </div>
+let typingInterval = null;
+let currentCall = null;
 
-        <div id="call-options" class="options"></div>
+const CALLS = [
+  {
+    severity: "trote",
+    intro: "Oi... é brincadeira 😂",
+    steps: [
+      {
+        text: "O chamador está rindo e não fornece informações.",
+        options: [
+          { label: "Encerrar chamada", result: "Trote identificado. Bom trabalho." },
+          { label: "Enviar viatura", result: "Erro: recurso desperdiçado." }
+        ]
+      }
+    ]
+  },
+  {
+    severity: "leve",
+    intro: "Tem um vizinho fazendo muito barulho.",
+    steps: [
+      {
+        text: "O problema parece sem risco imediato.",
+        options: [
+          { label: "Orientar e registrar", result: "Ocorrência leve resolvida." },
+          { label: "Enviar viatura", result: "Resposta aceitável, mas exagerada." }
+        ]
+      }
+    ]
+  },
+  {
+    severity: "media",
+    intro: "Houve um acidente de trânsito, acho que alguém se machucou.",
+    steps: [
+      {
+        text: "O chamador parece nervoso.",
+        options: [
+          { label: "Perguntar se há vítimas", next: 1 },
+          { label: "Enviar ajuda imediatamente", result: "Ajuda enviada rapidamente." }
+        ]
+      },
+      {
+        text: "Uma pessoa está ferida e sangrando.",
+        options: [
+          { label: "Orientar primeiros socorros", result: "Vítima estabilizada." },
+          { label: "Mandar aguardar", result: "Erro: situação piorou." }
+        ]
+      }
+    ]
+  },
+  {
+    severity: "grave",
+    intro: "SOCORRO! Estão atirando aqui!",
+    steps: [
+      {
+        text: "Há tiros ao fundo e gritos.",
+        options: [
+          { label: "Manter chamador em segurança", next: 1 },
+          { label: "Pedir mais detalhes", result: "Erro: tempo perdido." }
+        ]
+      },
+      {
+        text: "O chamador diz que o suspeito está armado.",
+        options: [
+          { label: "Despachar unidade tática", result: "Resposta correta. Vidas salvas." },
+          { label: "Enviar patrulha comum", result: "Erro grave. Vítima fatal." }
+        ]
+      }
+    ]
+  }
+];
 
-        <div class="panel-footer">
-          <label class="toggle">
-            <input id="toggle-audio" type="checkbox" checked />
-            <span>Áudio (bipes/telefone)</span>
-          </label>
-          <label class="toggle">
-            <input id="toggle-typewriter" type="checkbox" checked />
-            <span>Efeito máquina de escrever</span>
-          </label>
-        </div>
-      </section>
+function typeText(text, callback) {
+  clearInterval(typingInterval);
+  callTextEl.textContent = "";
+  let i = 0;
+  typingInterval = setInterval(() => {
+    callTextEl.textContent += text.charAt(i);
+    i++;
+    if (i >= text.length) {
+      clearInterval(typingInterval);
+      if (callback) callback();
+    }
+  }, 30);
+}
 
-      <!-- CAD PANEL -->
-      <section id="panel-cad" class="panel panel-cad" data-panel="cad">
-        <div class="panel-header">
-          <div class="panel-title">CAD • Incidentes</div>
-          <div class="panel-pill" id="cad-pill">0 ativos</div>
-        </div>
+function showStep(stepIndex) {
+  optionsEl.innerHTML = "";
+  const step = currentCall.steps[stepIndex];
 
-        <div class="cad-split">
-          <div class="cad-list">
-            <div class="cad-list-header">
-              <div>ID</div><div>Código</div><div>P</div><div>Status</div>
-            </div>
-            <div id="cad-items" class="cad-items"></div>
-          </div>
+  typeText(step.text);
 
-          <div class="cad-details">
-            <div class="details-title">Detalhes</div>
-            <div id="cad-details" class="details-box">
-              <div class="muted">Selecione um incidente para ver detalhes.</div>
-            </div>
+  step.options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.textContent = opt.label;
+    btn.onclick = () => {
+      if (opt.next !== undefined) {
+        showStep(opt.next);
+      } else {
+        typeText(opt.result);
+        optionsEl.innerHTML = "";
+      }
+    };
+    optionsEl.appendChild(btn);
+  });
+}
 
-            <div class="details-actions">
-              <button id="btn-dispatch-open" class="btn primary" disabled>Despachar unidades</button>
-              <button id="btn-escalate" class="btn ghost" disabled>Escalar prioridade</button>
-              <button id="btn-close" class="btn ghost" disabled>Encerrar incidente</button>
-            </div>
-          </div>
-        </div>
+startBtn.onclick = () => {
+  currentCall = CALLS[Math.floor(Math.random() * CALLS.length)];
+  optionsEl.innerHTML = "";
+  typeText(
+    "Central de emergência.\n\n" +
+    currentCall.intro,
+    () => showStep(0)
+  );
+};
+</script>
 
-        <div class="cad-log">
-          <div class="panel-title small">Log</div>
-          <div id="cad-log" class="log-box"></div>
-        </div>
-      </section>
-
-      <!-- MAP PANEL -->
-      <section id="panel-map" class="panel panel-map" data-panel="map">
-        <div class="panel-header">
-          <div class="panel-title">Mapa (grade)</div>
-          <div class="panel-pill" id="map-pill">Toque em um incidente</div>
-        </div>
-        <div id="map-grid" class="map-grid" aria-label="Mapa em grade"></div>
-        <div class="panel-footer hint">
-          Dica: toque em um <b>incidente</b> no mapa ou na lista do CAD para selecionar.
-        </div>
-      </section>
-
-      <!-- UNITS PANEL -->
-      <section id="panel-units" class="panel panel-units" data-panel="units">
-        <div class="panel-header">
-          <div class="panel-title">Unidades</div>
-          <div class="panel-pill" id="units-pill">0 disponíveis</div>
-        </div>
-
-        <div id="units-list" class="units-list"></div>
-
-        <div class="dispatch-box">
-          <div class="dispatch-title">Despacho (multi-unidade)</div>
-          <div class="dispatch-hint muted" id="dispatch-hint">
-            Selecione um incidente no CAD/Mapa e marque as unidades para despachar.
-          </div>
-          <button id="btn-dispatch-selected" class="btn primary" disabled>Despachar selecionadas</button>
-          <button id="btn-dispatch-recommended" class="btn ghost" disabled>Despacho recomendado</button>
-        </div>
-      </section>
-    </main>
-
-    <section id="result-section" class="result hidden">
-      <div class="result-card">
-        <h2>Fim de turno</h2>
-        <p id="result-text"></p>
-        <div class="result-actions">
-          <button id="result-restart" class="btn primary">Novo turno</button>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <script src="script.js"></script>
 </body>
 </html>
