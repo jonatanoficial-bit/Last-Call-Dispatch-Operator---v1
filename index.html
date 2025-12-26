@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Last Call Dispatch Operator — Fase 1 (Canvas Map, Offline)</title>
+  <title>Last Call Dispatch Operator — Fase 2 (Despacho Manual Realista)</title>
 
   <style>
     :root{
@@ -289,7 +289,7 @@
       font-family: var(--mono);
       font-size: 12px;
       color: rgba(255,255,255,.86);
-      max-width: min(520px, 88vw);
+      max-width: min(620px, 88vw);
     }
 
     .bottomDock{
@@ -315,6 +315,7 @@
     }
     .muted{ color: var(--muted); font-size: 12px; line-height: 1.35; }
     .row{ display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+
     .chip{
       font-family: var(--mono);
       font-size: 11px;
@@ -327,7 +328,10 @@
       user-select:none;
     }
     .chip.ok{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); }
+    .chip.warn{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.10); }
+    .chip.bad{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.10); }
     .chip.busy{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.10); }
+    .chip.sel{ border-color: rgba(96,165,250,.45); background: rgba(96,165,250,.14); }
 
     .toast{
       position: fixed;
@@ -341,7 +345,7 @@
       color: rgba(255,255,255,.92);
       font-size: 13px;
       box-shadow: var(--shadow);
-      max-width: min(620px, 92vw);
+      max-width: min(720px, 92vw);
       opacity: 0;
       pointer-events: none;
       transition: opacity .18s ease, transform .18s ease;
@@ -369,7 +373,7 @@
         <div class="logo"></div>
         <div>
           <h1>Last Call Dispatch Operator</h1>
-          <div class="sub">Fase 1 — Canvas Map (sem CDN) • Estável no GitHub Mobile/Vercel</div>
+          <div class="sub">Fase 2 — Despacho manual realista (múltiplas unidades + pendências)</div>
         </div>
       </div>
 
@@ -473,7 +477,7 @@
       <!-- RIGHT -->
       <div class="card mapcard">
         <div class="hd">
-          <h2>Mapa e Despacho (Canvas)</h2>
+          <h2>Mapa e Despacho (Manual)</h2>
           <span class="tag" id="dispatchHint">Selecione uma ocorrência</span>
         </div>
 
@@ -481,10 +485,10 @@
           <canvas id="mapCanvas"></canvas>
           <div class="mapOverlay">
             <div class="mini" id="mapMini">
-              🗺️ Dica: arraste para mover • pinça/scroll para zoom • toque nos ícones para selecionar.
+              🗺️ Arraste para mover • pinça/scroll para zoom • toque nos ícones para selecionar
             </div>
             <div class="mini" id="mapMini2">
-              Clique numa ocorrência (círculo) e depois numa unidade (quadrado) para selecionar.
+              Fluxo realista: selecione ocorrência → escolha unidade → despache → envie reforço se necessário
             </div>
           </div>
         </div>
@@ -492,7 +496,7 @@
         <div class="bottomDock">
           <div class="dockCol">
             <h3>Unidades</h3>
-            <div class="muted" id="unitHelp">Toque numa ocorrência (lista ou mapa), depois escolha a unidade.</div>
+            <div class="muted" id="unitHelp">Selecione uma ocorrência para ver quais unidades fazem sentido.</div>
             <div style="height:8px"></div>
             <div class="row" id="unitChips"></div>
           </div>
@@ -502,7 +506,7 @@
             <div class="muted" id="dispatchPanel">Nenhuma ocorrência selecionada.</div>
             <div style="height:10px"></div>
             <div class="btnrow" style="margin:0">
-              <button class="btn" id="btnDispatch" disabled>Despachar unidade</button>
+              <button class="btn" id="btnDispatch" disabled>Despachar unidade selecionada</button>
               <button class="btn secondary" id="btnUnselect" disabled>Limpar seleção</button>
             </div>
           </div>
@@ -519,18 +523,15 @@
      *  Utilities
      ************************/
     const $ = (id)=>document.getElementById(id);
-
     function clamp(v,min,max){ return Math.max(min, Math.min(max,v)); }
     function rnd(a,b){ return a + Math.random()*(b-a); }
     function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-
     function fmtMMSS(sec){
       sec = Math.max(0, Math.floor(sec));
       const m = String(Math.floor(sec/60)).padStart(2,'0');
       const s = String(sec%60).padStart(2,'0');
       return `${m}:${s}`;
     }
-
     function toast(msg){
       const t = $('toast');
       t.textContent = msg;
@@ -538,7 +539,6 @@
       clearTimeout(toast._tm);
       toast._tm = setTimeout(()=>t.classList.remove('show'), 2200);
     }
-
     function escapeHTML(s){
       return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
     }
@@ -546,7 +546,7 @@
     /***********************
      *  Career (localStorage)
      ************************/
-    const SAVE_KEY = 'lcdo_save_v2_canvas';
+    const SAVE_KEY = 'lcdo_save_v3_manual_dispatch';
     function loadCareer(){
       try{
         const raw = localStorage.getItem(SAVE_KEY);
@@ -612,6 +612,7 @@
       }
     };
 
+    // Catálogo
     const INCIDENT_CATALOG = {
       prank: [
         { key:'trote_crianca', title:'Possível trote', sev:'low', needs:['triage'], script:"(risos) Oi moço… tem um leão no meu quarto…", tips:"Sinais de trote: inconsistência, risos, história absurda." },
@@ -626,20 +627,20 @@
         { key:'viol_dom', title:'Violência doméstica', sev:'med', needs:['police','patrol'], script:"Meu marido tá agressivo, tenho medo…", tips:"Perguntar se há armas, crianças, local seguro." },
       ],
       police_high: [
-        { key:'tiros', title:'Disparos / situação armada', sev:'high', needs:['police','tactical'], script:"Tem tiro! Eu ouvi vários tiros agora!", tips:"Orientar abrigo imediato. Despacho tático/elite." },
-        { key:'bomba', title:'Suspeita de artefato explosivo', sev:'high', needs:['police','bomb'], script:"Tem uma mochila abandonada e tá fazendo barulho estranho.", tips:"Isolar área, não tocar, chamar anti-bomba." },
+        { key:'tiros', title:'Disparos / situação armada', sev:'high', needs:['police','tactical'], script:"Tem tiro! Eu ouvi vários tiros agora!", tips:"Abrigo imediato. Escalona com tático/elite." },
+        { key:'bomba', title:'Suspeita de artefato explosivo', sev:'high', needs:['police','bomb'], script:"Tem uma mochila abandonada e tá fazendo barulho estranho.", tips:"Isolar área, não tocar, anti-bomba." },
       ],
       fire_low: [
-        { key:'fumaça', title:'Fumaça em apartamento', sev:'low', needs:['fire','firetruck'], script:"Tá saindo fumaça da cozinha, acho que queimou panela.", tips:"Orientar desligar gás/energia se seguro, ventilar, observar chamas." },
-        { key:'elevador', title:'Pessoa presa no elevador', sev:'low', needs:['fire','rescue'], script:"Travou o elevador com gente dentro!", tips:"Manter calma, evitar forçar portas, aguardar resgate." },
+        { key:'fumaça', title:'Fumaça em apartamento', sev:'low', needs:['fire','firetruck'], script:"Tá saindo fumaça da cozinha, acho que queimou panela.", tips:"Orientar desligar gás/energia se seguro, evacuar se piorar." },
+        { key:'elevador', title:'Pessoa presa no elevador', sev:'low', needs:['fire','rescue'], script:"Travou o elevador com gente dentro!", tips:"Manter calma, evitar forçar portas." },
       ],
       fire_med: [
-        { key:'acidente_ferragens', title:'Acidente com vítimas presas', sev:'med', needs:['fire','rescue','medic'], script:"Bateu forte e tem gente presa no carro!", tips:"Orientar não mexer no pescoço, acionar resgate + ambulância." },
-        { key:'incendio', title:'Incêndio residencial', sev:'med', needs:['fire','firetruck'], script:"Pegou fogo no quarto, tá espalhando!", tips:"Evacuar, fechar portas, não usar elevador, ponto de encontro." },
+        { key:'acidente_ferragens', title:'Acidente com vítimas presas', sev:'med', needs:['fire','rescue','medic','ems'], script:"Bateu forte e tem gente presa no carro!", tips:"Resgate + ambulância. Não mexer em coluna." },
+        { key:'incendio', title:'Incêndio residencial', sev:'med', needs:['fire','firetruck'], script:"Pegou fogo no quarto, tá espalhando!", tips:"Evacuar, fechar portas, não usar elevador." },
       ],
       fire_high: [
-        { key:'parada', title:'Parada cardíaca', sev:'high', needs:['medic','ems'], script:"Ele caiu e não responde! Não tá respirando!", tips:"Orientar compressões. Mandar ambulância urgente." },
-        { key:'parto', title:'Parto de emergência', sev:'high', needs:['medic','ems'], script:"A bebê tá vindo! Não dá tempo!", tips:"Orientar suporte e higiene. Ambulância urgente." },
+        { key:'parada', title:'Parada cardíaca', sev:'high', needs:['medic','ems'], script:"Ele caiu e não responde! Não tá respirando!", tips:"Compressões imediatas + ambulância urgente." },
+        { key:'parto', title:'Parto de emergência', sev:'high', needs:['medic','ems'], script:"A bebê tá vindo! Não dá tempo!", tips:"Preparar toalhas limpas, manter calma, ambulância." },
       ]
     };
 
@@ -684,11 +685,8 @@
     };
 
     let selectedUnitId = null;
-
     let _id = 1;
     function nextId(prefix){ return `${prefix}_${_id++}`; }
-
-    function fmtSeverity(sev){ return sev.toUpperCase(); }
 
     function addScore(delta){
       GAME.score = Math.max(-999, GAME.score + delta);
@@ -858,6 +856,9 @@
       return "Mantenha a calma, afaste-se do risco e aguarde as equipes.";
     }
 
+    /***********************
+     *  Queue / Calls
+     ************************/
     function enqueueCall(){
       const scenario = pick(GAME.scenarioPool);
       const loc = randomLocation();
@@ -903,7 +904,7 @@
         else greeting = "911 Fire/Rescue, what's your emergency?";
       }
 
-      setCallHeader(`Chamada — ${CITIES[cityKey].label}`, `ID ${call.id} • Prioridade ${fmtSeverity(call.scenario.sev)}`);
+      setCallHeader(`Chamada — ${CITIES[cityKey].label}`, `ID ${call.id} • Prioridade ${call.scenario.sev.toUpperCase()}`);
       call.transcript = [];
       renderTranscript(call);
 
@@ -940,24 +941,33 @@
       }
     }
 
-    function createIncidentFromCall(call){
+    // 🔥 NOVO: incident agora tem "pendências" e múltiplas unidades possíveis
+    function createIncidentFromCall(call, responsePlan){
+      // responsePlan: 'min' | 'std' | 'max' (só influência de pontuação inicial)
+      const baseNeeds = call.scenario.needs.slice();
+
       const inc = {
         id: nextId('inc'),
         title: call.scenario.title,
         sev: call.scenario.sev,
-        needs: call.scenario.needs.slice(),
+        needs: baseNeeds,                   // lista original (o que faz sentido)
+        pending: baseNeeds.filter(x=>x!=='triage'), // o que ainda falta cobrir
+        assignedUnits: [],                  // ids das unidades enviadas
         loc: { ...call.loc },
         createdAt: GAME.shiftElapsed,
-        dispatched: false,
         resolved: false,
-        assignedUnitId: null,
-        expiresIn: call.scenario.sev==='high' ? 150 : (call.scenario.sev==='med' ? 180 : 210),
-        timeLeft:  call.scenario.sev==='high' ? 150 : (call.scenario.sev==='med' ? 180 : 210),
+        expiresIn: call.scenario.sev==='high' ? 160 : (call.scenario.sev==='med' ? 190 : 230),
+        timeLeft:  call.scenario.sev==='high' ? 160 : (call.scenario.sev==='med' ? 190 : 230),
+        plan: responsePlan || 'std',
+        notes: call.scenario.tips || ''
       };
+
       GAME.incidents.push(inc);
       $('incTag').textContent = String(GAME.incidents.length);
       renderIncidents();
-      toast(`🚨 Ocorrência criada: ${inc.title}`);
+
+      // Importante: NÃO auto-seleciona → fica 100% manual agora
+      toast(`🚨 Ocorrência registrada: ${inc.title} (Despacho manual)`);
       return inc;
     }
 
@@ -1038,24 +1048,18 @@
         }
       });
 
+      // ✅ NOVO: registrar ocorrência com "plano de resposta" (mas despacho continua manual)
       buttons.push({
-        label: "Registrar ocorrência e abrir despacho",
-        onClick: ()=>{
-          const goodInfo = (call.collected.addressKnown || call.collected.natureKnown);
-          if(!goodInfo){
-            addLine(call,"OPERADOR","Preciso do endereço e do que está acontecendo para enviar ajuda.", true, ()=>{
-              addScore(-3);
-              renderChoicesForCall(call);
-            });
-            return;
-          }
-          const inc = createIncidentFromCall(call);
-          addLine(call,"OPERADOR","Entendido. Unidades a caminho. Permaneça na linha se possível.", true, ()=>{
-            addScore(+10);
-            endActiveCall(`Ocorrência registrada: ${inc.title}`);
-            selectIncident(inc.id);
-          });
-        }
+        label: "Registrar ocorrência (resposta MÍNIMA) — mais arriscado",
+        onClick: ()=> registerIncidentPlan(call, 'min')
+      });
+      buttons.push({
+        label: "Registrar ocorrência (resposta PADRÃO) — recomendado",
+        onClick: ()=> registerIncidentPlan(call, 'std')
+      });
+      buttons.push({
+        label: "Registrar ocorrência (resposta MÁXIMA) — mais unidades/segurança",
+        onClick: ()=> registerIncidentPlan(call, 'max')
       });
 
       buttons.push({
@@ -1080,68 +1084,75 @@
       renderChoices(buttons);
     }
 
-    /***********************
-     *  Dispatch logic
-     ************************/
-    function canUnitHandleIncident(unit, inc){
-      if(inc.needs.includes('triage')) return false;
+    function registerIncidentPlan(call, plan){
+      const goodInfo = (call.collected.addressKnown || call.collected.natureKnown);
+      if(!goodInfo){
+        addLine(call,"OPERADOR","Preciso do endereço e do que está acontecendo para registrar.", true, ()=>{
+          addScore(-3);
+          renderChoicesForCall(call);
+        });
+        return;
+      }
+      const inc = createIncidentFromCall(call, plan);
 
-      const needSet = new Set(inc.needs);
-      const serviceNeeds = ['police','fire','medic'];
-      for(const s of serviceNeeds){
-        if(needSet.has(s) && !unit.tags.includes(s)) return false;
+      // Pontuação inicial depende do plano (só para reforçar realismo: mandar mínimo pode dar bônus de custo, mas risco maior depois)
+      if(plan==='min') addScore(+6);
+      if(plan==='std') addScore(+10);
+      if(plan==='max') addScore(+8);
+
+      addLine(call,"OPERADOR","Entendido. Vou registrar e despachar unidades. Permaneça na linha se possível.", true, ()=>{
+        endActiveCall(`Ocorrência registrada: ${inc.title}. Agora faça o DESPACHO manual na lista/mapa.`);
+        toast('Agora selecione a ocorrência na lista e escolha as unidades para despachar.');
+      });
+    }
+
+    /***********************
+     *  Dispatch logic (Manual + Pendências)
+     ************************/
+    const SERVICE_NEEDS = new Set(['police','fire','medic']);
+    function unitCovers(unit, need){
+      // need pode ser service ('police') ou capability ('tactical','bomb','ems','rescue','firetruck','patrol'...)
+      if(SERVICE_NEEDS.has(need)){
+        return unit.tags.includes(need);
       }
-      for(const t of inc.needs){
-        if(t==='triage') continue;
-        if(serviceNeeds.includes(t)) continue;
-        if(t==='tactical' && (unit.tags.includes('swat') || unit.tags.includes('tactical'))) continue;
-        if(!unit.tags.includes(t)) return false;
+      // compatibilidades especiais
+      if(need==='tactical') return unit.tags.includes('tactical') || unit.tags.includes('swat');
+      return unit.tags.includes(need);
+    }
+
+    function computeRemaining(inc){
+      const remaining = [];
+      for(const need of inc.needs){
+        if(need==='triage') continue;
+        // já coberto por alguma unidade enviada?
+        const covered = inc.assignedUnits.some(uid=>{
+          const u = GAME.units.find(x=>x.id===uid);
+          return u ? unitCovers(u, need) : false;
+        });
+        if(!covered) remaining.push(need);
       }
-      return true;
+      inc.pending = remaining;
+      return remaining;
     }
 
     function selectIncident(incId){
       GAME.selectedIncidentId = incId;
       const inc = GAME.incidents.find(x=>x.id===incId);
       if(!inc) return;
+      computeRemaining(inc);
       $('dispatchHint').textContent = `Selecionada: ${inc.title}`;
       $('btnDispatch').disabled = false;
       $('btnUnselect').disabled = false;
+      renderUnits();         // agora filtra melhor
       renderDispatchPanel();
       toast(`Ocorrência selecionada: ${inc.title}`);
     }
 
     function selectUnitForDispatch(unitId){
       selectedUnitId = unitId;
+      renderUnits();
       renderDispatchPanel();
       toast('Unidade selecionada.');
-    }
-
-    function renderDispatchPanel(){
-      const inc = GAME.incidents.find(x=>x.id===GAME.selectedIncidentId);
-      if(!inc){
-        $('dispatchPanel').textContent = 'Nenhuma ocorrência selecionada.';
-        $('btnDispatch').disabled = true;
-        $('btnUnselect').disabled = true;
-        return;
-      }
-      const needs = inc.needs.map(t=>`<span class="chip">${escapeHTML(t)}</span>`).join(' ');
-      const unit = selectedUnitId ? GAME.units.find(u=>u.id===selectedUnitId) : null;
-
-      const unitLine = unit
-        ? `<div style="margin-top:8px"><strong>Unidade:</strong> ${escapeHTML(unit.name)} <span class="chip ${unit.status==='idle'?'ok':'busy'}">${escapeHTML(unit.status)}</span></div>`
-        : `<div style="margin-top:8px; opacity:.85">Escolha uma unidade (toque em uma na lista).</div>`;
-
-      $('dispatchPanel').innerHTML = `
-        <div><strong>Ocorrência:</strong> ${escapeHTML(inc.title)}
-          <span class="sev ${inc.sev==='high'?'high':(inc.sev==='med'?'med':'low')}">${escapeHTML(inc.sev.toUpperCase())}</span>
-        </div>
-        <div style="margin-top:8px"><strong>Necessidades:</strong> ${needs}</div>
-        ${unitLine}
-        <div style="margin-top:8px; opacity:.8; font-family: var(--mono); font-size: 12px;">
-          Tempo restante: ${fmtMMSS(inc.timeLeft)}
-        </div>
-      `;
     }
 
     function dispatchSelected(){
@@ -1152,17 +1163,31 @@
       const unit = GAME.units.find(u=>u.id===selectedUnitId);
       if(!unit){ toast('Unidade inválida.'); return; }
       if(unit.status !== 'idle'){ toast('Unidade ocupada.'); return; }
-      if(inc.dispatched){ toast('Ocorrência já despachada.'); return; }
 
-      const ok = canUnitHandleIncident(unit, inc);
+      // já enviou essa unidade?
+      if(inc.assignedUnits.includes(unit.id)){
+        toast('Essa unidade já foi enviada para essa ocorrência.');
+        return;
+      }
 
+      // a unidade precisa cobrir pelo menos UMA pendência, senão é desperdício
+      computeRemaining(inc);
+      const coversSomething = inc.pending.some(need => unitCovers(unit, need));
+
+      // Permite mandar mesmo assim, mas penaliza bastante
       unit.status = 'enroute';
-      unit.target = { incId: inc.id, toLat: inc.loc.lat, toLng: inc.loc.lng, ok };
-      inc.dispatched = true;
-      inc.assignedUnitId = unit.id;
+      unit.target = { incId: inc.id, toLat: inc.loc.lat, toLng: inc.loc.lng, ok: coversSomething };
 
-      if(ok){ addScore(+10); toast('Despacho OK.'); }
-      else { addScore(-8); toast('Unidade possivelmente inadequada.'); }
+      inc.assignedUnits.push(unit.id);
+      computeRemaining(inc);
+
+      if(coversSomething){
+        addScore(+10);
+        toast('Despacho OK (cobre pendências).');
+      } else {
+        addScore(-12);
+        toast('Despacho ruim: unidade não cobre pendências (desperdício).');
+      }
 
       renderUnits();
       renderIncidents();
@@ -1175,40 +1200,57 @@
       $('dispatchHint').textContent = 'Selecione uma ocorrência';
       $('btnDispatch').disabled = true;
       $('btnUnselect').disabled = true;
+      renderUnits();
       renderDispatchPanel();
     }
 
-    function resolveIncident(inc, unit){
+    function resolveIncident(inc){
       if(!inc || inc.resolved) return;
+
+      computeRemaining(inc);
+
+      // Se ainda faltam pendências, não resolve (exige despacho completo)
+      if(inc.pending.length > 0){
+        toast('⚠️ Ocorrência ainda tem pendências. Envie reforço/unidades corretas.');
+        addScore(-4);
+        return;
+      }
+
       inc.resolved = true;
 
       const urgency = inc.sev==='high' ? 3 : (inc.sev==='med' ? 2 : 1);
       const timeFactor = inc.timeLeft / inc.expiresIn;
       const fast = timeFactor > 0.55;
 
+      // avaliação com base em plano + tempo
       let scoreDelta = 0, xpDelta=0, moneyDelta=0;
       let outcome = "Resolvido.";
 
-      if(unit && unit.target && unit.target.ok){
-        scoreDelta += 18 * urgency;
-        xpDelta += 12 * urgency;
-        moneyDelta += 8 * urgency;
-        outcome = fast ? "Sucesso rápido. Bom trabalho." : "Sucesso. Atendimento adequado.";
-      }else{
-        scoreDelta -= 12 * urgency;
-        xpDelta += 2;
-        moneyDelta += 1;
-        outcome = "Resultado ruim: unidade inadequada/atraso. Penalização.";
+      scoreDelta += 18 * urgency;
+      xpDelta += 12 * urgency;
+      moneyDelta += 8 * urgency;
+
+      if(inc.plan==='min') {
+        // barato, mas arriscado — se resolveu rápido dá bônus, se não, pequena penalização
+        scoreDelta += fast ? +6 : -4;
+      } else if(inc.plan==='max'){
+        // mais unidades — custo
+        moneyDelta -= 2 * urgency;
+        scoreDelta += fast ? +2 : +0;
       }
+
+      outcome = fast ? "Sucesso rápido. Ótimo despacho." : "Sucesso. Despacho concluído.";
 
       addScore(Math.round(scoreDelta));
       addXP(Math.round(xpDelta));
       addMoney(Math.round(moneyDelta));
 
+      // remove ocorrência
       GAME.incidents = GAME.incidents.filter(x=>x.id !== inc.id);
       $('incTag').textContent = String(GAME.incidents.length);
-      renderIncidents();
+
       if(GAME.selectedIncidentId === inc.id) clearSelection();
+      renderIncidents();
 
       toast(`📄 Relatório: ${outcome}`);
     }
@@ -1256,14 +1298,19 @@
         return;
       }
       for(const inc of GAME.incidents.slice(0,10)){
+        computeRemaining(inc);
+
         const it = document.createElement('div');
         it.className = 'item';
         it.onclick = ()=> selectIncident(inc.id);
-        const unitName = inc.assignedUnitId ? (GAME.units.find(u=>u.id===inc.assignedUnitId)?.name || 'Unidade') : '—';
+
+        const pendingTxt = inc.pending.length ? `Pendências: ${inc.pending.join(', ')}` : `Pendências: OK`;
+        const sentTxt = inc.assignedUnits.length ? `Enviado: ${inc.assignedUnits.length} unid.` : 'Enviado: 0 unid.';
+
         it.innerHTML = `
           <div class="a">
             <p class="t">${escapeHTML(inc.title)}</p>
-            <div class="s">ID ${escapeHTML(inc.id)} • Unidade: ${escapeHTML(unitName)} • ⏱ ${fmtMMSS(inc.timeLeft)}</div>
+            <div class="s">ID ${escapeHTML(inc.id)} • ⏱ ${fmtMMSS(inc.timeLeft)} • ${escapeHTML(sentTxt)} • ${escapeHTML(pendingTxt)}</div>
           </div>
           <span class="sev ${inc.sev==='high'?'high':(inc.sev==='med'?'med':'low')}">${escapeHTML(inc.sev.toUpperCase())}</span>
         `;
@@ -1275,9 +1322,28 @@
     function renderUnits(){
       const wrap = $('unitChips');
       wrap.innerHTML = '';
+
+      const inc = GAME.incidents.find(x=>x.id===GAME.selectedIncidentId);
+      if(!inc){
+        $('unitHelp').textContent = 'Selecione uma ocorrência para ver quais unidades fazem sentido.';
+      } else {
+        computeRemaining(inc);
+        $('unitHelp').textContent = inc.pending.length
+          ? `Pendências: ${inc.pending.join(', ')} — escolha unidades que cubram isso.`
+          : 'Todas as pendências cobertas. (Você ainda pode enviar reforço.)';
+      }
+
       for(const u of GAME.units){
+        let cls = 'chip ' + (u.status==='idle'?'ok':'busy');
+        if(selectedUnitId === u.id) cls += ' sel';
+
+        let useful = false;
+        if(inc && u.status==='idle'){
+          useful = inc.pending.some(need => unitCovers(u, need));
+        }
+
         const chip = document.createElement('span');
-        chip.className = 'chip ' + (u.status==='idle'?'ok':'busy');
+        chip.className = cls + (inc ? (useful ? '' : ' warn') : '');
         chip.textContent = `${u.name}`;
         chip.onclick = ()=>{
           if(!GAME.selectedIncidentId){ toast('Selecione uma ocorrência primeiro.'); return; }
@@ -1287,14 +1353,68 @@
       }
     }
 
+    function renderDispatchPanel(){
+      const inc = GAME.incidents.find(x=>x.id===GAME.selectedIncidentId);
+      if(!inc){
+        $('dispatchPanel').textContent = 'Nenhuma ocorrência selecionada.';
+        $('btnDispatch').disabled = true;
+        $('btnUnselect').disabled = true;
+        return;
+      }
+      computeRemaining(inc);
+
+      const needs = inc.needs.map(t=>`<span class="chip">${escapeHTML(t)}</span>`).join(' ');
+      const pending = inc.pending.length
+        ? inc.pending.map(t=>`<span class="chip bad">${escapeHTML(t)}</span>`).join(' ')
+        : `<span class="chip ok">OK</span>`;
+
+      const unit = selectedUnitId ? GAME.units.find(u=>u.id===selectedUnitId) : null;
+
+      const unitLine = unit
+        ? `<div style="margin-top:8px"><strong>Unidade selecionada:</strong> ${escapeHTML(unit.name)}
+            <span class="chip ${unit.status==='idle'?'ok':'busy'}">${escapeHTML(unit.status)}</span>
+          </div>`
+        : `<div style="margin-top:8px; opacity:.85">Escolha uma unidade (chips) para despachar.</div>`;
+
+      const sentList = inc.assignedUnits.length
+        ? inc.assignedUnits.map(uid=>{
+            const u = GAME.units.find(x=>x.id===uid);
+            return `<span class="chip">${escapeHTML(u ? u.name : uid)}</span>`;
+          }).join(' ')
+        : `<span class="chip warn">Nenhuma unidade enviada</span>`;
+
+      $('dispatchPanel').innerHTML = `
+        <div>
+          <strong>Ocorrência:</strong> ${escapeHTML(inc.title)}
+          <span class="sev ${inc.sev==='high'?'high':(inc.sev==='med'?'med':'low')}">${escapeHTML(inc.sev.toUpperCase())}</span>
+        </div>
+
+        <div style="margin-top:8px"><strong>Requisitos (o que faz sentido):</strong> ${needs}</div>
+        <div style="margin-top:8px"><strong>Pendências (o que falta cobrir):</strong> ${pending}</div>
+
+        <div style="margin-top:8px"><strong>Unidades enviadas:</strong> ${sentList}</div>
+
+        ${unitLine}
+
+        <div style="margin-top:8px; opacity:.8; font-family: var(--mono); font-size: 12px;">
+          Tempo restante: ${fmtMMSS(inc.timeLeft)} • Plano: ${escapeHTML(inc.plan.toUpperCase())}
+        </div>
+
+        <div style="margin-top:8px; opacity:.78; font-size: 12px;">
+          <strong>Dica:</strong> ${escapeHTML(inc.notes || '—')}
+        </div>
+      `;
+
+      $('btnDispatch').disabled = false;
+      $('btnUnselect').disabled = false;
+    }
+
     function renderHUD(){
       $('score').textContent = String(GAME.score);
       $('shiftClock').textContent = fmtMMSS(GAME.shiftElapsed);
-
       $('lvl').textContent = String(CAREER.lvl);
       $('xp').textContent = String(CAREER.xp);
       $('money').textContent = String(CAREER.money);
-
       $('shiftState').textContent = GAME.running ? 'ON' : 'OFF';
       $('dotShift').className = 'dot ' + (GAME.running ? 'ok' : '');
     }
@@ -1318,7 +1438,6 @@
       GAME.agency = $('agency').value;
 
       $('regionTag').textContent = CITIES[GAME.cityKey].regionTag;
-
       GAME.scenarioPool = buildScenarioPool(GAME.agency);
 
       buildUnitsForCity();
@@ -1403,10 +1522,10 @@
         if(inc.timeLeft <= 0){
           addScore(inc.sev==='high' ? -30 : (inc.sev==='med' ? -18 : -8));
           addXP(2);
+          toast('Ocorrência piorou/expirou. Penalização.');
           GAME.incidents = GAME.incidents.filter(x=>x.id !== inc.id);
           $('incTag').textContent = String(GAME.incidents.length);
           if(GAME.selectedIncidentId === inc.id) clearSelection();
-          toast('Ocorrência piorou/expirou. Penalização.');
         }
       }
 
@@ -1425,7 +1544,8 @@
             u.status = 'onscene';
 
             const inc = GAME.incidents.find(x=>x.id===u.target.incId);
-            const onscene = inc ? (inc.sev==='high' ? 10 : (inc.sev==='med' ? 12 : 9)) : 9;
+            // tempo de cena varia
+            const onscene = inc ? (inc.sev==='high' ? 12 : (inc.sev==='med' ? 14 : 10)) : 10;
             u.busyUntil = GAME.shiftElapsed + onscene;
 
             toast(`Unidade chegou: ${u.name}`);
@@ -1436,9 +1556,13 @@
         }
 
         if(u.status === 'onscene' && GAME.shiftElapsed >= u.busyUntil){
+          // quando uma unidade termina, tentamos resolver a ocorrência (MAS só resolve se pendências == 0)
           const inc = GAME.incidents.find(x=>x.id===u.target?.incId);
-          resolveIncident(inc, u);
+          if(inc){
+            resolveIncident(inc);
+          }
 
+          // unidade volta a ficar disponível
           u.status = 'idle';
           u.target = null;
           u.busyUntil = 0;
@@ -1459,57 +1583,34 @@
       dpr: 1,
       w: 0,
       h: 0,
-      // world -> view
       zoom: 1.0,
       panX: 0,
       panY: 0,
-      // input
       dragging: false,
       lastX: 0,
       lastY: 0,
       pinch: false,
       pinchDist: 0,
       pinchZoomStart: 1.0,
-      // cache
-      hoveredId: null,
     };
 
     function cityBounds(){
       return CITIES[GAME.cityKey].bounds;
     }
-
     function worldToNorm(lat, lng){
-      // normalize into 0..1 across bounds
       const b = cityBounds();
       const nx = (lng - b.lngMin) / (b.lngMax - b.lngMin);
       const ny = (lat - b.latMin) / (b.latMax - b.latMin);
       return { nx, ny };
     }
-
     function normToScreen(nx, ny){
-      // base viewport mapping with zoom/pan
-      // Note: y inverted for screen (higher ny -> lower on screen)
       const x = (nx - 0.5) * MAP.w * MAP.zoom + MAP.w/2 + MAP.panX;
       const y = (-(ny - 0.5)) * MAP.h * MAP.zoom + MAP.h/2 + MAP.panY;
       return { x, y };
     }
-
     function worldToScreen(lat, lng){
       const { nx, ny } = worldToNorm(lat, lng);
       return normToScreen(nx, ny);
-    }
-
-    function screenToNorm(x, y){
-      const nx = ((x - MAP.w/2 - MAP.panX) / (MAP.w * MAP.zoom)) + 0.5;
-      const ny = (-( (y - MAP.h/2 - MAP.panY) / (MAP.h * MAP.zoom) )) + 0.5;
-      return { nx, ny };
-    }
-
-    function normToWorld(nx, ny){
-      const b = cityBounds();
-      const lng = b.lngMin + nx * (b.lngMax - b.lngMin);
-      const lat = b.latMin + ny * (b.latMax - b.latMin);
-      return { lat, lng };
     }
 
     function resizeCanvas(){
@@ -1523,11 +1624,21 @@
       MAP.ctx.setTransform(MAP.dpr, 0, 0, MAP.dpr, 0, 0);
     }
 
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+    }
+
     function drawMap(){
       const ctx = MAP.ctx;
       ctx.clearRect(0, 0, MAP.w, MAP.h);
 
-      // background
       const grad = ctx.createLinearGradient(0,0, MAP.w, MAP.h);
       grad.addColorStop(0, 'rgba(96,165,250,0.08)');
       grad.addColorStop(0.5,'rgba(0,0,0,0.15)');
@@ -1537,7 +1648,6 @@
       ctx.fillStyle = grad;
       ctx.fillRect(0,0,MAP.w,MAP.h);
 
-      // grid (city vibe)
       const gridStep = 48 * MAP.zoom;
       ctx.save();
       ctx.translate(MAP.panX % gridStep, MAP.panY % gridStep);
@@ -1551,12 +1661,11 @@
       }
       ctx.restore();
 
-      // city label
       ctx.fillStyle = 'rgba(255,255,255,0.82)';
       ctx.font = '700 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
       ctx.fillText(`${CITIES[GAME.cityKey].label} • Zoom ${MAP.zoom.toFixed(2)}`, 12, MAP.h - 14);
 
-      // routes (unit->target)
+      // linhas unidade->alvo
       for(const u of GAME.units){
         if(u.status === 'enroute' && u.target){
           const a = worldToScreen(u.lat, u.lng);
@@ -1570,13 +1679,12 @@
         }
       }
 
-      // incidents (circles)
+      // ocorrências
       for(const inc of GAME.incidents){
         const p = worldToScreen(inc.loc.lat, inc.loc.lng);
         const r = 10;
         const col = inc.sev==='high' ? 'rgba(239,68,68,0.95)' : (inc.sev==='med' ? 'rgba(245,158,11,0.95)' : 'rgba(34,197,94,0.95)');
 
-        // selection halo
         if(GAME.selectedIncidentId === inc.id){
           ctx.fillStyle = 'rgba(96,165,250,0.22)';
           ctx.beginPath();
@@ -1592,13 +1700,19 @@
         ctx.fill();
         ctx.stroke();
 
-        // timer tiny
         ctx.fillStyle = 'rgba(255,255,255,0.85)';
         ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
         ctx.fillText(fmtMMSS(inc.timeLeft), p.x + 14, p.y + 4);
+
+        computeRemaining(inc);
+        if(inc.pending.length){
+          ctx.fillStyle = 'rgba(255,255,255,0.75)';
+          ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+          ctx.fillText(`FALTA: ${inc.pending.join(',')}`, p.x + 14, p.y + 18);
+        }
       }
 
-      // units (rounded squares)
+      // unidades
       for(const u of GAME.units){
         const p = worldToScreen(u.lat, u.lng);
         const s = 16;
@@ -1606,7 +1720,6 @@
         if(u.type==='fire') col = 'rgba(251,113,133,0.95)';
         if(u.type==='medic') col = 'rgba(52,211,153,0.95)';
 
-        // unit selection halo
         if(selectedUnitId === u.id){
           ctx.fillStyle = 'rgba(167,139,250,0.22)';
           roundRect(ctx, p.x-(s/2)-8, p.y-(s/2)-8, s+16, s+16, 10);
@@ -1625,7 +1738,6 @@
         const letter = u.type==='police' ? 'P' : (u.type==='fire' ? 'F' : 'M');
         ctx.fillText(letter, p.x-4, p.y+4);
 
-        // status
         if(u.status !== 'idle'){
           ctx.fillStyle = 'rgba(255,255,255,0.85)';
           ctx.font = '11px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
@@ -1636,20 +1748,7 @@
       requestAnimationFrame(drawMap);
     }
 
-    function roundRect(ctx, x, y, w, h, r){
-      const rr = Math.min(r, w/2, h/2);
-      ctx.beginPath();
-      ctx.moveTo(x+rr, y);
-      ctx.arcTo(x+w, y, x+w, y+h, rr);
-      ctx.arcTo(x+w, y+h, x, y+h, rr);
-      ctx.arcTo(x, y+h, x, y, rr);
-      ctx.arcTo(x, y, x+w, y, rr);
-      ctx.closePath();
-    }
-
     function hitTest(x, y){
-      // priority: incidents first, then units
-      // incidents radius ~ 12, units box ~ 18
       for(const inc of [...GAME.incidents].reverse()){
         const p = worldToScreen(inc.loc.lat, inc.loc.lng);
         const dx = x - p.x, dy = y - p.y;
@@ -1674,7 +1773,6 @@
       MAP.panX = 0;
       MAP.panY = 0;
 
-      // pointer events (pan)
       MAP.canvas.addEventListener('pointerdown', (e)=>{
         MAP.canvas.setPointerCapture(e.pointerId);
         MAP.dragging = true;
@@ -1694,7 +1792,6 @@
         if(!MAP.dragging) return;
         MAP.dragging = false;
 
-        // click detection: if small movement
         const rect = MAP.canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left);
         const y = (e.clientY - rect.top);
@@ -1712,16 +1809,13 @@
         }
       });
 
-      // wheel zoom (desktop)
       MAP.canvas.addEventListener('wheel', (e)=>{
         e.preventDefault();
         const delta = -e.deltaY;
         const factor = delta > 0 ? 1.08 : 0.92;
-        const newZoom = clamp(MAP.zoom * factor, 0.65, 2.6);
-        MAP.zoom = newZoom;
+        MAP.zoom = clamp(MAP.zoom * factor, 0.65, 2.6);
       }, { passive:false });
 
-      // touch pinch zoom
       MAP.canvas.addEventListener('touchstart', (e)=>{
         if(e.touches.length === 2){
           MAP.pinch = true;
@@ -1806,7 +1900,7 @@
     setupCanvasMap();
     renderAll();
 
-    setTimeout(()=>toast('Dica: Inicie o turno, crie ocorrência e despache no mapa.'), 650);
+    setTimeout(()=>toast('Fase 2: Ocorrência agora exige despacho MANUAL e pode precisar de múltiplas unidades.'), 650);
   </script>
 </body>
 </html>
