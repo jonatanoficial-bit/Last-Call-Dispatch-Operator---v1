@@ -119,6 +119,26 @@ const state = {
   units: []
 };
 
+// ===== Buttons refresher (MOBILE ROBUST) =====
+function refreshButtons(){
+  const canAnswer = state.running && !state.current && state.queue.length > 0;
+  const hasCurrent = state.running && !!state.current;
+
+  ui.btnAnswer.disabled = !canAnswer;
+
+  ui.btnHold.disabled = !hasCurrent;
+
+  ui.dispatchUnitSelect.disabled = !hasCurrent;
+  ui.btnDispatch.disabled = !hasCurrent;
+  ui.btnDismiss.disabled = !hasCurrent;
+
+  // info pills
+  ui.pillStatus.textContent = state.running ? "Turno em andamento" : "Turno parado";
+  if(!state.current){
+    ui.pillCallTimer.textContent = "Sem chamada";
+  }
+}
+
 // ===== Cities + Units =====
 function getCity(){
   return window.CITIES.find(c => c.id === state.cityId) || window.CITIES[0];
@@ -219,6 +239,7 @@ function enqueueCall(){
   state.queue.push({ call, createdAt: state.shiftSeconds, ttl });
   logLine(`📥 Nova chamada: "${call.title}" (${call.severity.toUpperCase()})`);
   renderQueue();
+  refreshButtons(); // <- garante que “Atender próxima” habilita imediatamente
 }
 
 function renderQueue(){
@@ -257,6 +278,7 @@ function setCurrentFromQueue(){
 
   updateCurrentUI(true);
   renderQueue();
+  refreshButtons();
 }
 
 function updateCurrentUI(isNew){
@@ -265,13 +287,9 @@ function updateCurrentUI(isNew){
   if(!state.current){
     ui.callMeta.textContent = "—";
     ui.dispatchInfo.textContent = "—";
-    ui.pillCallTimer.textContent = "Sem chamada";
     ui.callText.textContent = "Aguardando chamadas...";
     ui.dispatchUnitSelect.value = "";
-    ui.dispatchUnitSelect.disabled = true;
-    ui.btnDispatch.disabled = true;
-    ui.btnDismiss.disabled = true;
-    ui.btnHold.disabled = true;
+    refreshButtons();
     return;
   }
 
@@ -281,16 +299,13 @@ function updateCurrentUI(isNew){
   ui.callMeta.textContent = `Linha: ${greet} • Caso: ${state.current.title} • Gravidade: ${sev.toUpperCase()}`;
   ui.dispatchInfo.textContent = `Selecione a unidade adequada para "${state.current.title}" (${sev.toUpperCase()})`;
 
-  ui.dispatchUnitSelect.disabled = false;
-  ui.btnDispatch.disabled = false;
-  ui.btnDismiss.disabled = false;
-  ui.btnHold.disabled = false;
-
   if(isNew){
     const params = difficultyParams(state.difficulty);
     const fullText = `${greet}\n\nChamador: ${state.current.text}`;
     typeWriter(ui.callText, fullText, params.typeSpeed);
   }
+
+  refreshButtons();
 }
 
 // ===== Score / Resolve =====
@@ -359,6 +374,7 @@ function resolveCall(unitId, action){
   updateCurrentUI(false);
   renderQueue();
   updateSummary();
+  refreshButtons();
 }
 
 // ===== HUD/Summary =====
@@ -435,13 +451,12 @@ function tick(){
     ui.pillCallTimer.textContent = "Sem chamada";
   }
 
-  // botão atender
-  ui.btnAnswer.disabled = !(state.running && !state.current && state.queue.length > 0);
-
   // fim do turno
   if(state.shiftSeconds >= state.shiftDuration){
     endShift();
   }
+
+  refreshButtons();
 }
 
 function startShift(){
@@ -466,9 +481,6 @@ function startShift(){
   ui.agencySelect.disabled = true;
   ui.difficultySelect.disabled = true;
 
-  ui.pillStatus.textContent = "Turno em andamento";
-  ui.pillCallTimer.textContent = "Sem chamada";
-
   rebuildUnits();
   updateHUD();
   updateSummary();
@@ -480,10 +492,10 @@ function startShift(){
   renderQueue();
   updateCurrentUI(false);
 
-  ui.btnAnswer.disabled = false;
-
   if(interval) clearInterval(interval);
   interval = setInterval(tick, 1000);
+
+  refreshButtons();
 }
 
 function endShift(){
@@ -513,6 +525,8 @@ function endShift(){
     clearInterval(interval);
     interval = null;
   }
+
+  refreshButtons();
 }
 
 // ===== Actions =====
@@ -521,8 +535,9 @@ function answerNext(){
   if(state.current) return;
   if(state.queue.length === 0) return;
 
+  logLine("📞 Atendendo próxima chamada...");
   setCurrentFromQueue();
-  ui.btnAnswer.disabled = true;
+  refreshButtons();
 }
 
 function holdCall(){
@@ -539,8 +554,7 @@ function holdCall(){
 
   updateCurrentUI(false);
   renderQueue();
-
-  ui.btnAnswer.disabled = !(state.queue.length === 0);
+  refreshButtons();
 }
 
 function dispatchSelected(){
@@ -553,7 +567,7 @@ function dispatchSelected(){
     return;
   }
   resolveCall(unitId, "dispatch");
-  ui.btnAnswer.disabled = !(state.queue.length > 0);
+  refreshButtons();
 }
 
 function dismissCall(){
@@ -561,13 +575,20 @@ function dismissCall(){
   if(!state.current) return;
 
   resolveCall("", "dismiss");
-  ui.btnAnswer.disabled = !(state.queue.length > 0);
+  refreshButtons();
+}
+
+// ===== Mobile tap helpers =====
+function bindTap(el, fn){
+  if(!el) return;
+  el.addEventListener("click", (e) => { e.preventDefault(); fn(); });
+  el.addEventListener("touchstart", (e) => { e.preventDefault(); fn(); }, { passive: false });
 }
 
 // ===== Bind + Init =====
 function bindUI(){
-  ui.btnStart.addEventListener("click", startShift);
-  ui.btnEnd.addEventListener("click", endShift);
+  bindTap(ui.btnStart, startShift);
+  bindTap(ui.btnEnd, endShift);
 
   ui.citySelect.addEventListener("change", () => {
     state.cityId = ui.citySelect.value;
@@ -579,10 +600,10 @@ function bindUI(){
     rebuildUnits();
   });
 
-  ui.btnAnswer.addEventListener("click", answerNext);
-  ui.btnHold.addEventListener("click", holdCall);
-  ui.btnDispatch.addEventListener("click", dispatchSelected);
-  ui.btnDismiss.addEventListener("click", dismissCall);
+  bindTap(ui.btnAnswer, answerNext);
+  bindTap(ui.btnHold, holdCall);
+  bindTap(ui.btnDispatch, dispatchSelected);
+  bindTap(ui.btnDismiss, dismissCall);
 }
 
 function init(){
@@ -604,11 +625,9 @@ function init(){
   updateHUD();
   updateSummary();
 
-  ui.btnAnswer.disabled = true;
-  ui.btnHold.disabled = true;
-  ui.btnDispatch.disabled = true;
-  ui.btnDismiss.disabled = true;
   ui.dispatchUnitSelect.disabled = true;
+
+  refreshButtons();
 
   logLine("✅ Sistema pronto. Selecione cidade/agência e clique em INICIAR TURNO.");
 }
