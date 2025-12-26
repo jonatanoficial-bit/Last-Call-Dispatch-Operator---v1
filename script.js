@@ -1,9 +1,9 @@
 // script.js
 // Last Call Dispatch Operator - FASE A: Fila + Atendimento com Perguntas + Despacho Manual
-// Regras:
-// - Você só pode despachar após coletar informações mínimas (endereço/situação/risco)
-// - Perguntas consomem tempo e afetam a assertividade
-// - Trote existe: o correto é encerrar, e perguntas ajudam a confirmar
+// Melhorias:
+// - Checklist em PT-BR
+// - Fallback: se a chamada não tiver questions definidas, usa truth.address/situation/danger
+// - Nunca deixa aparecer “(sem resposta definida)” se houver truth
 
 const $ = (id) => document.getElementById(id);
 
@@ -29,7 +29,6 @@ async function typeWriter(el, text, speedMs){
 }
 async function typeAppend(el, text, speedMs){
   const token = ++typingToken;
-  // não limpa, apenas adiciona
   for(let i=0;i<text.length;i++){
     if(token !== typingToken) return;
     el.textContent += text[i];
@@ -61,7 +60,7 @@ function verifyDataLoaded(){
   return true;
 }
 
-// ===== UI refs (IDs existentes do seu layout) =====
+// ===== UI refs =====
 const ui = {
   citySelect: $("citySelect"),
   agencySelect: $("agencySelect"),
@@ -93,7 +92,7 @@ const ui = {
   shiftSummary: $("shiftSummary"),
 };
 
-// Vamos criar o painel de perguntas dinamicamente (sem mexer no index.html)
+// Painel de perguntas (criado via JS)
 let questionsPanel = null;
 
 function ensureQuestionsPanel(){
@@ -127,7 +126,6 @@ function ensureQuestionsPanel(){
   questionsPanel.appendChild(btnRow);
   questionsPanel.appendChild(status);
 
-  // coloca logo abaixo do texto da chamada
   const parent = ui.callText?.parentElement;
   if(parent){
     parent.appendChild(questionsPanel);
@@ -143,7 +141,6 @@ function setQuestionsStatus(text){
   if(el) el.textContent = text;
 }
 
-// ===== helpers =====
 function severityClass(sev){
   if(sev === "leve") return "leve";
   if(sev === "medio") return "medio";
@@ -173,16 +170,28 @@ const state = {
   spawnTimer: 0,
 
   queue: [],
-  current: null,        // objeto call (do CALLS)
+  current: null,
   currentTTL: 0,
 
-  // Estado de atendimento da chamada (o que o jogador coletou)
-  callIntel: null,      // { requiredDone:Set, optionalDone:Set, collected:{address,situation,danger}, notes:[] }
+  callIntel: null,
 
   score: 0,
   stats: { handled:0, correct:0, wrong:0, pranks:0, expired:0 },
 
   units: []
+};
+
+// ===== labels PT-BR =====
+const KEY_LABEL_PT = {
+  address: "Endereço",
+  situation: "Situação",
+  danger: "Risco/Feridos"
+};
+
+const DEFAULT_Q_PT = {
+  address: "Perguntar: Qual é o endereço exato?",
+  situation: "Perguntar: O que está acontecendo (situação)?",
+  danger: "Perguntar: Há risco imediato? Alguém ferido?"
 };
 
 function refreshButtons(){
@@ -192,12 +201,11 @@ function refreshButtons(){
   ui.btnAnswer.disabled = !canAnswer;
   ui.btnHold.disabled = !hasCurrent;
 
-  // despacho só libera se tiver chamada e requisitos mínimos coletados
   const canDispatch = hasCurrent && isDispatchUnlocked();
 
   ui.dispatchUnitSelect.disabled = !canDispatch;
   ui.btnDispatch.disabled = !canDispatch;
-  ui.btnDismiss.disabled = !hasCurrent; // encerrar pode sempre (mas pode penalizar)
+  ui.btnDismiss.disabled = !hasCurrent;
 
   ui.pillStatus.textContent = state.running ? "Turno em andamento" : "Turno parado";
 
@@ -206,20 +214,18 @@ function refreshButtons(){
   }
 }
 
+function getRequiredKeys(call){
+  const req = call?.questions?.required;
+  if(Array.isArray(req) && req.length) return req;
+  // padrão
+  if(call?.truth?.isPrank) return ["address", "situation"];
+  return ["address", "situation", "danger"];
+}
+
 function isDispatchUnlocked(){
   if(!state.current || !state.callIntel) return false;
-
-  const req = state.current.questions?.required || ["address","situation","danger"];
-  const done = state.callIntel.requiredDone;
-
-  // trote pode não exigir "danger"
-  if(state.current.truth?.isPrank){
-    // se for trote, exigimos pelo menos address + situation (ou o que vier no required)
-    return req.every(k => done.has(k));
-  }
-
-  // caso real: exige tudo do required
-  return req.every(k => done.has(k));
+  const req = getRequiredKeys(state.current);
+  return req.every(k => state.callIntel.requiredDone.has(k));
 }
 
 // ===== Cities / Units =====
@@ -291,7 +297,6 @@ function rebuildDispatchSelect(){
 function pickCall(){
   const progress = state.shiftSeconds / state.shiftDuration;
 
-  // pesos variando ao longo do turno
   const weights = {
     trote: clamp(0.28 - progress*0.12, 0.10, 0.28),
     leve:  clamp(0.34 - progress*0.10, 0.14, 0.34),
@@ -355,7 +360,6 @@ function setCurrentFromQueue(){
   state.current = next.call;
   state.currentTTL = next.ttl;
 
-  // inicia inteligência da chamada
   state.callIntel = {
     requiredDone: new Set(),
     optionalDone: new Set(),
@@ -402,10 +406,9 @@ function updateCurrentUI(isNew){
     typeWriter(ui.callText, initial, params.typeSpeed);
   }
 
-  // aviso de despacho bloqueado
   ui.dispatchInfo.textContent = isDispatchUnlocked()
     ? `Despacho liberado. Selecione a unidade adequada para "${state.current.title}".`
-    : `Despacho BLOQUEADO: pergunte endereço + situação + risco antes de despachar.`;
+    : `Despacho BLOQUEADO: pergunte ${getRequiredKeys(state.current).map(k=>KEY_LABEL_PT[k]||k).join(" + ")} antes de despachar.`;
 
   updateQuestionsStatusLine();
   refreshButtons();
@@ -417,10 +420,10 @@ function updateQuestionsStatusLine(){
     return;
   }
 
-  const req = state.current.questions?.required || ["address","situation","danger"];
+  const req = getRequiredKeys(state.current);
   const done = state.callIntel.requiredDone;
 
-  const checklist = req.map(k => `${done.has(k) ? "✅" : "⬜"} ${k}`).join("  |  ");
+  const checklist = req.map(k => `${done.has(k) ? "✅" : "⬜"} ${KEY_LABEL_PT[k] || k}`).join("  |  ");
   setQuestionsStatus(`Protocolo: ${checklist}`);
 }
 
@@ -433,15 +436,13 @@ function clearQuestionButtons(){
 function makeButton(text, onTap, disabled=false){
   const b = document.createElement("button");
   b.type = "button";
-  b.className = "btn"; // usa a classe do seu CSS (se existir). Se não, funciona igual.
+  b.className = "btn";
   b.textContent = text;
   b.disabled = !!disabled;
 
-  // mobile robust
   b.addEventListener("click", (e) => { e.preventDefault(); onTap(); });
   b.addEventListener("touchstart", (e) => { e.preventDefault(); onTap(); }, { passive:false });
 
-  // estilo mínimo (se o CSS não cobrir)
   b.style.padding = "10px 12px";
   b.style.borderRadius = "10px";
   b.style.border = "1px solid rgba(255,255,255,0.12)";
@@ -452,6 +453,29 @@ function makeButton(text, onTap, disabled=false){
   b.style.fontSize = "13px";
 
   return b;
+}
+
+function getAnswerFallback(call, key){
+  const t = call?.truth || {};
+  if(key === "address") return t.address || "Endereço não informado.";
+  if(key === "situation") return t.situation || "Situação não informada.";
+  if(key === "danger") return t.danger || "Risco não informado.";
+  return "(informação não disponível)";
+}
+
+function getQuestionText(call, key){
+  // Se tiver pergunta definida, usa
+  const q = call?.questions?.[key]?.q;
+  if(q) return q;
+
+  // fallback por idioma/local
+  if(call?.locale === "US"){
+    if(key === "address") return "Ask: What's the exact address?";
+    if(key === "situation") return "Ask: What's happening exactly?";
+    if(key === "danger") return "Ask: Any immediate danger or injuries?";
+  }
+  // PT padrão
+  return DEFAULT_Q_PT[key] || `Perguntar: ${key}?`;
 }
 
 function renderQuestions(){
@@ -465,11 +489,9 @@ function renderQuestions(){
   const intel = state.callIntel;
   const params = difficultyParams(state.difficulty);
 
-  const qDef = call.questions || {};
-  const req = qDef.required || ["address","situation","danger"];
+  const req = getRequiredKeys(call);
 
   function canAsk(k){
-    // só permite perguntar uma vez cada required
     if(req.includes(k) && intel.requiredDone.has(k)) return false;
     return true;
   }
@@ -478,47 +500,43 @@ function renderQuestions(){
     if(!state.current) return;
     if(!canAsk(k)) return;
 
-    // custo de tempo por pergunta
     state.currentTTL = Math.max(0, state.currentTTL - params.questionCost);
     ui.pillCallTimer.textContent = `Tempo da chamada: ${formatTime(state.currentTTL)}`;
 
-    // texto pergunta + resposta com typewriter
-    const qText = (qDef[k] && qDef[k].q) ? qDef[k].q : `Perguntar: ${k}?`;
-    const aText = (qDef[k] && qDef[k].a) ? qDef[k].a : "(sem resposta definida)";
+    const qText = getQuestionText(call, k);
+    const aText = (call?.questions?.[k]?.a) ? call.questions[k].a : getAnswerFallback(call, k);
 
     await typeAppend(ui.callText, `\n\nOperador: ${qText}\n`, params.typeSpeed);
     await typeAppend(ui.callText, `Chamador: ${aText}\n`, params.typeSpeed);
 
-    // marca como feito (required)
     if(req.includes(k)){
       intel.requiredDone.add(k);
       intel.collected[k] = aText;
     }
 
-    // atualiza UI de liberação
     ui.dispatchInfo.textContent = isDispatchUnlocked()
       ? `Despacho liberado. Selecione a unidade adequada para "${call.title}".`
-      : `Despacho BLOQUEADO: pergunte endereço + situação + risco antes de despachar.`;
+      : `Despacho BLOQUEADO: pergunte ${req.map(x=>KEY_LABEL_PT[x]||x).join(" + ")} antes de despachar.`;
 
     updateQuestionsStatusLine();
     refreshButtons();
   }
 
-  // required buttons
-  const requiredButtons = [
+  // Botões required
+  const btns = [
     { key: "address", label: "📍 Endereço" },
     { key: "situation", label: "❓ Situação" },
     { key: "danger", label: "⚠️ Risco/Feridos" }
   ];
 
-  requiredButtons.forEach(rb => {
-    if(req.includes(rb.key)){
-      row.appendChild(makeButton(rb.label, () => askKey(rb.key), !canAsk(rb.key)));
+  btns.forEach(b => {
+    if(req.includes(b.key)){
+      row.appendChild(makeButton(b.label, () => askKey(b.key), !canAsk(b.key)));
     }
   });
 
-  // optional
-  const optional = Array.isArray(qDef.optional) ? qDef.optional : [];
+  // Optional (se existir)
+  const optional = Array.isArray(call?.questions?.optional) ? call.questions.optional : [];
   optional.forEach(opt => {
     const already = intel.optionalDone.has(opt.id);
     row.appendChild(makeButton(`➕ ${opt.id}`, async () => {
@@ -528,7 +546,7 @@ function renderQuestions(){
       ui.pillCallTimer.textContent = `Tempo da chamada: ${formatTime(state.currentTTL)}`;
 
       const qText = opt.q || "Perguntar mais detalhes";
-      const aText = opt.a || "(sem resposta)";
+      const aText = opt.a || "Sem detalhes adicionais.";
 
       await typeAppend(ui.callText, `\n\nOperador: ${qText}\n`, params.typeSpeed);
       await typeAppend(ui.callText, `Chamador: ${aText}\n`, params.typeSpeed);
@@ -550,7 +568,6 @@ function addScore(delta){
   ui.hudScore.textContent = String(state.score);
 }
 
-// Avalia desempenho considerando: despacho correto + qualidade do atendimento (quantidade de perguntas feitas)
 function resolveCall(unitId, action){
   if(!state.current) return;
 
@@ -561,15 +578,12 @@ function resolveCall(unitId, action){
   const truth = call.truth || {};
   const isPrank = !!truth.isPrank;
 
-  // “qualidade de atendimento”: required + optional
-  const req = call.questions?.required || ["address","situation","danger"];
+  const req = getRequiredKeys(call);
   const requiredDoneCount = state.callIntel ? state.callIntel.requiredDone.size : 0;
   const optionalDoneCount = state.callIntel ? state.callIntel.optionalDone.size : 0;
 
-  // bônus por investigar (até um limite)
   const intelBonus = clamp(requiredDoneCount*0.08 + optionalDoneCount*0.04, 0, 0.25);
 
-  // recomendado “verdadeiro” (o que realmente era necessário)
   const city = getCity();
   const cityUnits = new Set((city.units[state.agency] || []).map(u => u.id));
   const recommendedTrue = (call.recommended?.[state.agency] || []).filter(id => cityUnits.has(id));
@@ -615,7 +629,6 @@ function resolveCall(unitId, action){
   addScore(delta);
   logLine(`${result} (Caso: ${call.title})`);
 
-  // limpa chamada
   state.current = null;
   state.currentTTL = 0;
   state.callIntel = null;
@@ -661,7 +674,6 @@ function tick(){
 
   const params = difficultyParams(state.difficulty);
 
-  // spawn
   state.spawnTimer++;
   if(state.spawnTimer >= params.spawnBase){
     state.spawnTimer = 0;
@@ -670,7 +682,6 @@ function tick(){
     if(Math.random() < extraChance) enqueueCall();
   }
 
-  // expira fila
   const before = state.queue.length;
   state.queue = state.queue.filter(q => {
     const age = state.shiftSeconds - q.createdAt;
@@ -685,7 +696,6 @@ function tick(){
   });
   if(before !== state.queue.length) renderQueue();
 
-  // TTL chamada atual
   if(state.current){
     state.currentTTL--;
     ui.pillCallTimer.textContent = `Tempo da chamada: ${formatTime(state.currentTTL)}`;
@@ -704,7 +714,6 @@ function tick(){
     ui.pillCallTimer.textContent = "Sem chamada";
   }
 
-  // fim do turno
   if(state.shiftSeconds >= state.shiftDuration){
     endShift();
   }
@@ -820,7 +829,7 @@ function dispatchSelected(){
   if(!state.current) return;
 
   if(!isDispatchUnlocked()){
-    alert("Despacho bloqueado: pergunte endereço + situação + risco antes.");
+    alert("Despacho bloqueado: faça as perguntas do protocolo primeiro.");
     return;
   }
 
@@ -836,8 +845,6 @@ function dispatchSelected(){
 function dismissCall(){
   if(!state.running) return;
   if(!state.current) return;
-
-  // se for caso real e você não coletou nada, penaliza — mas permitido
   resolveCall("", "dismiss");
   refreshButtons();
 }
