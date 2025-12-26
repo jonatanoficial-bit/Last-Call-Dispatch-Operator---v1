@@ -1,2222 +1,1901 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Last Call Dispatch Operator</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Last Call Dispatch Operator — Prototype AAA (Fase 1)</title>
 
-<style>
-  :root{
-    --bg:#0b0e13;
-    --panel:#141a24;
-    --panel2:#101521;
-    --line:#1f2a3a;
-    --text:#e9edf3;
-    --muted:#9fb0c7;
-    --accent:#4fd1c5;
-    --accent2:#63b3ed;
-    --danger:#ef4444;
-    --warn:#f59e0b;
-    --ok:#22c55e;
-    --btn:#2563eb;
-    --btn2:#1d4ed8;
-    --ghost:#2b3b56;
-  }
-  *{ box-sizing:border-box; }
-  body{
-    margin:0;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    background: radial-gradient(1200px 700px at 20% 0%, #101a2a 0%, var(--bg) 55%);
-    color:var(--text);
-  }
-  header{
-    padding:10px 12px;
-    background: linear-gradient(180deg, #0f172a 0%, #0b1222 100%);
-    border-bottom:1px solid var(--line);
-    position:sticky; top:0; z-index:5;
-  }
-  .topbar{
-    display:flex; gap:10px; align-items:center; justify-content:space-between;
-    flex-wrap:wrap;
-  }
-  .brand{
-    font-weight:900;
-    letter-spacing:0.4px;
-    color:var(--accent);
-    display:flex; align-items:center; gap:10px;
-  }
-  .chip{
-    font-size:12px;
-    color:#cfe7ff;
-    border:1px solid #233047;
-    background: rgba(20,26,36,0.7);
-    padding:4px 8px;
-    border-radius:999px;
-  }
-  .controls{
-    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
-  }
-  select, input{
-    background:#0f172a;
-    border:1px solid #233047;
-    color:var(--text);
-    padding:8px 10px;
-    border-radius:12px;
-    outline:none;
-    font-size:14px;
-  }
-  button{
-    border:none;
-    background: var(--btn);
-    color:#fff;
-    padding:10px 12px;
-    border-radius:12px;
-    font-weight:800;
-    cursor:pointer;
-    font-size:14px;
-    transition: transform .05s ease, background .15s ease, opacity .15s ease;
-  }
-  button:active{ transform: scale(0.98); }
-  button:hover{ background: var(--btn2); }
-  button:disabled{
-    opacity:0.5;
-    cursor:not-allowed;
-  }
-  .btn-ghost{
-    background: transparent;
-    border:1px solid var(--ghost);
-    color: var(--text);
-  }
-  .btn-ghost:hover{ background: rgba(99,179,237,0.10); }
-  .btn-danger{ background:#b91c1c; }
-  .btn-danger:hover{ background:#991b1b; }
-  .btn-ok{ background:#15803d; }
-  .btn-ok:hover{ background:#166534; }
+  <!-- Leaflet (CDN) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
 
-  main{
-    padding:12px;
-    display:grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    gap:12px;
-    max-width: 1240px;
-    margin: 0 auto;
-  }
-  @media (max-width: 920px){
-    main{ grid-template-columns: 1fr; }
-  }
+  <style>
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1020;
+      --bg2:#0E1730;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.09);
+      --stroke: rgba(255,255,255,.10);
+      --stroke2: rgba(255,255,255,.18);
+      --txt: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --muted2: rgba(255,255,255,.48);
+      --ok: #22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --accent:#60a5fa;
+      --accent2:#a78bfa;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+      --radius2: 22px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
 
-  .panel{
-    background: linear-gradient(180deg, rgba(20,26,36,0.98), rgba(14,18,26,0.98));
-    border:1px solid var(--line);
-    border-radius:18px;
-    overflow:hidden;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.22);
-  }
-  .panel-header{
-    padding:10px 12px;
-    border-bottom:1px solid var(--line);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    background: rgba(12,16,24,0.75);
-  }
-  .panel-header h3{
-    margin:0;
-    font-size:13px;
-    color: var(--accent2);
-    letter-spacing:0.6px;
-    text-transform: uppercase;
-  }
-  .panel-body{ padding:12px; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--txt);
+      background:
+        radial-gradient(1100px 700px at 20% 10%, rgba(96,165,250,.15), transparent 55%),
+        radial-gradient(900px 700px at 85% 35%, rgba(167,139,250,.14), transparent 60%),
+        radial-gradient(900px 700px at 60% 90%, rgba(239,68,68,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 55%, var(--bg0));
+      min-height:100vh;
+    }
 
-  .grid2{
-    display:grid;
-    grid-template-columns: 1fr 1fr;
-    gap:10px;
-  }
-  @media (max-width: 520px){
-    .grid2{ grid-template-columns:1fr; }
-  }
+    .topbar{
+      position: sticky;
+      top:0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(10,14,28,.92), rgba(10,14,28,.65));
+      border-bottom: 1px solid var(--stroke);
+    }
+    .topbar-inner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding: 12px 14px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 220px;
+    }
+    .logo{
+      width: 34px; height:34px;
+      border-radius: 10px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(96,165,250,.85), rgba(167,139,250,.45)),
+        linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.04));
+      border: 1px solid var(--stroke2);
+      box-shadow: var(--shadow);
+    }
+    .brand h1{
+      font-size: 14px;
+      margin:0;
+      line-height: 1.1;
+      letter-spacing: .3px;
+    }
+    .brand .sub{
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
 
-  .statrow{
-    display:flex; gap:10px; flex-wrap:wrap;
-  }
-  .stat{
-    flex: 1;
-    min-width: 150px;
-    background: rgba(8,12,18,0.55);
-    border:1px solid #202b40;
-    border-radius:16px;
-    padding:10px;
-  }
-  .stat .k{ font-size:12px; color:var(--muted); }
-  .stat .v{ font-size:16px; font-weight:900; margin-top:3px; }
-  .v .small{ font-size:12px; font-weight:800; color:var(--muted); }
+    .topstats{
+      display:flex;
+      gap:10px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--stroke);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .pill strong{ color: var(--txt); font-weight: 700; }
+    .dot{ width: 8px; height: 8px; border-radius: 999px; background: var(--muted2); }
+    .dot.ok{ background: var(--ok); }
+    .dot.warn{ background: var(--warn); }
+    .dot.bad{ background: var(--bad); }
 
-  .divider{
-    height:1px;
-    background: rgba(255,255,255,0.08);
-    margin:10px 0;
-  }
+    .wrap{
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 14px;
+    }
 
-  /* Call UI */
-  .callbox{
-    background: rgba(7,10,16,0.55);
-    border:1px solid #202b40;
-    border-radius:16px;
-    padding:12px;
-  }
-  .calltitle{
-    display:flex; align-items:center; justify-content:space-between;
-    gap:10px; margin-bottom:10px;
-    flex-wrap:wrap;
-  }
-  .badge{
-    font-size:12px;
-    padding:4px 10px;
-    border-radius:999px;
-    border:1px solid #2b3b56;
-    color:#dbeafe;
-    background: rgba(37,99,235,0.12);
-    font-weight:900;
-    letter-spacing:0.3px;
-  }
-  .badge.badge-danger{ border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.12); }
-  .badge.badge-warn{ border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.12); }
-  .badge.badge-ok{ border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.12); }
+    .grid{
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap: 14px;
+    }
 
-  #callText{
-    min-height: 140px;
-    white-space: pre-wrap;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
-    font-size: 14px;
-    line-height: 1.35;
-  }
+    .card{
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius2);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding: 12px 12px 10px 12px;
+      border-bottom: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), transparent);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .card .hd h2{
+      margin:0;
+      font-size: 12px;
+      letter-spacing: .35px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.78);
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .tag{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.75);
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      white-space: nowrap;
+    }
 
-  .options{
-    display:flex;
-    flex-direction: column;
-    gap:8px;
-    margin-top:10px;
-  }
-  .optbtn{
-    text-align:left;
-    background: rgba(37,99,235,0.18);
-    border:1px solid rgba(99,179,237,0.35);
-    color:#eaf3ff;
-  }
-  .optbtn:hover{ background: rgba(37,99,235,0.25); }
+    .body{
+      padding: 12px;
+    }
 
-  .hint{
-    font-size:12px;
-    color: var(--muted);
-    background: rgba(99,179,237,0.08);
-    border:1px solid rgba(99,179,237,0.20);
-    padding:10px;
-    border-radius:16px;
-  }
+    .controls{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .field label{
+      display:block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    select, button, input{
+      width:100%;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.25);
+      color: var(--txt);
+      padding: 10px 10px;
+      font-size: 14px;
+      outline: none;
+    }
+    select:focus, button:focus, input:focus{
+      border-color: rgba(96,165,250,.45);
+      box-shadow: 0 0 0 3px rgba(96,165,250,.14);
+    }
+    .btnrow{
+      display:flex;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .btn{
+      cursor:pointer;
+      border: 1px solid var(--stroke2);
+      background:
+        radial-gradient(120% 120% at 30% 20%, rgba(96,165,250,.18), rgba(167,139,250,.08)),
+        rgba(255,255,255,.05);
+      transition: transform .08s ease, filter .15s ease, opacity .15s ease;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+    .btn:hover{ filter: brightness(1.05); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.secondary{
+      background: rgba(255,255,255,.05);
+      border-color: var(--stroke);
+      font-weight: 600;
+      color: rgba(255,255,255,.86);
+    }
+    .btn.danger{
+      background: rgba(239,68,68,.12);
+      border-color: rgba(239,68,68,.35);
+    }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+    }
 
-  /* Dispatch lists */
-  .subtle{
-    font-size:12px;
-    color: var(--muted);
-  }
-  .list{
-    display:flex;
-    flex-direction: column;
-    gap:8px;
-  }
-  .card{
-    background: rgba(8,12,18,0.55);
-    border:1px solid #202b40;
-    border-radius:16px;
-    padding:10px;
-    display:flex;
-    gap:10px;
-    align-items:flex-start;
-    justify-content:space-between;
-  }
-  .card.sel{
-    outline: 2px solid rgba(79,209,197,0.35);
-    border-color: rgba(79,209,197,0.25);
-  }
-  .card.locked{
-    opacity:0.55;
-    filter: grayscale(0.25);
-  }
-  .left{
-    display:flex;
-    flex-direction: column;
-    gap:3px;
-    min-width:0;
-  }
-  .title{
-    font-weight:950;
-    font-size:14px;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-  }
-  .meta{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    font-size:12px;
-    color:var(--muted);
-  }
-  .pill{
-    font-size:12px;
-    padding:3px 9px;
-    border-radius:999px;
-    border:1px solid #2b3b56;
-    background: rgba(16,21,33,0.55);
-    color:#dbeafe;
-    font-weight:800;
-  }
-  .pill.ok{ border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.10); color:#d1fae5;}
-  .pill.warn{ border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.12); color:#ffedd5;}
-  .pill.danger{ border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.12); color:#ffe4e6;}
-  .right{
-    display:flex;
-    flex-direction: column;
-    gap:6px;
-    align-items:flex-end;
-    flex-shrink:0;
-  }
-  .minirow{
-    display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;
-  }
-  .tinybtn{
-    padding:8px 10px;
-    font-size:13px;
-    border-radius:12px;
-  }
+    .split{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
 
-  /* Unit selection checkbox-ish */
-  .check{
-    width:18px; height:18px;
-    border-radius:6px;
-    border:1px solid #2b3b56;
-    background: rgba(16,21,33,0.55);
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    font-size:12px;
-    font-weight:950;
-    color:#dbeafe;
-  }
-  .check.on{
-    border-color: rgba(79,209,197,0.55);
-    background: rgba(79,209,197,0.14);
-    color:#d1fae5;
-  }
+    .callbox{
+      background: rgba(0,0,0,.24);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      overflow:hidden;
+    }
+    .calltop{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--stroke);
+      background: rgba(255,255,255,.04);
+    }
+    .calltop .left{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      min-width: 0;
+    }
+    .avatar{
+      width: 36px; height:36px;
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), rgba(255,255,255,.06)),
+        linear-gradient(180deg, rgba(96,165,250,.25), rgba(167,139,250,.12));
+      border: 1px solid var(--stroke2);
+    }
+    .callmeta{
+      min-width: 0;
+    }
+    .callmeta .title{
+      font-size: 13px;
+      margin:0;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .callmeta .small{
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      font-family: var(--mono);
+    }
+    .timer{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(255,255,255,.85);
+      white-space: nowrap;
+    }
+    .bar{
+      width: 86px;
+      height: 8px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      overflow:hidden;
+    }
+    .bar > i{
+      display:block;
+      height:100%;
+      width: 50%;
+      background: linear-gradient(90deg, rgba(34,197,94,.9), rgba(245,158,11,.9), rgba(239,68,68,.9));
+      border-radius: 999px;
+    }
 
-  /* Map placeholder */
-  .map{
-    height: 230px;
-    border-radius:18px;
-    border:1px solid #202b40;
-    background:
-      radial-gradient(800px 300px at 10% 10%, rgba(79,209,197,0.15), transparent 60%),
-      radial-gradient(800px 300px at 80% 30%, rgba(99,179,237,0.12), transparent 55%),
-      linear-gradient(180deg, rgba(8,12,18,0.75), rgba(8,12,18,0.55));
-    position: relative;
-    overflow:hidden;
-  }
-  .map::before{
-    content:"";
-    position:absolute; inset:-40px;
-    background:
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 22px),
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 22px);
-    opacity:0.65;
-    transform: rotate(-2deg);
-  }
-  .maphud{
-    position:absolute; inset:0;
-    display:flex; flex-direction:column;
-    justify-content:space-between;
-    padding:10px;
-  }
-  .maptop{
-    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
-  }
-  .maptitle{
-    font-weight:950;
-    letter-spacing:0.5px;
-    color:#dbeafe;
-  }
-  .mapzone{
-    font-size:12px;
-    color: var(--muted);
-  }
-  .mappins{
-    position:absolute; left:0; right:0; top:0; bottom:0;
-    pointer-events:none;
-  }
-  .pin{
-    position:absolute;
-    width:12px; height:12px;
-    border-radius:999px;
-    background: rgba(239,68,68,0.95);
-    box-shadow: 0 0 0 6px rgba(239,68,68,0.14);
-    animation: pulse 1.4s infinite;
-  }
-  .pin.ok{
-    background: rgba(34,197,94,0.95);
-    box-shadow: 0 0 0 6px rgba(34,197,94,0.14);
-  }
-  @keyframes pulse{
-    0%{ transform: scale(1); opacity:1; }
-    70%{ transform: scale(1.08); opacity:0.95; }
-    100%{ transform: scale(1); opacity:1; }
-  }
+    .transcript{
+      padding: 10px;
+      min-height: 150px;
+      max-height: 220px;
+      overflow:auto;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .line{
+      margin: 0 0 10px 0;
+      color: rgba(255,255,255,.88);
+    }
+    .line .who{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.65);
+      margin-bottom: 4px;
+      display:block;
+    }
 
-  .log{
-    max-height: 190px;
-    overflow:auto;
-    border-radius:16px;
-    border:1px solid #202b40;
-    background: rgba(7,10,16,0.55);
-    padding:10px;
-    font-size:12px;
-    color: #c9d6ea;
-    line-height:1.35;
-    white-space: pre-wrap;
-  }
+    .choices{
+      display:grid;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+    }
+    .choice{
+      text-align:left;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--stroke);
+      padding: 10px 10px;
+      border-radius: 14px;
+      cursor:pointer;
+      transition: filter .15s ease, transform .08s ease;
+      color: rgba(255,255,255,.9);
+      font-weight: 650;
+    }
+    .choice:hover{ filter: brightness(1.06); }
+    .choice:active{ transform: translateY(1px); }
 
-  .filters{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:8px;
-  }
-  .tabs{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-  }
-  .tab{
-    padding:8px 10px;
-    border-radius:999px;
-    border:1px solid #2b3b56;
-    background: rgba(16,21,33,0.55);
-    color:#dbeafe;
-    font-size:12px;
-    font-weight:900;
-    cursor:pointer;
-    user-select:none;
-  }
-  .tab.on{
-    border-color: rgba(79,209,197,0.55);
-    background: rgba(79,209,197,0.14);
-    color:#d1fae5;
-  }
-  .recbox{
-    background: rgba(8,12,18,0.55);
-    border:1px solid #202b40;
-    border-radius:16px;
-    padding:10px;
-    margin-top:10px;
-  }
-  .recline{
-    display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between;
-    padding:8px 0;
-    border-top:1px solid rgba(255,255,255,0.06);
-  }
-  .recline:first-child{ border-top:none; }
-  .recl{
-    display:flex; flex-direction:column; gap:2px; min-width:0;
-  }
-  .recl .nm{
-    font-weight:950; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  }
-  .recl .why{ font-size:12px; color:var(--muted); }
-  .xpbar{
-    height:10px;
-    border-radius:999px;
-    border:1px solid #2b3b56;
-    background: rgba(16,21,33,0.55);
-    overflow:hidden;
-    margin-top:6px;
-  }
-  .xpfill{
-    height:100%;
-    background: rgba(79,209,197,0.45);
-    width:0%;
-  }
-</style>
+    .feed{
+      display:grid;
+      gap: 10px;
+    }
+    .list{
+      display:grid;
+      gap: 8px;
+    }
+    .item{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      cursor:pointer;
+    }
+    .item:hover{ border-color: rgba(255,255,255,.18); }
+    .item .a{
+      min-width:0;
+    }
+    .item .t{
+      margin:0;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
+    .item .s{
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+    .sev{
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      color: rgba(255,255,255,.82);
+      white-space: nowrap;
+    }
+    .sev.low{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); }
+    .sev.med{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.10); }
+    .sev.high{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.10); }
+
+    .mapcard{
+      height: calc(100vh - 100px);
+      min-height: 620px;
+      display:flex;
+      flex-direction:column;
+    }
+    #map{
+      flex:1;
+      min-height: 460px;
+    }
+
+    .bottomDock{
+      padding: 10px;
+      border-top: 1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .dockCol{
+      background: rgba(0,0,0,.22);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      padding: 10px;
+    }
+    .dockCol h3{
+      margin:0 0 8px 0;
+      font-size: 11px;
+      letter-spacing: .35px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.75);
+    }
+    .muted{ color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .row{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .chip{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,.85);
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      white-space: nowrap;
+    }
+    .chip.ok{ border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); }
+    .chip.busy{ border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.10); }
+    .chip.off{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.10); }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 16px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.72);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      padding: 10px 14px;
+      color: rgba(255,255,255,.92);
+      font-size: 13px;
+      box-shadow: var(--shadow);
+      max-width: min(620px, 92vw);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+      z-index: 9999;
+    }
+    .toast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .mapcard{ height: auto; min-height: 520px; }
+      #map{ min-height: 420px; }
+    }
+    @media (max-width: 520px){
+      .controls{ grid-template-columns: 1fr; }
+      .bottomDock{ grid-template-columns: 1fr; }
+      .brand{ min-width: unset; }
+      .topstats{ justify-content:flex-start; }
+    }
+  </style>
 </head>
-
 <body>
-<header>
   <div class="topbar">
-    <div class="brand">
-      <span>Last Call Dispatch Operator</span>
-      <span class="chip" id="buildTag">FASE 3 — Multi-Despacho + Carreira</span>
-    </div>
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>Last Call Dispatch Operator</h1>
+          <div class="sub">Fase 1 — Prototipagem sólida (turno + chamada + despacho)</div>
+        </div>
+      </div>
 
-    <div class="controls">
-      <select id="citySelect" title="Cidade / cenário">
-        <option value="sao_paulo">São Paulo (BR)</option>
-        <option value="new_york">New York (USA)</option>
-      </select>
-
-      <button id="startShiftBtn">Iniciar Turno</button>
-      <button id="endShiftBtn" class="btn-danger" disabled>Encerrar Turno</button>
-      <button id="newCallBtn" class="btn-ghost" disabled>Nova Chamada</button>
-      <button id="resetCareerBtn" class="btn-ghost" title="Apaga progresso salvo no aparelho">Reset Carreira</button>
+      <div class="topstats">
+        <div class="pill"><span class="dot" id="dotShift"></span> Turno: <strong id="shiftState">OFF</strong></div>
+        <div class="pill">Tempo: <strong id="shiftClock">00:00</strong></div>
+        <div class="pill">Pontuação: <strong id="score">0</strong></div>
+        <div class="pill">Nível: <strong id="lvl">1</strong> <span style="opacity:.6">•</span> XP: <strong id="xp">0</strong></div>
+        <div class="pill">Créditos: <strong id="money">0</strong></div>
+      </div>
     </div>
   </div>
-</header>
 
-<main>
-
-  <!-- LEFT: Calls + Career -->
-  <section class="panel">
-    <div class="panel-header">
-      <h3>Atendimento + Carreira</h3>
-      <div class="subtle" id="callStatus">Turno não iniciado</div>
-    </div>
-
-    <div class="panel-body">
-      <div class="statrow">
-        <div class="stat">
-          <div class="k">Pontuação (turno)</div>
-          <div class="v" id="scoreEl">0</div>
-        </div>
-        <div class="stat">
-          <div class="k">Reputação (turno)</div>
-          <div class="v" id="repEl">50 <span class="small">/100</span></div>
-        </div>
-        <div class="stat">
-          <div class="k">Patente (turno)</div>
-          <div class="v" id="rankEl">Recruta</div>
-        </div>
-        <div class="stat">
-          <div class="k">Tempo de turno</div>
-          <div class="v" id="shiftTimeEl">--:--</div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="statrow">
-        <div class="stat">
-          <div class="k">Carreira — Nível</div>
-          <div class="v" id="careerLevelEl">1</div>
-          <div class="xpbar" aria-label="XP">
-            <div class="xpfill" id="careerXpFill"></div>
-          </div>
-          <div class="subtle" id="careerXpText" style="margin-top:6px;">XP: 0/100</div>
-        </div>
-        <div class="stat">
-          <div class="k">Carreira — Créditos</div>
-          <div class="v" id="careerCreditsEl">0</div>
-          <div class="subtle" id="careerUnlockHint" style="margin-top:6px;">Desbloqueios por nível: Tática, Anti-bomba, Aéreo…</div>
-        </div>
-        <div class="stat">
-          <div class="k">Carreira — Melhor Pontuação</div>
-          <div class="v" id="careerBestEl">0</div>
-          <div class="subtle" id="careerCityBestEl" style="margin-top:6px;">SP: 0 • NY: 0</div>
-        </div>
-        <div class="stat">
-          <div class="k">Carreira — Conclusões</div>
-          <div class="v" id="careerStatsEl">0</div>
-          <div class="subtle" id="careerFailEl" style="margin-top:6px;">Falhas: 0</div>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="callbox">
-        <div class="calltitle">
-          <div>
-            <span class="badge" id="callBadge">SEM CHAMADA</span>
-          </div>
-          <div class="subtle" id="callTimerEl">Tempo de chamada: --</div>
+  <div class="wrap">
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="card">
+        <div class="hd">
+          <h2>Central</h2>
+          <span class="tag" id="regionTag">BR • SP</span>
         </div>
 
-        <div id="callText">Inicie o turno para começar a operar.</div>
-
-        <div class="options" id="options"></div>
-
-        <div class="divider"></div>
-
-        <div class="hint" id="callHint">
-          Dica: Em casos graves, primeiro garanta segurança do chamador e local. Depois despache a unidade CERTA.
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- RIGHT: Dispatch -->
-  <section class="panel">
-    <div class="panel-header">
-      <h3>Despacho</h3>
-      <div class="subtle" id="dispatchStatus">Aguardando turno</div>
-    </div>
-
-    <div class="panel-body">
-      <div class="map" id="mapBox">
-        <div class="maphud">
-          <div class="maptop">
-            <div>
-              <div class="maptitle" id="mapTitle">Cidade</div>
-              <div class="mapzone" id="mapZone">Zonas</div>
+        <div class="body">
+          <div class="controls">
+            <div class="field">
+              <label>Cidade</label>
+              <select id="city">
+                <option value="saopaulo">São Paulo (BR)</option>
+                <option value="nyc">New York (EUA)</option>
+              </select>
             </div>
-            <div class="pill" id="activeIncidentsPill">0 incidentes</div>
-          </div>
-
-          <div class="subtle">
-            Mapa estilizado (placeholder). Próxima fase: mapa real (Leaflet/OSM) sem quebrar a arquitetura.
-          </div>
-        </div>
-
-        <div class="mappins" id="pins"></div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="grid2">
-        <div>
-          <div class="subtle" style="margin-bottom:8px;">Fila de incidentes (selecione 1)</div>
-          <div class="list" id="incidentList"></div>
-
-          <div class="recbox" id="recommendBox" style="display:none;">
-            <div style="font-weight:950; color:#dbeafe; margin-bottom:6px;">Recomendado (1 toque para selecionar)</div>
-            <div id="recommendList"></div>
-          </div>
-        </div>
-
-        <div>
-          <div class="filters">
-            <div class="tabs" id="unitTabs">
-              <div class="tab on" data-role="all">TODAS</div>
-              <div class="tab" data-role="police">POLÍCIA</div>
-              <div class="tab" data-role="fire">BOMBEIROS</div>
-              <div class="tab" data-role="ems">EMS</div>
-            </div>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <label class="subtle" style="display:flex; gap:6px; align-items:center;">
-                <input type="checkbox" id="onlyAvailableChk" checked />
-                Disponível
-              </label>
-              <input id="unitSearch" placeholder="Buscar unidade…" />
+            <div class="field">
+              <label>Agência</label>
+              <select id="agency">
+                <option value="police">Polícia</option>
+                <option value="fire">Bombeiros/Resgate</option>
+                <option value="mixed">Central Integrada (911/112/CIOSP)</option>
+              </select>
             </div>
           </div>
 
-          <div class="subtle" style="margin-bottom:8px;">
-            Unidades (toque para marcar várias). Selecionadas: <b id="selCount">0</b>
+          <div class="btnrow">
+            <button class="btn" id="btnStart">Iniciar turno</button>
+            <button class="btn secondary" id="btnNextCall" disabled>Forçar nova chamada</button>
+          </div>
+          <div class="btnrow">
+            <button class="btn secondary" id="btnClearSave">Resetar carreira (local)</button>
+            <button class="btn danger" id="btnEnd" disabled>Encerrar turno</button>
           </div>
 
-          <div class="list" id="unitList"></div>
+          <div style="height:12px"></div>
 
-          <div class="divider"></div>
+          <div class="split">
+            <!-- CALL -->
+            <div class="callbox">
+              <div class="calltop">
+                <div class="left">
+                  <div class="avatar"></div>
+                  <div class="callmeta">
+                    <p class="title" id="callTitle">Sem chamada ativa</p>
+                    <div class="small" id="callSmall">Aguardando…</div>
+                  </div>
+                </div>
+                <div class="timer">
+                  <span id="callTimerTxt">--:--</span>
+                  <div class="bar"><i id="callTimerBar" style="width:0%"></i></div>
+                </div>
+              </div>
 
-          <div class="controls" style="justify-content:space-between;">
-            <button id="clearUnitsBtn" class="btn-ghost">Limpar Seleção</button>
-            <button id="dispatchBtn" disabled>Despachar Selecionadas</button>
-          </div>
+              <div class="transcript" id="transcript">
+                <p class="line" style="color:rgba(255,255,255,.65);margin:0">
+                  Inicie um turno para começar a receber chamadas.
+                </p>
+              </div>
 
-          <div class="hint" id="dispatchHint" style="margin-top:10px;">
-            Regra AAA: incidentes podem exigir 2+ unidades. Ex.: acidente com preso → Resgate + Ambulância.
+              <div class="choices" id="choices">
+                <!-- buttons -->
+              </div>
+            </div>
+
+            <!-- QUEUE + INCIDENTS -->
+            <div class="feed">
+              <div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px;">
+                  <div style="font-size:12px; color:rgba(255,255,255,.78); text-transform:uppercase; letter-spacing:.35px;">Fila de Chamadas</div>
+                  <span class="tag" id="queueTag">0</span>
+                </div>
+                <div class="list" id="queueList"></div>
+              </div>
+
+              <div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin: 8px 0;">
+                  <div style="font-size:12px; color:rgba(255,255,255,.78); text-transform:uppercase; letter-spacing:.35px;">Ocorrências Ativas</div>
+                  <span class="tag" id="incTag">0</span>
+                </div>
+                <div class="list" id="incList"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="divider"></div>
+      <!-- RIGHT -->
+      <div class="card mapcard">
+        <div class="hd">
+          <h2>Mapa e Despacho</h2>
+          <span class="tag" id="dispatchHint">Selecione uma ocorrência</span>
+        </div>
 
-      <div class="subtle" style="margin-bottom:8px;">Registro Operacional</div>
-      <div class="log" id="logEl"></div>
+        <div id="map"></div>
+
+        <div class="bottomDock">
+          <div class="dockCol">
+            <h3>Unidades</h3>
+            <div class="muted" id="unitHelp">Toque numa ocorrência (lista ou mapa), depois escolha a unidade.</div>
+            <div style="height:8px"></div>
+            <div class="row" id="unitChips"></div>
+          </div>
+
+          <div class="dockCol">
+            <h3>Despacho</h3>
+            <div class="muted" id="dispatchPanel">
+              Nenhuma ocorrência selecionada.
+            </div>
+            <div style="height:10px"></div>
+            <div class="btnrow" style="margin:0">
+              <button class="btn" id="btnDispatch" disabled>Despachar unidade</button>
+              <button class="btn secondary" id="btnUnselect" disabled>Limpar seleção</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
-  </section>
+  </div>
 
-</main>
+  <div class="toast" id="toast"></div>
 
-<script>
-/* ==========================
-   Utils
-========================== */
-const $ = (id) => document.getElementById(id);
-const now = () => Date.now();
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const pad2 = (n) => String(n).padStart(2, "0");
-function formatMMSS(ms){
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(s / 60);
-  const ss = s % 60;
-  return `${pad2(m)}:${pad2(ss)}`;
-}
-function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+  <script>
+    /***********************
+     *  Utilities
+     ************************/
+    const $ = (id)=>document.getElementById(id);
 
-/* ==========================
-   Tiny Audio (no assets)
-========================== */
-let audioEnabled = true;
-function beep(freq=700, dur=60, type="square", gain=0.02){
-  try{
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = type;
-    o.frequency.value = freq;
-    g.gain.value = gain;
-    o.connect(g); g.connect(ctx.destination);
-    o.start();
-    setTimeout(()=>{ o.stop(); ctx.close(); }, dur);
-  }catch(e){}
-}
-function ringOnce(){
-  if(!audioEnabled) return;
-  beep(880, 90, "sine", 0.03);
-  setTimeout(()=>beep(880, 90, "sine", 0.03), 150);
-  setTimeout(()=>beep(880, 90, "sine", 0.03), 300);
-}
-function tickType(){
-  if(!audioEnabled) return;
-  beep(1200, 18, "square", 0.008);
-}
+    function clamp(v,min,max){ return Math.max(min, Math.min(max,v)); }
+    function rnd(a,b){ return a + Math.random()*(b-a); }
+    function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-/* ==========================
-   Typewriter
-========================== */
-let typingHandle = null;
-function typeText(el, text, speed=16, onDone=null){
-  if(typingHandle) clearInterval(typingHandle);
-  el.textContent = "";
-  let i = 0;
-  typingHandle = setInterval(()=>{
-    el.textContent += text.charAt(i);
-    if(text.charAt(i) !== " " && text.charAt(i) !== "\n") tickType();
-    i++;
-    if(i >= text.length){
-      clearInterval(typingHandle);
-      typingHandle = null;
-      if(onDone) onDone();
+    function fmtMMSS(sec){
+      sec = Math.max(0, Math.floor(sec));
+      const m = String(Math.floor(sec/60)).padStart(2,'0');
+      const s = String(sec%60).padStart(2,'0');
+      return `${m}:${s}`;
     }
-  }, speed);
-}
 
-/* ==========================
-   Career Persistence
-========================== */
-const CAREER_KEY = "lcdo_career_v1";
+    function toast(msg){
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toast._tm);
+      toast._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+    }
 
-function defaultCareer(){
-  return {
-    level: 1,
-    xp: 0,
-    xpToNext: 100,
-    credits: 0,
-    bestScore: 0,
-    cityBest: { sao_paulo: 0, new_york: 0 },
-    totalResolved: 0,
-    totalFailed: 0
-  };
-}
+    /***********************
+     *  Career (localStorage)
+     ************************/
+    const SAVE_KEY = 'lcdo_save_v1';
+    function loadCareer(){
+      try{
+        const raw = localStorage.getItem(SAVE_KEY);
+        if(!raw) return { lvl:1, xp:0, money:0, bestScore:0 };
+        const d = JSON.parse(raw);
+        return { lvl: d.lvl||1, xp:d.xp||0, money:d.money||0, bestScore:d.bestScore||0 };
+      }catch(e){
+        return { lvl:1, xp:0, money:0, bestScore:0 };
+      }
+    }
+    function saveCareer(){
+      localStorage.setItem(SAVE_KEY, JSON.stringify(CAREER));
+    }
+    function xpNeededForNext(lvl){
+      return 120 + (lvl-1)*60;
+    }
+    function addXP(amount){
+      CAREER.xp += amount;
+      while(CAREER.xp >= xpNeededForNext(CAREER.lvl)){
+        CAREER.xp -= xpNeededForNext(CAREER.lvl);
+        CAREER.lvl++;
+        toast(`Promoção! Você alcançou o nível ${CAREER.lvl}.`);
+      }
+      saveCareer();
+      renderHUD();
+    }
+    function addMoney(amount){
+      CAREER.money = Math.max(0, CAREER.money + amount);
+      saveCareer();
+      renderHUD();
+    }
 
-function loadCareer(){
-  try{
-    const raw = localStorage.getItem(CAREER_KEY);
-    if(!raw) return defaultCareer();
-    const parsed = JSON.parse(raw);
-    // safe merge
-    const base = defaultCareer();
-    return {
-      ...base,
-      ...parsed,
-      cityBest: { ...base.cityBest, ...(parsed.cityBest||{}) }
+    let CAREER = loadCareer();
+
+    /***********************
+     *  Cities & Units
+     ************************/
+    const CITIES = {
+      saopaulo: {
+        label: "São Paulo",
+        regionTag: "BR • SP",
+        center: [-23.55052, -46.633308],
+        bounds: { // rough gameplay bounds
+          latMin: -23.72, latMax: -23.40,
+          lngMin: -46.82, lngMax: -46.45
+        },
+        units: [
+          { id:'sp_p1', name:'Patrulha (Área)', type:'police', tags:['police','patrol'], speed: 1.0 },
+          { id:'sp_rota', name:'ROTA (Tático)', type:'police', tags:['police','tactical','swat'], speed: 1.05 },
+          { id:'sp_gate', name:'GATE (Anti-bomba)', type:'police', tags:['police','bomb','tactical'], speed: 0.95 },
+          { id:'sp_aguia', name:'Águia (Helicóptero)', type:'police', tags:['police','air','tactical'], speed: 1.35 },
+          { id:'sp_choque', name:'Choque (Controle)', type:'police', tags:['police','riot','tactical'], speed: 0.95 },
+
+          { id:'sp_resgate', name:'Resgate (Bombeiros)', type:'fire', tags:['fire','rescue'], speed: 1.0 },
+          { id:'sp_ab', name:'Auto Bomba (Incêndio)', type:'fire', tags:['fire','firetruck'], speed: 0.95 },
+          { id:'sp_amb', name:'Ambulância', type:'medic', tags:['medic','ems'], speed: 1.05 },
+        ]
+      },
+      nyc: {
+        label: "New York City",
+        regionTag: "USA • NYC",
+        center: [40.7128, -74.0060],
+        bounds: {
+          latMin: 40.55, latMax: 40.92,
+          lngMin: -74.25, lngMax: -73.70
+        },
+        units: [
+          { id:'ny_patrol', name:'Patrol (Area)', type:'police', tags:['police','patrol'], speed: 1.0 },
+          { id:'ny_swat', name:'SWAT', type:'police', tags:['police','swat','tactical'], speed: 1.05 },
+          { id:'ny_fbi', name:'Federal Task (FBI)', type:'police', tags:['police','investigation','tactical'], speed: 1.0 },
+          { id:'ny_bomb', name:'Bomb Squad', type:'police', tags:['police','bomb','tactical'], speed: 0.95 },
+
+          { id:'ny_ems', name:'EMS Ambulance', type:'medic', tags:['medic','ems'], speed: 1.05 },
+          { id:'ny_engine', name:'Fire Engine', type:'fire', tags:['fire','firetruck'], speed: 0.95 },
+          { id:'ny_rescue', name:'Rescue Unit', type:'fire', tags:['fire','rescue'], speed: 1.0 },
+        ]
+      }
     };
-  }catch(e){
-    return defaultCareer();
-  }
-}
 
-function saveCareer(){
-  try{
-    localStorage.setItem(CAREER_KEY, JSON.stringify(career));
-  }catch(e){}
-}
+    // incident needs tags to resolve
+    const INCIDENT_CATALOG = {
+      prank: [
+        { key:'trote_crianca', title:'Possível trote', sev:'low', needs:['triage'], script:"(risos) Oi moço… tem um leão no meu quarto…", tips:"Sinais de trote: inconsistência, risos, história absurda." },
+        { key:'ligacao_muda', title:'Ligação muda', sev:'low', needs:['triage'], script:"…(silêncio)… respiração… depois desliga.", tips:"Tente confirmar local e tipo. Se sem resposta, encerre e registre." },
+      ],
+      police_low: [
+        { key:'perturbacao', title:'Perturbação do sossego', sev:'low', needs:['police','patrol'], script:"Tem som alto no vizinho, tá impossível dormir.", tips:"Coletar endereço e orientar a evitar confronto direto." },
+        { key:'suspeito', title:'Pessoa suspeita rondando', sev:'low', needs:['police','patrol'], script:"Tem um cara olhando as casas e mexendo nos portões.", tips:"Pedir descrição, direção, roupa, se há arma visível." },
+      ],
+      police_med: [
+        { key:'roubo', title:'Roubo em andamento', sev:'med', needs:['police','patrol'], script:"Estão tentando arrombar a porta aqui!", tips:"Orientar a se esconder, manter silêncio, não confrontar." },
+        { key:'viol_dom', title:'Violência doméstica', sev:'med', needs:['police','patrol'], script:"Meu marido tá agressivo, tenho medo…", tips:"Perguntar se há armas, crianças, local seguro." },
+      ],
+      police_high: [
+        { key:'tiros', title:'Disparos / situação armada', sev:'high', needs:['police','tactical'], script:"Tem tiro! Eu ouvi vários tiros agora!", tips:"Orientar abrigo imediato. Despacho tático/elite." },
+        { key:'bomba', title:'Suspeita de artefato explosivo', sev:'high', needs:['police','bomb'], script:"Tem uma mochila abandonada e tá fazendo barulho estranho.", tips:"Isolar área, não tocar, chamar anti-bomba." },
+      ],
+      fire_low: [
+        { key:'fumaça', title:'Fumaça em apartamento', sev:'low', needs:['fire','firetruck'], script:"Tá saindo fumaça da cozinha, acho que queimou panela.", tips:"Orientar desligar gás/energia se seguro, ventilar, observar chamas." },
+        { key:'elevador', title:'Pessoa presa no elevador', sev:'low', needs:['fire','rescue'], script:"Travou o elevador com gente dentro!", tips:"Manter calma, evitar forçar portas, aguardar resgate." },
+      ],
+      fire_med: [
+        { key:'acidente_ferragens', title:'Acidente com vítimas presas', sev:'med', needs:['fire','rescue','medic'], script:"Bateu forte e tem gente presa no carro!", tips:"Orientar não mexer no pescoço, desligar motor se possível, acionar resgate + ambulância." },
+        { key:'incendio', title:'Incêndio residencial', sev:'med', needs:['fire','firetruck'], script:"Pegou fogo no quarto, tá espalhando!", tips:"Evacuar, fechar portas, não usar elevador, ponto de encontro." },
+      ],
+      fire_high: [
+        { key:'parada', title:'Parada cardíaca', sev:'high', needs:['medic','ems'], script:"Ele caiu no chão e não responde! Não tá respirando!", tips:"Orientar RCP: compressões firmes e rápidas. Mandar ambulância urgente." },
+        { key:'parto', title:'Parto de emergência', sev:'high', needs:['medic','ems'], script:"A bebê tá vindo! Não dá tempo!", tips:"Orientar higiene, posição, suporte emocional, ambulância urgente." },
+      ]
+    };
 
-function resetCareer(){
-  career = defaultCareer();
-  saveCareer();
-  log("Carreira resetada (progresso apagado do aparelho).");
-  renderCareer();
-  loadCity(state.cityKey);
-}
+    function buildScenarioPool(agency){
+      // agency: police / fire / mixed
+      const pool = [];
+      pool.push(...INCIDENT_CATALOG.prank);
 
-function gainXP(amount){
-  career.xp += Math.max(0, amount);
-  while(career.xp >= career.xpToNext){
-    career.xp -= career.xpToNext;
-    career.level += 1;
-    // escalate requirement a bit
-    career.xpToNext = Math.floor(career.xpToNext * 1.18 + 30);
-    career.credits += 25; // bonus per level
-    log(`⭐ Subiu de nível! Agora: Nível ${career.level}. Novos desbloqueios disponíveis.`);
-  }
-  saveCareer();
-  renderCareer();
-}
-
-function awardShiftRewards(){
-  // based on score and performance
-  const baseXP = Math.floor(state.score * 0.55) + state.resolved * 8;
-  const penalty = state.failed * 6;
-  const xp = Math.max(0, baseXP - penalty);
-  const credits = Math.max(0, Math.floor(state.score * 0.25) + state.resolved * 3 - state.failed * 2);
-
-  career.credits += credits;
-  career.totalResolved += state.resolved;
-  career.totalFailed += state.failed;
-
-  if(state.score > career.bestScore) career.bestScore = state.score;
-  if(state.score > (career.cityBest[state.cityKey]||0)) career.cityBest[state.cityKey] = state.score;
-
-  gainXP(xp); // calls save+render inside
-  saveCareer();
-
-  return { xp, credits };
-}
-
-/* ==========================
-   Game Data
-========================== */
-const CITY_CONFIG = {
-  sao_paulo: {
-    name: "São Paulo",
-    zones: ["Centro","Norte","Sul","Leste","Oeste"],
-    unitTemplates: [
-      // unlockLevel: 1 basic
-      { id:"sp_area_1", name:"Polícia de Área A-01", role:"police", tags:["patrol","area"], speed:1.00, riskHandle:1, cost:1, zone:"Centro", unlockLevel:1 },
-      { id:"sp_area_2", name:"Polícia de Área A-02", role:"police", tags:["patrol","area"], speed:1.05, riskHandle:1, cost:1, zone:"Leste", unlockLevel:1 },
-
-      // level 3 tactical
-      { id:"sp_rota",   name:"ROTA (Resposta Tática)", role:"police", tags:["tactical","highrisk"], speed:1.15, riskHandle:3, cost:3, zone:"Oeste", unlockLevel:3 },
-
-      // level 4 bomb/crises
-      { id:"sp_gate",   name:"GATE (Anti-bomba/Crises)", role:"police", tags:["bomb","hostage","highrisk","tactical"], speed:0.95, riskHandle:4, cost:4, zone:"Centro", unlockLevel:4 },
-
-      // level 3 riot
-      { id:"sp_choque", name:"Choque (Distúrbios)", role:"police", tags:["riot","highrisk","tactical"], speed:0.90, riskHandle:3, cost:3, zone:"Norte", unlockLevel:3 },
-
-      // level 5 air
-      { id:"sp_aguia",  name:"Águia (Helicóptero)", role:"police", tags:["air","pursuit","highrisk","tactical"], speed:1.35, riskHandle:3, cost:5, zone:"Sul", unlockLevel:5 },
-
-      // fire/ems unlock 2
-      { id:"sp_resgate",name:"Bombeiros Resgate R-01", role:"fire", tags:["rescue","extrication","fire"], speed:0.95, riskHandle:2, cost:3, zone:"Centro", unlockLevel:2 },
-      { id:"sp_ambul",  name:"Ambulância (Suporte Básico)", role:"ems", tags:["medical","ems"], speed:1.05, riskHandle:2, cost:2, zone:"Leste", unlockLevel:2 }
-    ]
-  },
-  new_york: {
-    name: "New York",
-    zones: ["Downtown","Uptown","Queens","Brooklyn","Bronx"],
-    unitTemplates: [
-      { id:"ny_patrol_1", name:"NYPD Patrol P-12", role:"police", tags:["patrol","area"], speed:1.05, riskHandle:1, cost:1, zone:"Downtown", unlockLevel:1 },
-      { id:"ny_patrol_2", name:"NYPD Patrol P-21", role:"police", tags:["patrol","area"], speed:1.00, riskHandle:1, cost:1, zone:"Brooklyn", unlockLevel:1 },
-
-      { id:"ny_swat",     name:"SWAT (High Risk)", role:"police", tags:["tactical","highrisk","hostage"], speed:1.10, riskHandle:4, cost:4, zone:"Queens", unlockLevel:3 },
-      { id:"ny_fbi",      name:"FBI Liaison (Federal)", role:"police", tags:["federal","organized","highrisk"], speed:0.95, riskHandle:3, cost:4, zone:"Downtown", unlockLevel:4 },
-      { id:"ny_sheriff",  name:"Sheriff Unit (Warrants)", role:"police", tags:["warrants","area"], speed:0.90, riskHandle:2, cost:2, zone:"Bronx", unlockLevel:2 },
-
-      { id:"ny_ems",      name:"EMS Ambulance E-08", role:"ems", tags:["medical","ems"], speed:1.10, riskHandle:3, cost:3, zone:"Uptown", unlockLevel:2 },
-      { id:"ny_fire",     name:"Fire Engine F-03", role:"fire", tags:["fire","rescue"], speed:1.00, riskHandle:3, cost:3, zone:"Queens", unlockLevel:2 }
-    ]
-  }
-};
-
-// Incident requirements are now evaluated across MULTIPLE UNITS.
-const CALL_POOL = [
-  {
-    id:"prank_kid",
-    severity:"trote",
-    title:"Possível trote",
-    intro: (city) => `Central de emergência, ${city.name}.`,
-    first: "Ô moço... tem um dinossauro na rua aqui 😂",
-    steps: [
-      {
-        text: "O chamador parece rindo e não fornece informações coerentes.",
-        options: [
-          { label:"Confirmar endereço e natureza real", effect:{quality:+1}, next:1 },
-          { label:"Despachar patrulha imediatamente", effect:{quality:-2}, end:"Você despachou sem confirmar. Recurso desperdiçado." }
-        ]
-      },
-      {
-        text: "Ele muda a história e dá um endereço inexistente.",
-        options: [
-          { label:"Encerrar por trote e registrar", end:"Trote identificado. Boa triagem." },
-          { label:"Insistir e manter na linha", effect:{quality:-1}, end:"Tempo perdido. Outras chamadas podem ficar sem resposta." }
-        ]
+      if(agency === 'police'){
+        pool.push(...INCIDENT_CATALOG.police_low, ...INCIDENT_CATALOG.police_med, ...INCIDENT_CATALOG.police_high);
+      }else if(agency === 'fire'){
+        pool.push(...INCIDENT_CATALOG.fire_low, ...INCIDENT_CATALOG.fire_med, ...INCIDENT_CATALOG.fire_high);
+      }else{
+        pool.push(
+          ...INCIDENT_CATALOG.police_low, ...INCIDENT_CATALOG.police_med, ...INCIDENT_CATALOG.police_high,
+          ...INCIDENT_CATALOG.fire_low, ...INCIDENT_CATALOG.fire_med, ...INCIDENT_CATALOG.fire_high
+        );
       }
-    ],
-    incident: (city) => ({
-      type:"trote",
-      zone: pick(city.zones),
-      required: {
-        anyOfTags: ["triage", "patrol"], // qualquer patrulha serve (ideal é encerrar sem despacho)
-        mustHaveTags: [],               // nada obrigatório
-        minRiskHandle: 0,
-        minUnits: 0
-      },
-      baseUrgency: 0.7
-    })
-  },
-
-  {
-    id:"noise_neighbor",
-    severity:"leve",
-    title:"Perturbação do sossego",
-    intro: (city) => `Central de emergência, ${city.name}. Qual sua ocorrência?`,
-    first: "Meu vizinho tá com som alto desde cedo. Não consigo dormir.",
-    steps: [
-      {
-        text: "Ocorrência sem risco imediato. Precisa triagem e registro.",
-        options: [
-          { label:"Coletar endereço e orientar", effect:{quality:+2}, next:1 },
-          { label:"Enviar unidade tática", effect:{quality:-2}, end:"Resposta exagerada. Custo alto sem necessidade." }
-        ]
-      },
-      {
-        text: "O chamador confirma que não há ameaça ou armas.",
-        options: [
-          { label:"Registrar como baixa prioridade", end:"Registrado. Orientação correta." },
-          { label:"Mandar resolver sozinho", effect:{quality:-1}, end:"Postura inadequada. Reputação caiu." }
-        ]
-      }
-    ],
-    incident: (city) => ({
-      type:"police_low",
-      zone: pick(city.zones),
-      required: {
-        anyOfTags: ["patrol","area"],
-        mustHaveTags: [],
-        minRiskHandle: 1,
-        minUnits: 1
-      },
-      baseUrgency: 1.0
-    })
-  },
-
-  {
-    id:"traffic_injury",
-    severity:"media",
-    title:"Acidente com feridos (possível preso)",
-    intro:(city)=>`Central de emergência, ${city.name}. Diga o que aconteceu.`,
-    first:"Teve uma colisão e uma pessoa tá sangrando!",
-    steps:[
-      {
-        text:"Confirme localização e número de vítimas.",
-        options:[
-          { label:"Perguntar endereço e nº de feridos", effect:{quality:+2}, next:1 },
-          { label:"Mandar aguardar e desligar", effect:{quality:-3}, end:"Erro: risco de vida sem orientação." }
-        ]
-      },
-      {
-        text:"Há 2 vítimas. Uma presa no carro e outra consciente com sangramento.",
-        options:[
-          { label:"Orientar compressão no sangramento e manter calma", effect:{quality:+2}, next:2 },
-          { label:"Focar só na descrição do carro", effect:{quality:-1}, next:2 }
-        ]
-      },
-      {
-        text:"Cheiro de combustível aumentou. Pode haver risco de incêndio.",
-        options:[
-          { label:"Orientar afastar curiosos e desligar ignição", effect:{quality:+2}, end:"Boa orientação. Agora despache RESGATE + AMBULÂNCIA." },
-          { label:"Ignorar e pedir silêncio", effect:{quality:-2}, end:"Orientação fraca. Risco aumentou." }
-        ]
-      }
-    ],
-    incident:(city)=>({
-      type:"accident_extrication",
-      zone: pick(city.zones),
-      required: {
-        // precisa: 1 resgate/extrication + 1 ems/medical (mínimo 2 unidades)
-        anyOfTags: ["rescue","extrication","medical","ems"],
-        mustHaveTags: ["extrication","ems"],
-        minRiskHandle: 2,
-        minUnits: 2
-      },
-      baseUrgency: 1.5
-    })
-  },
-
-  {
-    id:"shots_fired",
-    severity:"grave",
-    title:"Disparos / ameaça armada",
-    intro:(city)=>`Central de emergência, ${city.name}. Qual sua emergência?`,
-    first:"SOCORRO! Tem alguém atirando aqui perto!",
-    steps:[
-      {
-        text:"Você ouve gritos ao fundo. Prioridade: segurança do chamador + local.",
-        options:[
-          { label:"Orientar: se abrigue e diga o local", effect:{quality:+2}, next:1 },
-          { label:"Pedir que confronte o suspeito", effect:{quality:-4}, end:"Erro gravíssimo. Risco extremo." }
-        ]
-      },
-      {
-        text:"O chamador relata suspeito armado e possíveis feridos.",
-        options:[
-          { label:"Perguntar descrição e direção", effect:{quality:+2}, next:2 },
-          { label:"Mandar desligar e correr", effect:{quality:-2}, next:2 }
-        ]
-      },
-      {
-        text:"Situação piora: 'Ele entrou no prédio!'",
-        options:[
-          { label:"Manter na linha e reforçar segurança", effect:{quality:+2}, end:"Ok. Despache unidade TÁTICA imediatamente." },
-          { label:"Insistir em detalhes irrelevantes", effect:{quality:-2}, end:"Tempo perdido. Chance de vítimas aumentou." }
-        ]
-      }
-    ],
-    incident:(city)=>({
-      type:"active_threat",
-      zone: pick(city.zones),
-      required: {
-        anyOfTags: ["tactical","highrisk"],
-        mustHaveTags: ["tactical"],
-        minRiskHandle: 3,
-        minUnits: 1
-      },
-      baseUrgency: 1.8
-    })
-  },
-
-  {
-    id:"house_fire",
-    severity:"grave",
-    title:"Incêndio residencial",
-    intro:(city)=>`Central de emergência, ${city.name}. Fale agora.`,
-    first:"Minha cozinha tá pegando fogo! Tem fumaça por tudo!",
-    steps:[
-      {
-        text:"Risco alto. Prioridade: evacuação e segurança.",
-        options:[
-          { label:"Orientar evacuar e NÃO usar elevador", effect:{quality:+2}, next:1 },
-          { label:"Mandar jogar água sem avaliar", effect:{quality:-2}, next:1 }
-        ]
-      },
-      {
-        text:"O chamador diz que há uma criança no quarto.",
-        options:[
-          { label:"Orientar sair e fechar portas ao sair", effect:{quality:+2}, end:"Orientação correta. Despache BOMBEIROS." },
-          { label:"Mandar voltar sozinho", effect:{quality:-4}, end:"Erro grave: risco de morte." }
-        ]
-      }
-    ],
-    incident:(city)=>({
-      type:"fire",
-      zone: pick(city.zones),
-      required: {
-        anyOfTags: ["fire","rescue"],
-        mustHaveTags: ["fire"],
-        minRiskHandle: 2,
-        minUnits: 1
-      },
-      baseUrgency: 1.9
-    })
-  },
-
-  {
-    id:"suspicious_package",
-    severity:"media",
-    title:"Objeto suspeito (possível bomba)",
-    intro:(city)=>`Central de emergência, ${city.name}.`,
-    first:"Tem uma mochila abandonada na estação. Ouvi um bip…",
-    steps:[
-      {
-        text:"Você precisa isolar área e evitar pânico.",
-        options:[
-          { label:"Orientar afastar pessoas e manter distância", effect:{quality:+2}, next:1 },
-          { label:"Mandar alguém abrir a mochila", effect:{quality:-4}, end:"Erro crítico. Risco altíssimo." }
-        ]
-      },
-      {
-        text:"O chamador confirma que o objeto está próximo de grande fluxo.",
-        options:[
-          { label:"Manter distância e aguardar equipe especializada", effect:{quality:+2}, end:"Boa decisão. Despache ANTI-BOMBA." },
-          { label:"Enviar patrulha comum apenas", effect:{quality:-2}, end:"Resposta inadequada para ameaça de bomba." }
-        ]
-      }
-    ],
-    incident:(city)=>({
-      type:"bomb_threat",
-      zone: pick(city.zones),
-      required: {
-        anyOfTags: ["bomb","tactical","highrisk"],
-        mustHaveTags: ["bomb"],
-        minRiskHandle: 4,
-        minUnits: 1
-      },
-      baseUrgency: 1.6
-    })
-  }
-];
-
-const SEVERITY = {
-  trote: { badge:"TROTE", pill:"warn", deadlineMs: 45_000, baseScore: 6,  repDeltaOk:+2, repDeltaBad:-4 },
-  leve:  { badge:"LEVE",  pill:"ok",   deadlineMs: 65_000, baseScore: 10, repDeltaOk:+3, repDeltaBad:-6 },
-  media: { badge:"MÉDIO", pill:"warn", deadlineMs: 55_000, baseScore: 18, repDeltaOk:+4, repDeltaBad:-10 },
-  grave: { badge:"GRAVE", pill:"danger",deadlineMs: 45_000, baseScore: 28, repDeltaOk:+6, repDeltaBad:-18 }
-};
-
-function computeRank(score, rep){
-  if(rep < 20) return "Em avaliação";
-  if(score < 40) return "Recruta";
-  if(score < 120) return "Operador";
-  if(score < 240) return "Sênior";
-  return "Supervisor";
-}
-
-/* ==========================
-   State
-========================== */
-let career = loadCareer();
-
-const state = {
-  cityKey: "sao_paulo",
-  shiftActive: false,
-  shiftStart: 0,
-  shiftDurationMs: 10 * 60 * 1000,
-
-  score: 0,
-  rep: 50,
-
-  callActive: false,
-  callStart: 0,
-  callTimerHandle: null,
-  callQuality: 0,
-  currentCall: null,
-
-  incidents: [],
-  units: [],
-  selectedIncidentId: null,
-  selectedUnitIds: new Set(),
-
-  resolved: 0,
-  failed: 0,
-
-  // unit filters
-  unitRoleFilter: "all",
-  onlyAvailable: true,
-  unitSearch: ""
-};
-
-let incidentCounter = 1;
-
-/* ==========================
-   UI Elements
-========================== */
-const citySelect = $("citySelect");
-const startShiftBtn = $("startShiftBtn");
-const endShiftBtn = $("endShiftBtn");
-const newCallBtn = $("newCallBtn");
-const resetCareerBtn = $("resetCareerBtn");
-
-const scoreEl = $("scoreEl");
-const repEl = $("repEl");
-const rankEl = $("rankEl");
-const shiftTimeEl = $("shiftTimeEl");
-
-const callStatus = $("callStatus");
-const dispatchStatus = $("dispatchStatus");
-
-const callBadge = $("callBadge");
-const callTimerEl = $("callTimerEl");
-const callTextEl = $("callText");
-const optionsEl = $("options");
-const callHint = $("callHint");
-
-const careerLevelEl = $("careerLevelEl");
-const careerXpFill = $("careerXpFill");
-const careerXpText = $("careerXpText");
-const careerCreditsEl = $("careerCreditsEl");
-const careerBestEl = $("careerBestEl");
-const careerCityBestEl = $("careerCityBestEl");
-const careerStatsEl = $("careerStatsEl");
-const careerFailEl = $("careerFailEl");
-
-const mapTitle = $("mapTitle");
-const mapZone = $("mapZone");
-const activeIncidentsPill = $("activeIncidentsPill");
-const pinsEl = $("pins");
-
-const incidentListEl = $("incidentList");
-const unitListEl = $("unitList");
-const dispatchBtn = $("dispatchBtn");
-const clearUnitsBtn = $("clearUnitsBtn");
-
-const logEl = $("logEl");
-
-const unitTabs = $("unitTabs");
-const onlyAvailableChk = $("onlyAvailableChk");
-const unitSearchEl = $("unitSearch");
-const selCountEl = $("selCount");
-
-const recommendBox = $("recommendBox");
-const recommendList = $("recommendList");
-const dispatchHint = $("dispatchHint");
-
-/* ==========================
-   Logging
-========================== */
-function log(msg){
-  const t = new Date().toLocaleTimeString();
-  logEl.textContent = `[${t}] ${msg}\n` + logEl.textContent;
-}
-
-/* ==========================
-   Career Render
-========================== */
-function renderCareer(){
-  careerLevelEl.textContent = career.level;
-  careerCreditsEl.textContent = career.credits;
-  careerBestEl.textContent = career.bestScore;
-  careerCityBestEl.textContent = `SP: ${career.cityBest.sao_paulo||0} • NY: ${career.cityBest.new_york||0}`;
-  careerStatsEl.textContent = career.totalResolved;
-  careerFailEl.textContent = `Falhas: ${career.totalFailed}`;
-  const pct = clamp(Math.floor((career.xp / career.xpToNext) * 100), 0, 100);
-  careerXpFill.style.width = pct + "%";
-  careerXpText.textContent = `XP: ${career.xp}/${career.xpToNext}`;
-
-  $("careerUnlockHint").textContent =
-    career.level < 2 ? "Nível 2: EMS + Bombeiros" :
-    career.level < 3 ? "Nível 3: Unidades táticas (ROTA/SWAT/Choque)" :
-    career.level < 4 ? "Nível 4: Anti-bomba (GATE) / Federal (FBI)" :
-    career.level < 5 ? "Nível 5: Aéreo (Águia)" :
-    "Desbloqueios máximos nesta versão (próxima fase: upgrades e compra).";
-}
-
-/* ==========================
-   City Load with Unlocks
-========================== */
-function loadCity(cityKey){
-  state.cityKey = cityKey;
-  const city = CITY_CONFIG[cityKey];
-  mapTitle.textContent = city.name;
-  mapZone.textContent = `Zonas: ${city.zones.join(" • ")}`;
-
-  state.units = city.unitTemplates.map(u => ({
-    ...u,
-    status: "disponível",
-    busyUntil: 0,
-    locked: career.level < u.unlockLevel
-  }));
-
-  state.selectedIncidentId = null;
-  state.selectedUnitIds = new Set();
-
-  renderUnits();
-  renderIncidents();
-  renderPins();
-  renderRecommend();
-
-  log(`Cenário carregado: ${city.name}. (Carreira nível ${career.level})`);
-}
-
-/* ==========================
-   Rendering
-========================== */
-function renderStats(){
-  scoreEl.textContent = state.score;
-  repEl.textContent = `${state.rep} /100`;
-  rankEl.textContent = computeRank(state.score, state.rep);
-  selCountEl.textContent = state.selectedUnitIds.size;
-}
-
-function renderShiftTime(){
-  if(!state.shiftActive){
-    shiftTimeEl.textContent = "--:--";
-    return;
-  }
-  const remain = (state.shiftStart + state.shiftDurationMs) - now();
-  shiftTimeEl.textContent = formatMMSS(remain);
-  if(remain <= 0){
-    endShift("Tempo do turno acabou.");
-  }
-}
-
-function severityBadge(sev){
-  const s = SEVERITY[sev];
-  callBadge.textContent = s.badge;
-  callBadge.className = "badge " + (s.pill === "danger" ? "badge-danger" : s.pill === "warn" ? "badge-warn" : "badge-ok");
-}
-
-function reqHintText(incident){
-  const r = incident.required;
-  const must = r.mustHaveTags || [];
-  const minUnits = r.minUnits || 1;
-
-  let parts = [];
-  if(must.includes("extrication") && must.includes("ems")){
-    parts.push("Precisa: Resgate/Desencarceramento + Ambulância (mín. 2 unidades)");
-  }
-  if(must.includes("fire")){
-    parts.push("Precisa: Bombeiros (Fire)");
-  }
-  if(must.includes("bomb")){
-    parts.push("Precisa: Anti-bomba (GATE/SWAT-bomb)");
-  }
-  if(must.includes("tactical")){
-    parts.push("Precisa: Tática (ROTA/SWAT)");
-  }
-  if(r.minRiskHandle >= 4) parts.push("Risco: Altíssimo (nível 4+)");
-  else if(r.minRiskHandle >= 3) parts.push("Risco: Alto (nível 3+)");
-  else if(r.minRiskHandle >= 2) parts.push("Risco: Médio (nível 2+)");
-
-  if(parts.length === 0){
-    parts.push(`Mínimo: ${minUnits} unidade(s) apropriada(s).`);
-  }
-  return parts.join(" • ");
-}
-
-function renderIncidents(){
-  incidentListEl.innerHTML = "";
-
-  if(state.incidents.length === 0){
-    const empty = document.createElement("div");
-    empty.className = "subtle";
-    empty.textContent = "Nenhum incidente aguardando despacho.";
-    incidentListEl.appendChild(empty);
-  }else{
-    state.incidents
-      .slice()
-      .sort((a,b)=>a.deadlineAt-b.deadlineAt)
-      .forEach(inc=>{
-        const card = document.createElement("div");
-        card.className = "card" + (state.selectedIncidentId === inc.id ? " sel" : "");
-        card.onclick = ()=>{
-          state.selectedIncidentId = inc.id;
-          // limpa seleção anterior (pra evitar despachar errado)
-          state.selectedUnitIds = new Set();
-          renderIncidents();
-          renderUnits();
-          renderRecommend();
-          updateDispatchButton();
-        };
-
-        const left = document.createElement("div");
-        left.className = "left";
-
-        const title = document.createElement("div");
-        title.className = "title";
-        title.textContent = inc.title;
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-
-        const sevPill = document.createElement("span");
-        sevPill.className = "pill " + (inc.severity==="grave"?"danger":inc.severity==="media"?"warn":inc.severity==="leve"?"ok":"warn");
-        sevPill.textContent = inc.severity.toUpperCase();
-
-        const zonePill = document.createElement("span");
-        zonePill.className = "pill";
-        zonePill.textContent = inc.zone;
-
-        const statusPill = document.createElement("span");
-        statusPill.className = "pill";
-        statusPill.textContent = inc.status;
-
-        meta.appendChild(sevPill);
-        meta.appendChild(zonePill);
-        meta.appendChild(statusPill);
-
-        const req = document.createElement("div");
-        req.className = "subtle";
-        req.textContent = reqHintText(inc);
-
-        const right = document.createElement("div");
-        right.className = "right";
-
-        const timeLeft = Math.max(0, inc.deadlineAt - now());
-        const timePill = document.createElement("span");
-        timePill.className = "pill " + (timeLeft < 12_000 ? "danger" : timeLeft < 22_000 ? "warn" : "");
-        timePill.textContent = `⏱ ${formatMMSS(timeLeft)}`;
-
-        right.appendChild(timePill);
-
-        left.appendChild(title);
-        left.appendChild(meta);
-        left.appendChild(req);
-
-        card.appendChild(left);
-        card.appendChild(right);
-
-        incidentListEl.appendChild(card);
-      });
-  }
-
-  activeIncidentsPill.textContent = `${state.incidents.length} incidentes`;
-}
-
-function filteredUnits(){
-  const q = (state.unitSearch || "").trim().toLowerCase();
-  return state.units.filter(u=>{
-    if(state.unitRoleFilter !== "all" && u.role !== state.unitRoleFilter) return false;
-    if(state.onlyAvailable && u.status !== "disponível") return false;
-    if(q){
-      const hay = `${u.name} ${u.role} ${u.zone} ${u.tags.join(" ")}`.toLowerCase();
-      if(!hay.includes(q)) return false;
+      return pool;
     }
-    return true;
-  });
-}
 
-function renderUnits(){
-  unitListEl.innerHTML = "";
+    /***********************
+     *  Map setup
+     ************************/
+    let map, tileLayer;
+    const markers = {
+      incidents: new Map(), // id -> marker
+      units: new Map(),     // id -> marker
+      routes: new Map(),    // unitId -> polyline
+    };
 
-  const units = filteredUnits();
-  if(units.length === 0){
-    const empty = document.createElement("div");
-    empty.className = "subtle";
-    empty.textContent = "Nenhuma unidade encontrada com os filtros.";
-    unitListEl.appendChild(empty);
-  }else{
-    units.forEach(u=>{
-      const selected = state.selectedUnitIds.has(u.id);
-      const card = document.createElement("div");
-      card.className = "card" + (selected ? " sel" : "") + (u.locked ? " locked" : "");
-      card.onclick = ()=>{
-        if(u.locked){
-          log(`🔒 Unidade bloqueada: precisa nível ${u.unlockLevel}.`);
-          return;
-        }
-        if(u.status !== "disponível"){
-          log("Unidade indisponível no momento.");
-          return;
-        }
-        if(selected) state.selectedUnitIds.delete(u.id);
-        else state.selectedUnitIds.add(u.id);
-        renderUnits();
-        renderStats();
-        updateDispatchButton();
+    function initMap(){
+      map = L.map('map', { zoomControl: true, preferCanvas: true });
+      tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      });
+      tileLayer.addTo(map);
+      map.setView(CITIES.saopaulo.center, 12);
+
+      map.on('click', ()=>{
+        // click on empty map = no-op
+      });
+    }
+
+    function setCity(cityKey){
+      const c = CITIES[cityKey];
+      $('regionTag').textContent = c.regionTag;
+      map.setView(c.center, cityKey==='saopaulo' ? 12 : 12);
+    }
+
+    function iconForIncident(sev){
+      const color = sev==='high' ? '#ef4444' : (sev==='med' ? '#f59e0b' : '#22c55e');
+      const html = `
+        <div style="
+          width:18px;height:18px;border-radius:999px;
+          background:${color};
+          box-shadow:0 0 0 6px rgba(0,0,0,.22), 0 10px 22px rgba(0,0,0,.35);
+          border:1px solid rgba(255,255,255,.25);
+        "></div>`;
+      return L.divIcon({ html, className:'', iconSize:[18,18], iconAnchor:[9,9] });
+    }
+
+    function iconForUnit(unit){
+      let color = '#60a5fa';
+      if(unit.type==='fire') color = '#fb7185';
+      if(unit.type==='medic') color = '#34d399';
+      const html = `
+        <div style="
+          width:22px;height:22px;border-radius:10px;
+          background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.06)), ${color};
+          border:1px solid rgba(255,255,255,.22);
+          display:flex;align-items:center;justify-content:center;
+          box-shadow:0 18px 45px rgba(0,0,0,.35);
+          font-size:12px; color: rgba(0,0,0,.75); font-weight:900;
+        ">${unit.type==='police'?'P':(unit.type==='fire'?'F':'M')}</div>`;
+      return L.divIcon({ html, className:'', iconSize:[22,22], iconAnchor:[11,11] });
+    }
+
+    /***********************
+     *  Game state
+     ************************/
+    const GAME = {
+      running: false,
+      cityKey: 'saopaulo',
+      agency: 'police',
+      score: 0,
+
+      shiftElapsed: 0,
+      shiftDuration: 8 * 60, // 8min (prototype). Ajuste depois.
+      lastCallAt: 0,
+
+      scenarioPool: [],
+
+      queue: [],      // calls waiting
+      activeCall: null,
+      incidents: [],  // active incidents
+      selectedIncidentId: null,
+
+      units: [],      // units (with status + pos)
+      tickHandle: null,
+    };
+
+    function resetOperationalState(){
+      GAME.score = 0;
+      GAME.shiftElapsed = 0;
+      GAME.lastCallAt = 0;
+      GAME.queue = [];
+      GAME.activeCall = null;
+      GAME.incidents = [];
+      GAME.selectedIncidentId = null;
+
+      // clear map markers
+      for(const m of markers.incidents.values()) map.removeLayer(m);
+      markers.incidents.clear();
+      for(const p of markers.routes.values()) map.removeLayer(p);
+      markers.routes.clear();
+
+      // units keep but reset status
+      for(const u of GAME.units){
+        u.status = 'idle';
+        u.busyUntil = 0;
+      }
+      renderAll();
+    }
+
+    function buildUnitsForCity(){
+      const c = CITIES[GAME.cityKey];
+      const bounds = c.bounds;
+
+      GAME.units = c.units.map(u => {
+        const lat = rnd(bounds.latMin, bounds.latMax);
+        const lng = rnd(bounds.lngMin, bounds.lngMax);
+        return {
+          ...u,
+          lat, lng,
+          status: 'idle', // idle / enroute / onscene / returning
+          busyUntil: 0,
+          target: null
+        };
+      });
+
+      // remove unit markers
+      for(const m of markers.units.values()) map.removeLayer(m);
+      markers.units.clear();
+
+      // re-add
+      for(const u of GAME.units){
+        const mk = L.marker([u.lat,u.lng], { icon: iconForUnit(u) }).addTo(map);
+        mk.on('click', ()=>{
+          if(!GAME.selectedIncidentId){
+            toast('Selecione uma ocorrência primeiro.');
+            return;
+          }
+          selectUnitForDispatch(u.id);
+        });
+        mk.bindTooltip(u.name, { direction:'top', opacity:0.9 });
+        markers.units.set(u.id, mk);
+      }
+    }
+
+    /***********************
+     *  Call / Incident generation
+     ************************/
+    let _id = 1;
+    function nextId(prefix){ return `${prefix}_${_id++}`; }
+
+    function randomLocation(){
+      const b = CITIES[GAME.cityKey].bounds;
+      return { lat: rnd(b.latMin, b.latMax), lng: rnd(b.lngMin, b.lngMax) };
+    }
+
+    function enqueueCall(){
+      const scenario = pick(GAME.scenarioPool);
+      const loc = randomLocation();
+
+      const call = {
+        id: nextId('call'),
+        scenario,
+        loc,
+        createdAt: GAME.shiftElapsed,
+        // call timers
+        duration: scenario.sev==='high' ? 120 : (scenario.sev==='med' ? 100 : 80),
+        timeLeft: scenario.sev==='high' ? 120 : (scenario.sev==='med' ? 100 : 80),
+        stage: 0,
+        collected: {
+          addressKnown: false,
+          natureKnown: false,
+          dangerKnown: false
+        },
+        transcript: [],
+        typing: null,
+        resolved: false
       };
 
-      const left = document.createElement("div");
-      left.className = "left";
+      GAME.queue.push(call);
+      renderQueue();
+      $('queueTag').textContent = String(GAME.queue.length);
 
-      const top = document.createElement("div");
-      top.style.display = "flex";
-      top.style.gap = "8px";
-      top.style.alignItems = "center";
+      // alert
+      toast('☎️ Nova chamada na fila.');
+    }
 
-      const check = document.createElement("span");
-      check.className = "check" + (selected ? " on" : "");
-      check.textContent = selected ? "✓" : "";
-      top.appendChild(check);
+    function popNextCall(){
+      if(GAME.activeCall) return;
+      const call = GAME.queue.shift();
+      if(!call) return;
+      GAME.activeCall = call;
+      $('queueTag').textContent = String(GAME.queue.length);
+      renderQueue();
+      startCallIntro(call);
+    }
 
-      const title = document.createElement("div");
-      title.className = "title";
-      title.textContent = u.name + (u.locked ? ` (Nível ${u.unlockLevel})` : "");
-      top.appendChild(title);
+    function startCallIntro(call){
+      const cityKey = GAME.cityKey;
+      const agency = GAME.agency;
 
-      const meta = document.createElement("div");
-      meta.className = "meta";
+      let greeting = "Central, qual sua emergência?";
+      if(cityKey==='saopaulo'){
+        if(agency==='police') greeting = "190, Polícia Militar. Qual sua emergência?";
+        else if(agency==='fire') greeting = "193, Bombeiros. Qual sua emergência?";
+        else greeting = "CIOSP (Central Integrada). Qual sua emergência?";
+      } else {
+        // NYC/USA
+        if(agency==='police' || agency==='mixed') greeting = "911, what's your emergency?";
+        else greeting = "911 Fire/Rescue, what's your emergency?";
+      }
 
-      const rolePill = document.createElement("span");
-      rolePill.className = "pill";
-      rolePill.textContent = u.role.toUpperCase();
+      setCallHeader(call, `Chamada — ${CITIES[cityKey].label}`, `ID ${call.id} • Prioridade ${call.scenario.sev.toUpperCase()}`);
+      setTranscript(call, []);
+      addLine(call, "OPERADOR", greeting, true, ()=> {
+        addLine(call, "CHAMADOR", call.scenario.script, true, ()=>{
+          renderChoicesForCall(call);
+        });
+      });
+    }
 
-      const zonePill = document.createElement("span");
-      zonePill.className = "pill";
-      zonePill.textContent = u.zone;
+    function setCallHeader(call, title, small){
+      $('callTitle').textContent = title;
+      $('callSmall').textContent = small;
+    }
 
-      const statusPill = document.createElement("span");
-      statusPill.className = "pill " + (u.status==="disponível" ? "ok" : "warn");
-      statusPill.textContent = u.status;
+    function setTranscript(call, lines){
+      call.transcript = lines.slice();
+      renderTranscript(call);
+    }
 
-      meta.appendChild(rolePill);
-      meta.appendChild(zonePill);
-      meta.appendChild(statusPill);
+    function renderTranscript(call){
+      const el = $('transcript');
+      el.innerHTML = '';
+      for(const L of call.transcript){
+        const p = document.createElement('p');
+        p.className = 'line';
+        const who = document.createElement('span');
+        who.className = 'who';
+        who.textContent = L.who;
+        const msg = document.createElement('span');
+        msg.textContent = L.text;
+        p.appendChild(who);
+        p.appendChild(msg);
+        el.appendChild(p);
+      }
+      el.scrollTop = el.scrollHeight;
+    }
 
-      const right = document.createElement("div");
-      right.className = "right";
+    // Typewriter
+    function typewriterAppend(call, who, text, done){
+      const el = $('transcript');
 
-      const cost = document.createElement("span");
-      cost.className = "pill";
-      cost.textContent = `Custo ${u.cost}`;
+      // create new line
+      const p = document.createElement('p');
+      p.className = 'line';
+      const whoEl = document.createElement('span');
+      whoEl.className = 'who';
+      whoEl.textContent = who;
+      const msgEl = document.createElement('span');
+      msgEl.textContent = '';
+      p.appendChild(whoEl);
+      p.appendChild(msgEl);
+      el.appendChild(p);
+      el.scrollTop = el.scrollHeight;
 
-      const risk = document.createElement("span");
-      risk.className = "pill";
-      risk.textContent = `Risco ${u.riskHandle}`;
+      let i = 0;
+      const speed = 12; // lower = faster (ms per char approx by interval)
+      clearInterval(call.typing);
+      call.typing = setInterval(()=>{
+        i++;
+        msgEl.textContent = text.slice(0, i);
+        el.scrollTop = el.scrollHeight;
+        if(i >= text.length){
+          clearInterval(call.typing);
+          call.typing = null;
+          // push into transcript (final)
+          call.transcript.push({ who, text });
+          // rebuild to keep consistent
+          renderTranscript(call);
+          if(done) done();
+        }
+      }, speed);
+    }
 
-      const mini = document.createElement("div");
-      mini.className = "subtle";
-      mini.textContent = "Tags: " + u.tags.join(", ");
+    function addLine(call, who, text, typed=true, done){
+      if(!call) return;
+      // if already typing, stop to avoid overlap
+      if(call.typing){
+        clearInterval(call.typing);
+        call.typing = null;
+      }
 
-      const mini2 = document.createElement("div");
-      mini2.className = "subtle";
-      mini2.textContent = u.locked ? `Bloqueado (nível ${u.unlockLevel})` : `Velocidade ${u.speed.toFixed(2)} • Zona ${u.zone}`;
+      if(!typed){
+        call.transcript.push({ who, text });
+        renderTranscript(call);
+        if(done) done();
+        return;
+      }
+      typewriterAppend(call, who, text, done);
+    }
 
-      const row = document.createElement("div");
-      row.className = "minirow";
-      row.appendChild(cost);
-      row.appendChild(risk);
+    function renderChoices(buttons){
+      const box = $('choices');
+      box.innerHTML = '';
+      for(const b of buttons){
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.textContent = b.label;
+        btn.onclick = b.onClick;
+        box.appendChild(btn);
+      }
+    }
 
-      right.appendChild(row);
-      right.appendChild(mini);
-      right.appendChild(mini2);
+    function renderChoicesForCall(call){
+      if(!call) return;
 
-      left.appendChild(top);
-      left.appendChild(meta);
+      const buttons = [];
 
-      card.appendChild(left);
-      card.appendChild(right);
+      // Protocol-ish questions
+      buttons.push({
+        label: "Perguntar endereço/localização",
+        onClick: ()=>{
+          if(call.collected.addressKnown){
+            addLine(call,"OPERADOR","Confirme novamente: qual o endereço exato?", true, ()=>{
+              addLine(call,"CHAMADOR","É aqui mesmo… rápido!", true, ()=> {});
+            });
+            GAME.score -= 1;
+            renderHUD();
+            return;
+          }
+          call.collected.addressKnown = true;
+          addLine(call,"OPERADOR","Qual o endereço exato e ponto de referência?", true, ()=>{
+            addLine(call,"CHAMADOR", fakeAddressForCity(GAME.cityKey), true, ()=>{
+              // small reward
+              addScore(+6);
+              renderChoicesForCall(call);
+            });
+          });
+        }
+      });
 
-      unitListEl.appendChild(card);
-    });
-  }
-}
+      buttons.push({
+        label: "Perguntar o que está acontecendo",
+        onClick: ()=>{
+          if(call.collected.natureKnown){
+            addLine(call,"OPERADOR","Entendi. O que mais você consegue ver/ouvir agora?", true, ()=>{
+              addLine(call,"CHAMADOR","Tá assustador…", true, ()=> {});
+            });
+            addScore(+1);
+            return;
+          }
+          call.collected.natureKnown = true;
+          addLine(call,"OPERADOR","Certo. Descreva a emergência em uma frase.", true, ()=>{
+            addLine(call,"CHAMADOR", call.scenario.title + ".", true, ()=>{
+              addScore(+6);
+              renderChoicesForCall(call);
+            });
+          });
+        }
+      });
 
-function renderPins(){
-  pinsEl.innerHTML = "";
-  state.incidents.forEach((inc, idx)=>{
-    const p = document.createElement("div");
-    p.className = "pin" + (inc.status === "resolvido" ? " ok" : "");
-    const x = 12 + (idx*19 % 70);
-    const y = 25 + (idx*23 % 55);
-    p.style.left = x + "%";
-    p.style.top  = y + "%";
-    pinsEl.appendChild(p);
-  });
-}
+      buttons.push({
+        label: "Perguntar risco imediato (armas/fogo/feridos)",
+        onClick: ()=>{
+          if(call.collected.dangerKnown){
+            addLine(call,"OPERADOR","Fique em segurança. Alguma mudança agora?", true, ()=>{
+              addLine(call,"CHAMADOR","Tô tentando…", true, ()=> {});
+            });
+            addScore(+1);
+            return;
+          }
+          call.collected.dangerKnown = true;
+          addLine(call,"OPERADOR","Existe risco imediato? Arma, fogo, fumaça, alguém inconsciente?", true, ()=>{
+            addLine(call,"CHAMADOR", dangerLineFromScenario(call.scenario), true, ()=>{
+              addScore(+6);
+              renderChoicesForCall(call);
+            });
+          });
+        }
+      });
 
-function updateDispatchButton(){
-  const inc = state.incidents.find(i=>i.id===state.selectedIncidentId);
-  const hasIncident = !!inc && inc.status === "aguardando";
-  const selectedUnits = [...state.selectedUnitIds].map(id=>state.units.find(u=>u.id===id)).filter(Boolean);
-  const allAvailable = selectedUnits.length > 0 && selectedUnits.every(u => u.status === "disponível" && !u.locked);
-  const minUnits = inc ? (inc.required.minUnits || 1) : 1;
+      // Provide instruction if medical/fire
+      buttons.push({
+        label: "Dar instruções de segurança / primeiros socorros",
+        onClick: ()=>{
+          const instr = instructionForScenario(call.scenario);
+          addLine(call,"OPERADOR", instr, true, ()=>{
+            addLine(call,"CHAMADOR","Ok… vou tentar!", true, ()=>{
+              addScore(+8);
+              renderChoicesForCall(call);
+            });
+          });
+        }
+      });
 
-  const can = state.shiftActive && hasIncident && allAvailable && selectedUnits.length >= minUnits;
-  dispatchBtn.disabled = !can;
+      // Create incident
+      buttons.push({
+        label: "Registrar ocorrência e abrir despacho",
+        onClick: ()=>{
+          // require at least address or nature ideally
+          const goodInfo = (call.collected.addressKnown || call.collected.natureKnown);
+          if(!goodInfo){
+            addLine(call,"OPERADOR","Preciso do endereço e do que está acontecendo para enviar ajuda.", true, ()=>{
+              addScore(-3);
+              renderChoicesForCall(call);
+            });
+            return;
+          }
+          // Create incident on map
+          const inc = createIncidentFromCall(call);
+          addLine(call,"OPERADOR","Entendido. Unidades a caminho. Permaneça na linha se possível.", true, ()=>{
+            addScore(+10);
+            // end call and focus dispatch
+            endActiveCall(`Ocorrência registrada: ${inc.title}`);
+            selectIncident(inc.id);
+          });
+        }
+      });
 
-  if(inc){
-    const need = reqHintText(inc);
-    dispatchHint.textContent = `Requisito do incidente: ${need}`;
-  }else{
-    dispatchHint.textContent = "Selecione um incidente para ver recomendações e requisitos.";
-  }
-}
+      // triage/close prank
+      buttons.push({
+        label: "Encerrar / classificar como trote (se aplicável)",
+        onClick: ()=>{
+          if(call.scenario.needs.includes('triage')){
+            addLine(call,"OPERADOR","Entendido. Sem emergência confirmada. Encerrando e registrando a ligação.", true, ()=>{
+              addScore(+8);
+              addXP(8);
+              endActiveCall("Ligação encerrada (trote/sem confirmação).");
+            });
+          } else {
+            // wrong: you closed a real emergency
+            addLine(call,"OPERADOR","Vou encerrar a ligação.", true, ()=>{
+              addScore(-18);
+              addXP(-5);
+              endActiveCall("Erro: ligação encerrada indevidamente.");
+            });
+          }
+        }
+      });
 
-function renderAll(){
-  renderCareer();
-  renderStats();
-  renderShiftTime();
-  renderIncidents();
-  renderUnits();
-  renderPins();
-  renderRecommend();
-  updateDispatchButton();
-}
+      renderChoices(buttons);
+    }
 
-/* ==========================
-   Recommender
-========================== */
-function incidentNeeds(inc){
-  const must = new Set(inc.required.mustHaveTags || []);
-  const minRisk = inc.required.minRiskHandle || 0;
+    function fakeAddressForCity(cityKey){
+      if(cityKey==='saopaulo'){
+        return pick([
+          "Av. Paulista, próximo ao MASP.",
+          "Rua da Consolação, perto do metrô.",
+          "Marginal Tietê, sentido Castelo Branco.",
+          "Av. Rebouças, esquina com uma farmácia.",
+          "Av. 23 de Maio, perto do viaduto."
+        ]);
+      }
+      return pick([
+        "5th Avenue near Central Park.",
+        "Broadway, close to Times Square.",
+        "Brooklyn, near the bridge entrance.",
+        "Queens, near a subway station.",
+        "Lower Manhattan, near Wall Street."
+      ]);
+    }
 
-  const flags = {
-    needFire: must.has("fire"),
-    needBomb: must.has("bomb"),
-    needTactical: must.has("tactical"),
-    needExtrication: must.has("extrication"),
-    needEms: must.has("ems"),
-    minRisk
-  };
-  return flags;
-}
+    function dangerLineFromScenario(sc){
+      if(sc.key.includes('bomba')) return "Tem gente perto… e ninguém sabe o que é!";
+      if(sc.key.includes('tiros')) return "Tem risco sim! Eu tô escondido!";
+      if(sc.key.includes('incendio')) return "Tem fumaça forte e chamas!";
+      if(sc.key.includes('parada')) return "Ele não respira, tá roxo!";
+      if(sc.key.includes('acidente')) return "Tem sangue e gritos…";
+      if(sc.needs.includes('triage')) return "Ah… acho que era brincadeira…";
+      return "Não sei… tô com medo!";
+    }
 
-function scoreUnitForIncident(unit, inc){
-  // higher is better
-  const must = inc.required.mustHaveTags || [];
-  const any = inc.required.anyOfTags || [];
+    function instructionForScenario(sc){
+      // educational-ish, not overly explicit.
+      if(sc.key.includes('parada')){
+        return "Inicie compressões no centro do peito: rápidas e firmes. Se houver alguém, peça para ligar e trazer ajuda. Continue até a ambulância chegar.";
+      }
+      if(sc.key.includes('parto')){
+        return "Mantenha a pessoa confortável. Prepare toalhas limpas. Não puxe o bebê. Apoie e aguarde a equipe médica.";
+      }
+      if(sc.key.includes('incendio') || sc.key.includes('fumaça')){
+        return "Saia do local com segurança. Não use elevador. Se houver fumaça, fique baixo e feche portas ao sair. Não tente combater fogo se não for seguro.";
+      }
+      if(sc.key.includes('acidente')){
+        return "Não mova a vítima se houver suspeita de trauma. Sinalize o local e desligue o motor se for seguro. Aguarde resgate.";
+      }
+      if(sc.key.includes('tiros')){
+        return "Abaixe-se, procure abrigo e mantenha-se longe de janelas. Não confronte. Fique em silêncio e só fale se seguro.";
+      }
+      if(sc.needs.includes('triage')){
+        return "Preciso de informações reais. Se não houver emergência, não ocupe a linha. Trotes colocam vidas em risco.";
+      }
+      return "Mantenha a calma, afaste-se do risco e aguarde as equipes.";
+    }
 
-  let score = 0;
-  let why = [];
+    function createIncidentFromCall(call){
+      const inc = {
+        id: nextId('inc'),
+        title: call.scenario.title,
+        sev: call.scenario.sev,
+        needs: call.scenario.needs.slice(), // tags
+        loc: { ...call.loc },
+        createdAt: GAME.shiftElapsed,
+        dispatched: false,
+        resolved: false,
+        assignedUnitId: null,
+        expiresIn: call.scenario.sev==='high' ? 150 : (call.scenario.sev==='med' ? 180 : 210),
+        timeLeft: call.scenario.sev==='high' ? 150 : (call.scenario.sev==='med' ? 180 : 210),
+      };
 
-  if(unit.locked) return { score:-999, why:"Bloqueado na carreira." };
-  if(unit.status !== "disponível") return { score:-999, why:"Indisponível." };
+      GAME.incidents.push(inc);
+      $('incTag').textContent = String(GAME.incidents.length);
 
-  // tag matches
-  const tags = new Set(unit.tags);
+      const mk = L.marker([inc.loc.lat, inc.loc.lng], { icon: iconForIncident(inc.sev) }).addTo(map);
+      mk.on('click', ()=> selectIncident(inc.id));
+      mk.bindTooltip(`${inc.title}`, { direction:'top', opacity:0.9 });
+      markers.incidents.set(inc.id, mk);
 
-  let mustHits = 0;
-  must.forEach(t=>{
-    if(tags.has(t)) mustHits++;
-  });
+      renderIncidents();
+      return inc;
+    }
 
-  let anyHits = 0;
-  any.forEach(t=>{
-    if(tags.has(t)) anyHits++;
-  });
+    function endActiveCall(note){
+      if(!GAME.activeCall) return;
+      clearInterval(GAME.activeCall.typing);
+      GAME.activeCall.typing = null;
 
-  score += mustHits * 30 + anyHits * 8;
+      setTranscript(GAME.activeCall, GAME.activeCall.transcript);
+      $('choices').innerHTML = '';
+      $('callTitle').textContent = 'Sem chamada ativa';
+      $('callSmall').textContent = note || 'Aguardando…';
+      GAME.activeCall = null;
+      updateCallTimerUI(null);
 
-  if(mustHits > 0) why.push(`cobre obrigatório (${mustHits})`);
-  if(anyHits > 0) why.push(`cobre útil (${anyHits})`);
+      // auto take next if exists
+      if(GAME.queue.length){
+        setTimeout(()=> popNextCall(), 450);
+      }
+    }
 
-  // risk capability
-  if(unit.riskHandle >= (inc.required.minRiskHandle||0)){
-    score += 15;
-    why.push(`risco ok (${unit.riskHandle})`);
-  }else{
-    score -= 30;
-    why.push(`risco baixo (${unit.riskHandle})`);
-  }
+    /***********************
+     *  Dispatch mechanics
+     ************************/
+    let selectedUnitId = null;
 
-  // zone advantage
-  if(unit.zone === inc.zone){
-    score += 10;
-    why.push("na mesma zona");
-  }
+    function selectIncident(incId){
+      GAME.selectedIncidentId = incId;
+      const inc = GAME.incidents.find(x=>x.id===incId);
+      if(!inc) return;
 
-  // speed
-  score += Math.floor((unit.speed - 1) * 40); // modest bonus
-  if(unit.speed > 1.05) why.push("rápida");
+      $('dispatchHint').textContent = `Selecionada: ${inc.title}`;
+      $('btnDispatch').disabled = false;
+      $('btnUnselect').disabled = false;
 
-  // cost penalty (avoid overkill)
-  score -= unit.cost * 6;
+      renderDispatchPanel();
+      toast(`Ocorrência selecionada: ${inc.title}`);
+    }
 
-  // severity sensitivity: in grave, speed & risk matter more
-  if(inc.severity === "grave"){
-    score += unit.riskHandle * 5;
-    score += Math.floor(unit.speed * 8);
-  }
+    function selectUnitForDispatch(unitId){
+      selectedUnitId = unitId;
+      renderDispatchPanel();
+      toast('Unidade selecionada para despacho.');
+    }
 
-  if(why.length === 0) why.push("opção padrão");
+    function renderDispatchPanel(){
+      const inc = GAME.incidents.find(x=>x.id===GAME.selectedIncidentId);
+      if(!inc){
+        $('dispatchPanel').textContent = 'Nenhuma ocorrência selecionada.';
+        $('btnDispatch').disabled = true;
+        $('btnUnselect').disabled = true;
+        return;
+      }
 
-  return { score, why: why.join(" • ") };
-}
+      const needs = inc.needs.map(t=>`<span class="chip">${t}</span>`).join(' ');
+      const unit = selectedUnitId ? GAME.units.find(u=>u.id===selectedUnitId) : null;
 
-function renderRecommend(){
-  const inc = state.incidents.find(i=>i.id===state.selectedIncidentId);
-  if(!inc || inc.status !== "aguardando"){
-    recommendBox.style.display = "none";
-    recommendList.innerHTML = "";
-    return;
-  }
+      const unitLine = unit
+        ? `<div style="margin-top:8px"><strong>Unidade escolhida:</strong> ${escapeHTML(unit.name)} <span class="chip ${unit.status==='idle'?'ok':'busy'}">${unit.status}</span></div>`
+        : `<div style="margin-top:8px; opacity:.85">Escolha uma unidade (toque em uma na lista abaixo).</div>`;
 
-  // for multi requirements, we show top police/fire/ems candidates
-  // and let player tap to select.
-  const candidates = state.units
-    .map(u => ({ u, ...scoreUnitForIncident(u, inc) }))
-    .filter(x => x.score > -500)
-    .sort((a,b)=>b.score-a.score);
+      $('dispatchPanel').innerHTML = `
+        <div><strong>Ocorrência:</strong> ${escapeHTML(inc.title)} <span class="sev ${inc.sev==='high'?'high':(inc.sev==='med'?'med':'low')}">${inc.sev.toUpperCase()}</span></div>
+        <div style="margin-top:8px"><strong>Necessidades:</strong> ${needs}</div>
+        ${unitLine}
+        <div style="margin-top:8px; opacity:.8; font-family: var(--mono); font-size: 12px;">
+          Tempo restante: ${fmtMMSS(inc.timeLeft)}
+        </div>
+      `;
+    }
 
-  if(candidates.length === 0){
-    recommendBox.style.display = "none";
-    recommendList.innerHTML = "";
-    return;
-  }
+    function escapeHTML(s){
+      return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    }
 
-  recommendBox.style.display = "block";
-  recommendList.innerHTML = "";
+    function canUnitHandleIncident(unit, inc){
+      // if incident is triage only, no unit needed
+      if(inc.needs.includes('triage')) return false;
 
-  // show top 4
-  candidates.slice(0,4).forEach(item=>{
-    const line = document.createElement("div");
-    line.className = "recline";
+      // needs: a set of tags that must be satisfied at least partially.
+      // We'll treat: must match all "core" groups:
+      // - if includes 'police' -> unit.tags must include 'police'
+      // - if includes 'fire' -> unit.tags must include 'fire'
+      // - if includes 'medic' -> unit.tags must include 'medic'
+      // other tags like tactical/bomb/rescue/firetruck/ems should be matched if present.
+      const needSet = new Set(inc.needs);
 
-    const left = document.createElement("div");
-    left.className = "recl";
-    const nm = document.createElement("div");
-    nm.className = "nm";
-    nm.textContent = item.u.name;
+      // service group
+      const serviceNeeds = ['police','fire','medic'];
+      for(const s of serviceNeeds){
+        if(needSet.has(s) && !unit.tags.includes(s)) return false;
+      }
 
-    const why = document.createElement("div");
-    why.className = "why";
-    why.textContent = item.why;
+      // extra tags (ignore triage)
+      for(const t of inc.needs){
+        if(t==='triage') continue;
+        if(serviceNeeds.includes(t)) continue;
+        // accept if unit has tag OR some flexible equivalents:
+        if(t==='tactical' && (unit.tags.includes('swat') || unit.tags.includes('tactical'))) continue;
+        if(t==='ems' && unit.tags.includes('ems')) continue;
+        if(t==='firetruck' && unit.tags.includes('firetruck')) continue;
+        if(t==='rescue' && unit.tags.includes('rescue')) continue;
+        if(t==='bomb' && unit.tags.includes('bomb')) continue;
+        if(t==='patrol' && unit.tags.includes('patrol')) continue;
+        if(!unit.tags.includes(t)) return false;
+      }
+      return true;
+    }
 
-    left.appendChild(nm);
-    left.appendChild(why);
+    function dispatchSelected(){
+      const inc = GAME.incidents.find(x=>x.id===GAME.selectedIncidentId);
+      if(!inc){
+        toast('Selecione uma ocorrência.');
+        return;
+      }
+      if(!selectedUnitId){
+        toast('Selecione uma unidade.');
+        return;
+      }
+      const unit = GAME.units.find(u=>u.id===selectedUnitId);
+      if(!unit){
+        toast('Unidade inválida.');
+        return;
+      }
+      if(unit.status !== 'idle'){
+        toast('Unidade ocupada. Escolha outra.');
+        return;
+      }
+      if(inc.dispatched){
+        toast('Essa ocorrência já foi despachada.');
+        return;
+      }
 
-    const right = document.createElement("div");
-    right.style.display = "flex";
-    right.style.gap = "8px";
-    right.style.alignItems = "center";
+      // validate right unit
+      const ok = canUnitHandleIncident(unit, inc);
 
-    const pill = document.createElement("span");
-    pill.className = "pill";
-    pill.textContent = `Score ${item.score}`;
+      // create route polyline (straight line prototype)
+      const from = [unit.lat, unit.lng];
+      const to = [inc.loc.lat, inc.loc.lng];
+      const line = L.polyline([from, to], { color: ok ? '#22c55e' : '#f59e0b', weight: 3, opacity: 0.85 }).addTo(map);
 
-    const btn = document.createElement("button");
-    btn.className = "tinybtn btn-ok";
-    btn.textContent = "Selecionar";
-    btn.onclick = (e)=>{
-      e.stopPropagation();
-      if(item.u.locked || item.u.status !== "disponível") return;
-      // toggle select
-      if(state.selectedUnitIds.has(item.u.id)) state.selectedUnitIds.delete(item.u.id);
-      else state.selectedUnitIds.add(item.u.id);
+      // replace old route if exists
+      if(markers.routes.has(unit.id)){
+        map.removeLayer(markers.routes.get(unit.id));
+      }
+      markers.routes.set(unit.id, line);
+
+      unit.status = 'enroute';
+      unit.target = { incId: inc.id, toLat: inc.loc.lat, toLng: inc.loc.lng, ok };
+      inc.dispatched = true;
+      inc.assignedUnitId = unit.id;
+
+      // scoring immediate
+      if(ok){
+        addScore(+10);
+        toast('Despacho realizado (unidade adequada).');
+      }else{
+        addScore(-8);
+        toast('Despacho suspeito: unidade pode ser inadequada.');
+      }
 
       renderUnits();
-      renderStats();
-      updateDispatchButton();
-    };
-
-    right.appendChild(pill);
-    right.appendChild(btn);
-
-    line.appendChild(left);
-    line.appendChild(right);
-
-    recommendList.appendChild(line);
-  });
-}
-
-/* ==========================
-   Shift Control
-========================== */
-function startShift(){
-  if(state.shiftActive) return;
-  state.shiftActive = true;
-  state.shiftStart = now();
-
-  state.score = 0;
-  state.rep = 50;
-  state.resolved = 0;
-  state.failed = 0;
-  state.incidents = [];
-  state.selectedIncidentId = null;
-  state.selectedUnitIds = new Set();
-
-  // reset unit statuses (keep lock rules)
-  state.units.forEach(u=>{
-    u.status = "disponível";
-    u.busyUntil = 0;
-    u.locked = career.level < u.unlockLevel;
-  });
-
-  callStatus.textContent = "Turno ativo — pronto para atender";
-  dispatchStatus.textContent = "Despacho operacional";
-  startShiftBtn.disabled = true;
-  endShiftBtn.disabled = false;
-  newCallBtn.disabled = false;
-
-  log("Turno iniciado. Central operacional.");
-  ringOnce();
-  typeText(callTextEl, "Turno iniciado.\n\nClique em “Nova Chamada” para atender.\nDepois selecione o incidente e envie 1 ou MAIS unidades.", 14);
-
-  callBadge.textContent = "AGUARDANDO";
-  callBadge.className = "badge";
-  callTimerEl.textContent = "Tempo de chamada: --";
-  optionsEl.innerHTML = "";
-  callHint.textContent = "Dica AAA: a ligação abre o ticket e você despacha pela fila. Casos complexos pedem 2+ unidades.";
-
-  renderAll();
-}
-
-function endShift(reason="Turno encerrado."){
-  if(!state.shiftActive) return;
-  state.shiftActive = false;
-
-  startShiftBtn.disabled = false;
-  endShiftBtn.disabled = true;
-  newCallBtn.disabled = true;
-  dispatchBtn.disabled = true;
-
-  state.callActive = false;
-  state.currentCall = null;
-  optionsEl.innerHTML = "";
-
-  callStatus.textContent = "Turno não iniciado";
-  dispatchStatus.textContent = "Aguardando turno";
-
-  const rewards = awardShiftRewards();
-
-  const summary =
-`TURNO ENCERRADO
-Motivo: ${reason}
-
-Resultados do turno:
-- Pontuação: ${state.score}
-- Reputação: ${state.rep}/100
-- Resolvidos: ${state.resolved}
-- Falhas: ${state.failed}
-- Patente: ${computeRank(state.score, state.rep)}
-
-Recompensas da carreira:
-- +${rewards.xp} XP
-- +${rewards.credits} Créditos
-
-Dica:
-Suba de nível para liberar unidades avançadas (Tática, Anti-bomba, Aéreo).
-`;
-
-  typeText(callTextEl, summary, 12);
-  callBadge.textContent = "ENCERRADO";
-  callBadge.className = "badge badge-warn";
-  callTimerEl.textContent = "Tempo de chamada: --";
-  log(reason);
-
-  renderAll();
-}
-
-/* ==========================
-   Calls -> Incidents
-========================== */
-function createIncidentFromCall(call){
-  const city = CITY_CONFIG[state.cityKey];
-  const incSpec = call.incident(city);
-
-  const sevCfg = SEVERITY[call.severity];
-  const id = `INC-${incidentCounter++}`;
-
-  const incident = {
-    id,
-    title: call.title,
-    severity: call.severity,
-    zone: incSpec.zone,
-    required: incSpec.required,
-    status: "aguardando",
-    createdAt: now(),
-    deadlineAt: now() + sevCfg.deadlineMs,
-    baseUrgency: incSpec.baseUrgency,
-    dispatchedUnitIds: []
-  };
-
-  state.incidents.push(incident);
-  log(`Incidente criado (${id}): ${incident.title} [${incident.severity}] — Zona ${incident.zone}.`);
-  renderAll();
-}
-
-function startCall(){
-  if(!state.shiftActive) return;
-  if(state.callActive){
-    log("Você já está em chamada.");
-    return;
-  }
-
-  state.callActive = true;
-  state.callStart = now();
-  state.callQuality = 0;
-  state.currentCall = pick(CALL_POOL);
-
-  const city = CITY_CONFIG[state.cityKey];
-  ringOnce();
-
-  severityBadge(state.currentCall.severity);
-
-  callStatus.textContent = "Chamada em andamento";
-  callTimerEl.textContent = "Tempo de chamada: 00:00";
-  optionsEl.innerHTML = "";
-
-  // create ticket immediately
-  createIncidentFromCall(state.currentCall);
-
-  const intro = `${state.currentCall.intro(city)}\n\nChamador: ${state.currentCall.first}`;
-  typeText(callTextEl, intro, 14, ()=> showCallStep(0));
-
-  callHint.textContent = "A qualidade do atendimento melhora o resultado do incidente. Você pode despachar enquanto atende.";
-
-  if(state.callTimerHandle) clearInterval(state.callTimerHandle);
-  state.callTimerHandle = setInterval(()=>{
-    if(!state.callActive){
-      clearInterval(state.callTimerHandle);
-      state.callTimerHandle = null;
-      callTimerEl.textContent = "Tempo de chamada: --";
-      return;
-    }
-    const elapsed = now() - state.callStart;
-    callTimerEl.textContent = `Tempo de chamada: ${formatMMSS(elapsed)}`;
-    if(elapsed > 80_000){
-      state.rep = clamp(state.rep - 1, 0, 100);
-      renderStats();
-    }
-  }, 250);
-
-  renderAll();
-}
-
-function showCallStep(stepIndex){
-  const call = state.currentCall;
-  const step = call.steps[stepIndex];
-
-  optionsEl.innerHTML = "";
-  typeText(callTextEl, step.text, 14);
-
-  step.options.forEach(opt=>{
-    const b = document.createElement("button");
-    b.className = "optbtn";
-    b.textContent = opt.label;
-    b.onclick = ()=>{
-      if(opt.effect && typeof opt.effect.quality === "number"){
-        state.callQuality += opt.effect.quality;
-      }
-      if(typeof opt.next === "number"){
-        showCallStep(opt.next);
-      }else{
-        finishCall(opt.end || "Chamada encerrada.");
-      }
-    };
-    optionsEl.appendChild(b);
-  });
-}
-
-function finishCall(endText){
-  state.callActive = false;
-  optionsEl.innerHTML = "";
-  state.callQuality = clamp(state.callQuality, -6, 10);
-
-  if(state.callQuality >= 4) state.rep = clamp(state.rep + 1, 0, 100);
-  if(state.callQuality <= -2) state.rep = clamp(state.rep - 2, 0, 100);
-
-  callStatus.textContent = "Chamada finalizada — despache corretamente";
-  typeText(callTextEl, `${endText}\n\nQualidade do atendimento: ${state.callQuality}\n(Dica: selecione o incidente e use a recomendação.)`, 12);
-
-  renderAll();
-}
-
-/* ==========================
-   Multi-Dispatch Logic
-========================== */
-function dispatchSelected(){
-  const inc = state.incidents.find(i=>i.id===state.selectedIncidentId);
-  if(!inc || inc.status !== "aguardando") return;
-
-  // check deadline
-  if(now() > inc.deadlineAt){
-    failIncident(inc, "Despacho tardio: estourou o prazo.");
-    renderAll();
-    return;
-  }
-
-  const selectedUnits = [...state.selectedUnitIds]
-    .map(id=>state.units.find(u=>u.id===id))
-    .filter(Boolean);
-
-  const minUnits = inc.required.minUnits || 1;
-  if(selectedUnits.length < minUnits){
-    log(`Precisa selecionar no mínimo ${minUnits} unidade(s) para este incidente.`);
-    return;
-  }
-
-  // validate availability and lock
-  if(selectedUnits.some(u => u.locked)){
-    log("Há unidade bloqueada na seleção. Suba nível para liberar.");
-    return;
-  }
-  if(selectedUnits.some(u => u.status !== "disponível")){
-    log("Há unidade indisponível na seleção.");
-    return;
-  }
-
-  // mark incident in progress
-  inc.status = "em andamento";
-  inc.dispatchedUnitIds = selectedUnits.map(u=>u.id);
-
-  // compute combined capability
-  const combined = evaluateCombinedCapability(selectedUnits, inc);
-
-  // compute travel time: use fastest selected unit adjusted by zone match
-  const baseTravel = (inc.severity==="grave" ? 18_000 : inc.severity==="media" ? 22_000 : inc.severity==="leve" ? 26_000 : 20_000);
-  const bestSpeed = Math.max(...selectedUnits.map(u=>u.speed));
-  const bestZoneMatch = selectedUnits.some(u=>u.zone === inc.zone) ? 0.85 : 1.12;
-  const travel = Math.floor(baseTravel * bestZoneMatch * (1 / bestSpeed));
-
-  // resolve time: depends on severity and capability (better = faster)
-  const resolveBase = (inc.severity==="grave" ? 26_000 : inc.severity==="media" ? 20_000 : 16_000);
-  const capabilityBoost = clamp(combined.capabilityScore / 40, 0, 0.35); // up to 35% faster
-  const resolve = Math.floor(resolveBase * (1 - capabilityBoost));
-
-  // set units busy
-  selectedUnits.forEach(u=>{
-    u.status = "em atendimento";
-    u.busyUntil = now() + travel + resolve;
-  });
-
-  // log
-  const names = selectedUnits.map(u=>u.name).join(" + ");
-  log(`Despacho MULTI: ${names} → ${inc.title} (${inc.id}) | ETA ~${formatMMSS(travel)} | Unidades: ${selectedUnits.length}.`);
-
-  // Clear selection for next
-  state.selectedUnitIds = new Set();
-  renderUnits();
-  renderStats();
-  updateDispatchButton();
-
-  // outcome later
-  setTimeout(()=>{
-    if(!state.shiftActive) return;
-
-    // after dispatch, free units
-    selectedUnits.forEach(u=>{
-      u.status = "disponível";
-      u.busyUntil = 0;
-    });
-
-    const outcome = decideOutcome(combined, inc);
-    if(outcome.success){
-      resolveIncident(inc, selectedUnits, outcome);
-    }else{
-      failIncident(inc, outcome.reason);
+      renderIncidents();
+      renderDispatchPanel();
     }
 
-    renderAll();
-  }, travel + resolve);
+    function clearSelection(){
+      GAME.selectedIncidentId = null;
+      selectedUnitId = null;
+      $('dispatchHint').textContent = 'Selecione uma ocorrência';
+      $('btnDispatch').disabled = true;
+      $('btnUnselect').disabled = true;
+      renderDispatchPanel();
+    }
 
-  renderAll();
-}
+    /***********************
+     *  Scoring + resolve
+     ************************/
+    function addScore(delta){
+      GAME.score = Math.max(-999, GAME.score + delta);
+      renderHUD();
+    }
 
-function evaluateCombinedCapability(units, inc){
-  const must = inc.required.mustHaveTags || [];
-  const any = inc.required.anyOfTags || [];
-  const minRisk = inc.required.minRiskHandle || 0;
+    function resolveIncident(inc, unit){
+      if(inc.resolved) return;
+      inc.resolved = true;
 
-  const unionTags = new Set();
-  let maxRisk = 0;
-  let totalCost = 0;
-  let zoneMatch = 0;
+      // Determine outcome based on timeLeft and whether unit ok
+      const urgency = inc.sev==='high' ? 3 : (inc.sev==='med' ? 2 : 1);
+      const timeFactor = inc.timeLeft / (inc.sev==='high' ? 150 : (inc.sev==='med' ? 180 : 210));
+      const fast = timeFactor > 0.55;
 
-  units.forEach(u=>{
-    u.tags.forEach(t=>unionTags.add(t));
-    maxRisk = Math.max(maxRisk, u.riskHandle);
-    totalCost += u.cost;
-    if(u.zone === inc.zone) zoneMatch += 1;
-  });
+      let outcome = "Resolvido.";
+      let scoreDelta = 0;
+      let xpDelta = 0;
+      let moneyDelta = 0;
 
-  // must tags coverage:
-  // special rule: extrication + ems must be covered by possibly different units
-  let mustCovered = 0;
-  must.forEach(t=>{
-    if(unionTags.has(t)) mustCovered += 1;
-  });
-
-  // any coverage
-  let anyCovered = 0;
-  any.forEach(t=>{
-    if(unionTags.has(t)) anyCovered += 1;
-  });
-
-  // call quality helps
-  const infoBonus = clamp(state.callQuality || 0, -6, 10);
-
-  // capability score
-  let capabilityScore = 0;
-  capabilityScore += mustCovered * 40;
-  capabilityScore += anyCovered * 10;
-  capabilityScore += (maxRisk >= minRisk ? 20 : -40);
-  capabilityScore += zoneMatch > 0 ? 8 : 0;
-  capabilityScore += infoBonus * 5;
-  capabilityScore -= totalCost * 6; // cost matters, prevents always using elite
-
-  // hard requirements check
-  let hardFail = false;
-  if(maxRisk < minRisk) hardFail = true;
-
-  // if must includes extrication or ems, ensure present
-  if(must.includes("extrication") && !unionTags.has("extrication") && !unionTags.has("rescue")) hardFail = true;
-  if(must.includes("ems") && !unionTags.has("ems") && !unionTags.has("medical")) hardFail = true;
-  if(must.includes("fire") && !unionTags.has("fire")) hardFail = true;
-  if(must.includes("bomb") && !unionTags.has("bomb")) hardFail = true;
-  if(must.includes("tactical") && !unionTags.has("tactical")) hardFail = true;
-
-  return {
-    unionTags,
-    maxRisk,
-    totalCost,
-    mustCovered,
-    anyCovered,
-    infoBonus,
-    capabilityScore,
-    hardFail
-  };
-}
-
-function decideOutcome(combined, inc){
-  if(combined.hardFail){
-    return { success:false, reason:"Despacho não atendeu requisitos mínimos (tags/risco). Consequências graves." };
-  }
-
-  // thresholds by severity
-  const threshold =
-    inc.severity === "grave" ? 40 :
-    inc.severity === "media" ? 18 :
-    inc.severity === "leve" ? 6 :
-    10;
-
-  const success = combined.capabilityScore >= threshold;
-
-  if(success){
-    return { success:true, quality: combined.capabilityScore };
-  }
-
-  // not hard fail but below threshold
-  return { success:false, reason:`Despacho insuficiente (qualidade ${combined.capabilityScore} < ${threshold}).` };
-}
-
-function resolveIncident(inc, units, outcome){
-  inc.status = "resolvido";
-  state.resolved += 1;
-
-  const sevCfg = SEVERITY[inc.severity];
-  const base = sevCfg.baseScore;
-
-  // bonus from quality
-  const bonus = clamp(Math.floor((outcome.quality || 0) / 4), 0, 22);
-  const gain = base + bonus;
-
-  state.score += gain;
-  state.rep = clamp(state.rep + sevCfg.repDeltaOk, 0, 100);
-
-  log(`✅ RESOLVIDO: ${inc.title} (${inc.id}) | +${gain} pontos | Unidades: ${units.length}.`);
-}
-
-function failIncident(inc, reason){
-  inc.status = "falhou";
-  state.failed += 1;
-
-  const loss = inc.severity==="grave" ? 18 : inc.severity==="media" ? 12 : 8;
-  state.score = Math.max(0, state.score - loss);
-  state.rep = clamp(state.rep + SEVERITY[inc.severity].repDeltaBad, 0, 100);
-
-  let extra = "";
-  if(inc.severity==="grave") extra = " Resultado: possível óbito / dano crítico.";
-  if(inc.severity==="trote") extra = " Resultado: recurso desperdiçado por trote.";
-
-  log(`❌ FALHA: ${inc.title} (${inc.id}) | -${loss} pontos. ${reason}${extra}`);
-}
-
-/* ==========================
-   Background Tick
-========================== */
-function tick(){
-  renderShiftTime();
-
-  if(state.shiftActive){
-    // deadlines
-    state.incidents.forEach(inc=>{
-      if(inc.status === "aguardando" && now() > inc.deadlineAt){
-        inc.status = "falhou";
-        state.failed += 1;
-
-        const loss = inc.severity==="grave" ? 18 : inc.severity==="media" ? 12 : 8;
-        state.score = Math.max(0, state.score - loss);
-        state.rep = clamp(state.rep + SEVERITY[inc.severity].repDeltaBad, 0, 100);
-
-        log(`⏱ PRAZO ESTOURADO: ${inc.title} (${inc.id}) | -${loss} pontos. Atraso crítico.`);
+      if(unit && unit.target && unit.target.ok){
+        scoreDelta += 18 * urgency;
+        xpDelta += 12 * urgency;
+        moneyDelta += 8 * urgency;
+        outcome = fast ? "Sucesso rápido. Bom trabalho." : "Sucesso. Atendimento dentro do esperado.";
+      } else {
+        // wrong unit or no unit
+        scoreDelta -= 12 * urgency;
+        xpDelta += 2;
+        moneyDelta += 1;
+        outcome = "Resultado ruim: unidade inadequada/atraso. Penalização.";
       }
-    });
 
-    // cleanup
-    const keepMs = 55_000;
-    state.incidents = state.incidents.filter(inc=>{
-      if(inc.status === "aguardando" || inc.status === "em andamento") return true;
-      return (now() - inc.createdAt) < keepMs;
-    });
+      addScore(Math.round(scoreDelta));
+      addXP(Math.round(xpDelta));
+      addMoney(Math.round(moneyDelta));
 
-    // unit busy reset safeguard
-    state.units.forEach(u=>{
-      if(u.status === "em atendimento"){
-        const rem = u.busyUntil - now();
-        if(rem <= 0){
-          u.status = "disponível";
-          u.busyUntil = 0;
+      // remove marker
+      const mk = markers.incidents.get(inc.id);
+      if(mk){
+        map.removeLayer(mk);
+        markers.incidents.delete(inc.id);
+      }
+
+      // remove from list
+      GAME.incidents = GAME.incidents.filter(x=>x.id !== inc.id);
+      $('incTag').textContent = String(GAME.incidents.length);
+      renderIncidents();
+
+      toast(`📄 Relatório: ${outcome}`);
+      if(GAME.selectedIncidentId === inc.id) clearSelection();
+    }
+
+    /***********************
+     *  Rendering lists
+     ************************/
+    function renderQueue(){
+      const list = $('queueList');
+      list.innerHTML = '';
+
+      if(!GAME.queue.length){
+        const div = document.createElement('div');
+        div.className = 'muted';
+        div.textContent = 'Sem chamadas na fila.';
+        list.appendChild(div);
+        return;
+      }
+
+      for(const c of GAME.queue.slice(0,6)){
+        const it = document.createElement('div');
+        it.className = 'item';
+        it.onclick = ()=> {
+          if(GAME.activeCall){
+            toast('Finalize a chamada atual antes de atender outra.');
+            return;
+          }
+          // bring it to front
+          GAME.queue = [c, ...GAME.queue.filter(x=>x.id!==c.id)];
+          popNextCall();
+        };
+        it.innerHTML = `
+          <div class="a">
+            <p class="t">${escapeHTML(c.scenario.title)}</p>
+            <div class="s">ID ${c.id} • ${CITIES[GAME.cityKey].label}</div>
+          </div>
+          <span class="sev ${c.scenario.sev==='high'?'high':(c.scenario.sev==='med'?'med':'low')}">${c.scenario.sev.toUpperCase()}</span>
+        `;
+        list.appendChild(it);
+      }
+    }
+
+    function renderIncidents(){
+      const list = $('incList');
+      list.innerHTML = '';
+
+      if(!GAME.incidents.length){
+        const div = document.createElement('div');
+        div.className = 'muted';
+        div.textContent = 'Sem ocorrências ativas.';
+        list.appendChild(div);
+        return;
+      }
+
+      for(const inc of GAME.incidents.slice(0,10)){
+        const it = document.createElement('div');
+        it.className = 'item';
+        it.onclick = ()=> selectIncident(inc.id);
+        const unitName = inc.assignedUnitId ? (GAME.units.find(u=>u.id===inc.assignedUnitId)?.name || 'Unidade') : '—';
+        it.innerHTML = `
+          <div class="a">
+            <p class="t">${escapeHTML(inc.title)}</p>
+            <div class="s">ID ${inc.id} • Unidade: ${escapeHTML(unitName)} • ⏱ ${fmtMMSS(inc.timeLeft)}</div>
+          </div>
+          <span class="sev ${inc.sev==='high'?'high':(inc.sev==='med'?'med':'low')}">${inc.sev.toUpperCase()}</span>
+        `;
+        list.appendChild(it);
+      }
+      renderDispatchPanel();
+    }
+
+    function renderUnits(){
+      const wrap = $('unitChips');
+      wrap.innerHTML = '';
+      for(const u of GAME.units){
+        const chip = document.createElement('span');
+        chip.className = 'chip ' + (u.status==='idle'?'ok':(u.status==='enroute'?'busy':'busy'));
+        chip.textContent = `${u.name}`;
+        chip.onclick = ()=>{
+          if(!GAME.selectedIncidentId){
+            toast('Selecione uma ocorrência primeiro.');
+            return;
+          }
+          selectUnitForDispatch(u.id);
+        };
+        wrap.appendChild(chip);
+      }
+    }
+
+    function renderHUD(){
+      $('score').textContent = String(GAME.score);
+      $('shiftClock').textContent = fmtMMSS(GAME.shiftElapsed);
+
+      $('lvl').textContent = String(CAREER.lvl);
+      $('xp').textContent = String(CAREER.xp);
+      $('money').textContent = String(CAREER.money);
+
+      $('shiftState').textContent = GAME.running ? 'ON' : 'OFF';
+      const dot = $('dotShift');
+      dot.className = 'dot ' + (GAME.running ? 'ok' : '');
+    }
+
+    function updateCallTimerUI(call){
+      if(!call){
+        $('callTimerTxt').textContent = '--:--';
+        $('callTimerBar').style.width = '0%';
+        return;
+      }
+      $('callTimerTxt').textContent = fmtMMSS(call.timeLeft);
+      const pct = 100 * (call.timeLeft / call.duration);
+      $('callTimerBar').style.width = `${clamp(pct,0,100)}%`;
+    }
+
+    function renderAll(){
+      renderHUD();
+      renderQueue();
+      renderIncidents();
+      renderUnits();
+      renderDispatchPanel();
+    }
+
+    /***********************
+     *  Main loop
+     ************************/
+    function startShift(){
+      if(GAME.running) return;
+
+      GAME.running = true;
+
+      GAME.cityKey = $('city').value;
+      GAME.agency = $('agency').value;
+
+      setCity(GAME.cityKey);
+      GAME.scenarioPool = buildScenarioPool(GAME.agency);
+
+      buildUnitsForCity();
+      resetOperationalState();
+
+      $('btnStart').disabled = true;
+      $('btnEnd').disabled = false;
+      $('btnNextCall').disabled = false;
+
+      // seed some calls quickly
+      enqueueCall();
+      enqueueCall();
+      popNextCall();
+
+      // loop
+      if(GAME.tickHandle) clearInterval(GAME.tickHandle);
+      GAME.tickHandle = setInterval(tick, 250);
+
+      toast('Turno iniciado.');
+      renderAll();
+    }
+
+    function endShift(){
+      if(!GAME.running) return;
+
+      GAME.running = false;
+      clearInterval(GAME.tickHandle);
+      GAME.tickHandle = null;
+
+      $('btnStart').disabled = false;
+      $('btnEnd').disabled = true;
+      $('btnNextCall').disabled = true;
+
+      endActiveCall("Turno encerrado.");
+      clearSelection();
+
+      // reward based on score
+      const reward = Math.max(0, Math.floor(GAME.score / 10));
+      addMoney(reward);
+      addXP(Math.max(0, Math.floor(GAME.score / 12)));
+
+      toast(`Turno encerrado. Bônus: ${reward} créditos.`);
+      renderAll();
+    }
+
+    function tick(){
+      if(!GAME.running) return;
+
+      GAME.shiftElapsed += 0.25;
+
+      // Shift end
+      if(GAME.shiftElapsed >= GAME.shiftDuration){
+        endShift();
+        return;
+      }
+
+      // Generate calls periodically, faster at higher level
+      const baseInterval = 18; // seconds
+      const lvlFactor = clamp(1 - (CAREER.lvl-1)*0.03, 0.72, 1.0);
+      const interval = baseInterval * lvlFactor;
+
+      if(GAME.shiftElapsed - GAME.lastCallAt >= interval){
+        GAME.lastCallAt = GAME.shiftElapsed;
+        // sometimes generate 2 calls burst
+        enqueueCall();
+        if(Math.random() < 0.18) enqueueCall();
+        // if no active call, take it
+        if(!GAME.activeCall) popNextCall();
+      }
+
+      // Update active call timer
+      if(GAME.activeCall){
+        GAME.activeCall.timeLeft -= 0.25;
+        if(GAME.activeCall.timeLeft <= 0){
+          // call timed out => penalty
+          addScore(-10);
+          addXP(1);
+          endActiveCall("Chamada perdida por demora.");
+        } else {
+          updateCallTimerUI(GAME.activeCall);
         }
       }
-      // update lock if leveled up
-      u.locked = career.level < u.unlockLevel;
-    });
 
-    renderStats();
-    renderIncidents();
-    renderUnits();
-    renderPins();
-    renderRecommend();
-    updateDispatchButton();
-  }
+      // Update incidents timer
+      for(const inc of GAME.incidents){
+        inc.timeLeft -= 0.25;
+      }
 
-  requestAnimationFrame(tick);
-}
+      // If incident expires -> penalty and remove
+      for(const inc of [...GAME.incidents]){
+        if(inc.timeLeft <= 0){
+          // expired / worst outcome
+          addScore(inc.sev==='high' ? -30 : (inc.sev==='med' ? -18 : -8));
+          addXP(2);
+          addMoney(0);
 
-/* ==========================
-   Event Handlers
-========================== */
-citySelect.addEventListener("change", ()=>{
-  loadCity(citySelect.value);
-});
+          // remove marker
+          const mk = markers.incidents.get(inc.id);
+          if(mk){
+            map.removeLayer(mk);
+            markers.incidents.delete(inc.id);
+          }
+          GAME.incidents = GAME.incidents.filter(x=>x.id !== inc.id);
+          $('incTag').textContent = String(GAME.incidents.length);
+          if(GAME.selectedIncidentId === inc.id) clearSelection();
+          toast('Ocorrência piorou/expirou. Penalização.');
+        }
+      }
 
-startShiftBtn.addEventListener("click", startShift);
-endShiftBtn.addEventListener("click", ()=>endShift("Encerrado manualmente."));
-newCallBtn.addEventListener("click", startCall);
-dispatchBtn.addEventListener("click", dispatchSelected);
-clearUnitsBtn.addEventListener("click", ()=>{
-  state.selectedUnitIds = new Set();
-  renderUnits();
-  renderStats();
-  updateDispatchButton();
-  log("Seleção de unidades limpa.");
-});
+      // Move units (simple linear interpolation)
+      const dt = 0.25;
+      for(const u of GAME.units){
+        if(u.status === 'enroute' && u.target){
+          const speed = u.speed; // higher = faster
+          // step size scaled to lat/lng approx (gamey)
+          const step = 0.0009 * speed; // tweak
+          const dLat = u.target.toLat - u.lat;
+          const dLng = u.target.toLng - u.lng;
+          const dist = Math.hypot(dLat, dLng);
 
-resetCareerBtn.addEventListener("click", ()=>{
-  resetCareer();
-});
+          if(dist < step){
+            // arrive
+            u.lat = u.target.toLat;
+            u.lng = u.target.toLng;
+            u.status = 'onscene';
 
-unitTabs.addEventListener("click", (e)=>{
-  const t = e.target.closest(".tab");
-  if(!t) return;
-  const role = t.dataset.role;
-  state.unitRoleFilter = role;
+            // on-scene duration
+            const inc = GAME.incidents.find(x=>x.id===u.target.incId);
+            const onscene = inc ? (inc.sev==='high' ? 10 : (inc.sev==='med' ? 12 : 9)) : 9;
+            u.busyUntil = GAME.shiftElapsed + onscene;
 
-  [...unitTabs.querySelectorAll(".tab")].forEach(x=>x.classList.remove("on"));
-  t.classList.add("on");
+            // update marker
+            markers.units.get(u.id)?.setLatLng([u.lat,u.lng]);
 
-  renderUnits();
-});
+            toast(`Unidade chegou: ${u.name}`);
+          }else{
+            // move fractionally
+            u.lat += (dLat / dist) * step;
+            u.lng += (dLng / dist) * step;
+            markers.units.get(u.id)?.setLatLng([u.lat,u.lng]);
+          }
+        }
 
-onlyAvailableChk.addEventListener("change", ()=>{
-  state.onlyAvailable = !!onlyAvailableChk.checked;
-  renderUnits();
-});
+        if(u.status === 'onscene' && GAME.shiftElapsed >= u.busyUntil){
+          // resolve incident
+          const inc = GAME.incidents.find(x=>x.id===u.target?.incId);
+          resolveIncident(inc, u);
 
-unitSearchEl.addEventListener("input", ()=>{
-  state.unitSearch = unitSearchEl.value || "";
-  renderUnits();
-});
+          // go idle
+          u.status = 'idle';
+          u.target = null;
+          u.busyUntil = 0;
 
-/* ==========================
-   Init
-========================== */
-(function init(){
-  renderCareer();
-  log("Sistema carregado. Carreira persistente ativa (salva no aparelho).");
-  loadCity(citySelect.value);
-  renderAll();
-  requestAnimationFrame(tick);
+          // remove route
+          if(markers.routes.has(u.id)){
+            map.removeLayer(markers.routes.get(u.id));
+            markers.routes.delete(u.id);
+          }
 
-  typeText(callTextEl,
-`Bem-vindo ao Last Call Dispatch Operator (FASE 3).
+          renderUnits();
+        }
+      }
 
-✅ Novidades:
-- MULTI-DESPACHO (envie 2+ unidades)
-- Recomendações automáticas por incidente
-- Filtros de unidades (Polícia/Bombeiros/EMS)
-- Carreira persistente (Nível + XP + Créditos)
-- Unidades avançadas DESBLOQUEADAS por nível
+      // refresh some UI every tick
+      renderHUD();
+      renderIncidents();
+    }
 
-Como jogar:
-1) Inicie o turno
-2) Clique em “Nova Chamada”
-3) Atenda e finalize
-4) Selecione o incidente
-5) Selecione 1 ou MAIS unidades (toque para marcar)
-6) Clique “Despachar Selecionadas”
+    /***********************
+     *  Wire UI
+     ************************/
+    function wire(){
+      $('btnStart').onclick = startShift;
+      $('btnEnd').onclick = endShift;
 
-Dica:
-Acidente com preso = Resgate + Ambulância
-Ameaça armada = Tática (ROTA/SWAT)
-Bomba = Anti-bomba (GATE) / alto risco
-Incêndio = Bombeiros (Fire)
-`, 12);
-})();
-</script>
+      $('btnNextCall').onclick = ()=>{
+        if(!GAME.running){
+          toast('Inicie o turno primeiro.');
+          return;
+        }
+        enqueueCall();
+        if(!GAME.activeCall) popNextCall();
+      };
+
+      $('btnDispatch').onclick = dispatchSelected;
+      $('btnUnselect').onclick = clearSelection;
+
+      $('city').onchange = ()=>{
+        if(GAME.running){
+          toast('Para trocar cidade, encerre o turno.');
+          $('city').value = GAME.cityKey;
+          return;
+        }
+        GAME.cityKey = $('city').value;
+        setCity(GAME.cityKey);
+        $('regionTag').textContent = CITIES[GAME.cityKey].regionTag;
+      };
+
+      $('agency').onchange = ()=>{
+        if(GAME.running){
+          toast('Para trocar agência, encerre o turno.');
+          $('agency').value = GAME.agency;
+          return;
+        }
+      };
+
+      $('btnClearSave').onclick = ()=>{
+        localStorage.removeItem(SAVE_KEY);
+        CAREER = loadCareer();
+        toast('Carreira resetada.');
+        renderHUD();
+      };
+    }
+
+    /***********************
+     *  Boot
+     ************************/
+    initMap();
+    wire();
+
+    // init city view
+    setCity('saopaulo');
+    $('city').value = 'saopaulo';
+    $('agency').value = 'police';
+    renderAll();
+
+    // small initial hint
+    setTimeout(()=>toast('Dica: Inicie o turno, atenda a chamada e depois crie o despacho.'), 650);
+  </script>
 </body>
 </html>
