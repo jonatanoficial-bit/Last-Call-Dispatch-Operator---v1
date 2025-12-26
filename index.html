@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
   <title>Last Call Dispatch Operator</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <!-- IMPORTANTE: caminhos com ./ e cache-buster -->
+  <link rel="stylesheet" href="./style.css?v=20" />
 </head>
 <body>
 
@@ -33,7 +35,7 @@
           <div class="hudValue" id="hudScore">0</div>
         </div>
         <div class="hudItem">
-          <div class="hudLabel">Chamadas na fila</div>
+          <div class="hudLabel">Chamadas</div>
           <div class="hudValue" id="hudQueue">0</div>
         </div>
       </div>
@@ -41,7 +43,7 @@
 
     <main class="layout">
 
-      <!-- PAINEL ESQUERDO -->
+      <!-- ESQUERDA -->
       <section class="panel">
         <h2 class="panelTitle">Configuração</h2>
 
@@ -68,16 +70,15 @@
           </div>
 
           <div class="hint mt10">
-            Dica: no turno, as chamadas chegam em fila. Você precisa <b>atender</b> e depois <b>despachar manualmente</b>.
+            Regra do jogo: você <b>atende</b> e depois faz <b>despacho manual</b>.
+            Se for <b>trote</b>, o correto é <b>encerrar</b>.
           </div>
         </div>
 
         <h2 class="panelTitle mt16">Unidades</h2>
         <div class="card">
           <div id="unitsList" class="unitsList"></div>
-          <div class="hint mt10">
-            Cada unidade tem uso correto. Enviar unidade errada gera penalidade.
-          </div>
+          <div class="hint mt10">Dica: cada unidade tem função (role). Enviar errado dá penalidade.</div>
         </div>
 
         <h2 class="panelTitle mt16">Registro</h2>
@@ -86,7 +87,7 @@
         </div>
       </section>
 
-      <!-- PAINEL DIREITO -->
+      <!-- DIREITA -->
       <section class="panel">
         <h2 class="panelTitle">Operação</h2>
 
@@ -124,7 +125,7 @@
               </div>
 
               <div class="hint mt10">
-                Regra: você só pontua se <b>atender</b> e <b>despachar</b> corretamente dentro do tempo.
+                Você pontua por escolher a unidade certa (ou encerrar trote) dentro do tempo.
               </div>
             </div>
 
@@ -146,8 +147,11 @@
     </main>
   </div>
 
-  <script src="data/cities.js"></script>
-  <script src="data/calls.js"></script>
-  <script src="main.js"></script>
+  <!-- Dados -->
+  <script src="./data/cities.js?v=20"></script>
+  <script src="./data/calls.js?v=20"></script>
+
+  <!-- Game -->
+  <script src="./main.js?v=20"></script>
 </body>
 </html>
