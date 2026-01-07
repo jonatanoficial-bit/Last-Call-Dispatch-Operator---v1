@@ -1,6 +1,8 @@
 /* =========================================================
-   Last Call Dispatch Operator - Fase 2C (PATCH)
-   FIX: typewriter não reinicia a cada tick (evita "loop")
+   Last Call Dispatch Operator - Fase 2C (PATCH v2)
+   - FIX: typewriter não reinicia a cada tick
+   - IMPROVE: typewriter mais humano (lento + pausas)
+   - IMPROVE: toque no texto pula para o final
    ========================================================= */
 
 (function () {
@@ -31,20 +33,61 @@
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
-  // Typewriter (com token)
-  function typewriter(el, text, speed = 10) {
+  // ----------------------------
+  // Typewriter (mais humano + token + skip)
+  // ----------------------------
+  const TYPEWRITER = {
+    baseMs: 32,        // velocidade base (menor = mais rápido)
+    commaMs: 120,      // pausa extra em vírgula/;:
+    punctMs: 220,      // pausa extra em .!? 
+    newlineMs: 260,    // pausa extra em quebra de linha
+    fastFactor: 0.45,  // quando "fast" (ex: depois de skip) fica mais rápido
+  };
+
+  function typewriter(el, fullText, opts = {}) {
     if (!el) return;
+
     const token = Symbol("tw");
     el.__twToken = token;
+
+    const baseMs = clamp(opts.baseMs ?? TYPEWRITER.baseMs, 12, 80);
+    const commaMs = clamp(opts.commaMs ?? TYPEWRITER.commaMs, 0, 600);
+    const punctMs = clamp(opts.punctMs ?? TYPEWRITER.punctMs, 0, 800);
+    const newlineMs = clamp(opts.newlineMs ?? TYPEWRITER.newlineMs, 0, 900);
+
+    // Guarda o texto alvo para permitir "skip"
+    el.__twFullText = fullText;
+
     el.textContent = "";
     let i = 0;
+
+    function delayForChar(ch) {
+      if (ch === "\n") return baseMs + newlineMs;
+      if (ch === "," || ch === ";" || ch === ":") return baseMs + commaMs;
+      if (ch === "." || ch === "!" || ch === "?") return baseMs + punctMs;
+      return baseMs;
+    }
+
     function tick() {
       if (el.__twToken !== token) return;
-      if (i >= text.length) return;
-      el.textContent += text[i++];
-      setTimeout(tick, speed);
+      if (i >= fullText.length) return;
+
+      const ch = fullText[i++];
+      el.textContent += ch;
+
+      const d = delayForChar(ch);
+      setTimeout(tick, d);
     }
+
     tick();
+  }
+
+  function skipTypewriter(el) {
+    if (!el) return;
+    if (!el.__twToken) return;
+    // Mata animação atual e escreve tudo
+    el.__twToken = null;
+    el.textContent = el.__twFullText || el.textContent;
   }
 
   // ----------------------------
@@ -84,7 +127,9 @@
     shiftSummary: $("shiftSummary"),
   };
 
-  // Painel dinâmico (perguntas)
+  // ----------------------------
+  // UI Dinâmico
+  // ----------------------------
   function ensureDynamicQuestionsUI() {
     let panel = document.getElementById("dynamicQuestionsPanel");
     if (panel) return panel;
@@ -113,7 +158,6 @@
     return panel;
   }
 
-  // Painel dinâmico (RELATÓRIO)
   function ensureReportUI() {
     let panel = document.getElementById("reportPanel");
     if (panel) return panel;
@@ -161,7 +205,7 @@
   }
 
   // ----------------------------
-  // Dados (fallback)
+  // Dados fallback
   // ----------------------------
   const FALLBACK_CITIES = [
     { id: "sp_sim", name: "São Paulo (Simulação)", country: "BR" },
@@ -186,7 +230,7 @@
   // ----------------------------
   const state = {
     shiftActive: false,
-    pauseQueueWhileActiveCall: true, // modo B
+    pauseQueueWhileActiveCall: true,
     difficulty: "normal",
     agency: "police",
     cityId: null,
@@ -200,13 +244,12 @@
 
     lastReport: null,
 
-    // FIX: cache do texto pra não reiniciar typewriter em loop
+    // cache do texto para não reiniciar typewriter no tick
     ui: {
       lastCallUid: null,
       lastTranscript: "",
     },
 
-    // Carreira
     career: {
       xp: 0,
       rank: "Recruta",
@@ -520,6 +563,9 @@
       return;
     }
 
+    // Se o jogador clicar enquanto ainda está digitando, pula para o final antes
+    skipTypewriter(el.callText);
+
     state.activeCall.asked[questionId] = true;
     state.score += 1;
     applyQuestionEffect(q.effect);
@@ -528,7 +574,7 @@
     updateDispatchUnlock();
 
     renderDynamicQuestions();
-    renderActiveCall(true); // força atualizar transcrição pq mudou
+    renderActiveCall(true); // texto mudou -> atualiza (com typewriter humano)
     renderAll();
   }
 
@@ -691,8 +737,7 @@
   }
 
   // ----------------------------
-  // Render chamada ativa (transcrição)
-  // FIX: Só roda typewriter quando o texto MUDAR
+  // Render chamada ativa (com cache + typewriter humano)
   // ----------------------------
   function renderActiveCall(force = false) {
     if (!el.callText || !el.callMeta) return;
@@ -702,7 +747,6 @@
       el.callText.textContent = state.shiftActive ? "Aguardando chamadas..." : "Inicie um turno para receber chamadas.";
       if (el.dispatchInfo) el.dispatchInfo.textContent = "—";
 
-      // limpa cache
       state.ui.lastCallUid = null;
       state.ui.lastTranscript = "";
 
@@ -735,7 +779,6 @@
 
     if (def.hint) convo += `[Dica] ${def.hint}\n`;
 
-    // ✅ FIX PRINCIPAL: só reescreve se mudou
     const sameCall = state.ui.lastCallUid === c.uid;
     const sameText = state.ui.lastTranscript === convo;
 
@@ -744,7 +787,12 @@
     } else {
       state.ui.lastCallUid = c.uid;
       state.ui.lastTranscript = convo;
-      typewriter(el.callText, convo, 10);
+      typewriter(el.callText, convo, {
+        baseMs: TYPEWRITER.baseMs,
+        commaMs: TYPEWRITER.commaMs,
+        punctMs: TYPEWRITER.punctMs,
+        newlineMs: TYPEWRITER.newlineMs,
+      });
     }
 
     if (el.dispatchInfo) {
@@ -863,7 +911,6 @@
     state.activeCall = null;
     state.spawnAccumulator = 0;
 
-    // limpa cache do typewriter
     state.ui.lastCallUid = null;
     state.ui.lastTranscript = "";
 
@@ -876,7 +923,7 @@
 
     log(`✅ Turno iniciado em ${flagByCityId(state.cityId)} ${cityNameById(state.cityId)} • Agência: ${state.agency} • Dificuldade: ${state.difficulty}`);
     log(`🎓 Carreira: ${state.career.rank} (XP ${state.career.xp}) • Advertências ${state.career.warnings}/3`);
-    log(`🧠 Patch aplicado: typewriter não reinicia no tick.`);
+    log(`🧠 Patch: typewriter humano + toque para pular.`);
 
     spawnCall();
     spawnCall();
@@ -912,7 +959,6 @@
     state.activeCall = state.queue.shift();
     state.stats.handled += 1;
 
-    // reseta cache e força render do texto UMA vez
     state.ui.lastCallUid = null;
     state.ui.lastTranscript = "";
 
@@ -928,13 +974,15 @@
   function holdCall() {
     if (!state.shiftActive || !state.activeCall) return;
 
+    // se estiver digitando, pula
+    skipTypewriter(el.callText);
+
     const call = state.activeCall;
     state.activeCall = null;
 
     call.queueTTL = clamp(call.queueTTL, 10, 25);
     state.queue.unshift(call);
 
-    // limpa cache pois não há chamada ativa
     state.ui.lastCallUid = null;
     state.ui.lastTranscript = "";
 
@@ -944,6 +992,9 @@
 
   function dismissCall() {
     if (!state.shiftActive || !state.activeCall) return;
+
+    // se estiver digitando, pula
+    skipTypewriter(el.callText);
 
     const c = state.activeCall;
     const isTrote = (c.severity === "trote") || (c.confidenceTrote >= 6);
@@ -999,6 +1050,9 @@
 
   function dispatchSelectedUnit() {
     if (!state.shiftActive || !state.activeCall) return;
+
+    // se estiver digitando, pula
+    skipTypewriter(el.callText);
 
     const c = state.activeCall;
 
@@ -1106,8 +1160,6 @@
     });
 
     state.activeCall = null;
-
-    // limpa cache de transcrição
     state.ui.lastCallUid = null;
     state.ui.lastTranscript = "";
 
@@ -1115,7 +1167,7 @@
   }
 
   // ----------------------------
-  // Tick (tempo)
+  // Tick
   // ----------------------------
   function tick() {
     if (!state.shiftActive) return;
@@ -1167,7 +1219,6 @@
       if (state.queue.length < state.maxQueue) spawnCall();
     }
 
-    // ✅ Importante: renderActiveCall() agora NÃO reinicia typewriter
     renderAll();
   }
 
@@ -1180,10 +1231,7 @@
     setButtons();
     renderQueue();
     renderUnits();
-
-    // agora renderActiveCall é seguro (não reinicia se não mudou)
     renderActiveCall(false);
-
     renderDynamicQuestions();
     renderSummary();
 
@@ -1236,6 +1284,13 @@
 
     if (el.btnDispatch) el.btnDispatch.addEventListener("click", dispatchSelectedUnit);
     if (el.btnDismiss) el.btnDismiss.addEventListener("click", dismissCall);
+
+    // ✅ NOVO: tocar no texto da chamada "pula" o typewriter e mostra tudo
+    if (el.callText) {
+      el.callText.style.cursor = "pointer";
+      el.callText.addEventListener("click", () => skipTypewriter(el.callText));
+      el.callText.addEventListener("touchstart", () => skipTypewriter(el.callText), { passive: true });
+    }
   }
 
   // ----------------------------
@@ -1255,7 +1310,7 @@
     renderAll();
 
     log("✅ Sistema pronto. Clique em INICIAR TURNO.");
-    log("✅ Correção aplicada: texto da ligação não reinicia a cada segundo.");
+    log("✅ Typewriter: mais humano + toque para pular.");
   }
 
   window.__LCDO = { state };
