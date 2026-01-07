@@ -1,9 +1,6 @@
 /* =========================================================
-   Last Call Dispatch Operator - Fase 2C
-   - Resultados reais (sucesso/falha/agravamento)
-   - Relatório pós-chamada (painel)
-   - Carreira inicial: XP + Rank + Advertências
-   - Mantém: perguntas dinâmicas + despacho bloqueado até protocolo
+   Last Call Dispatch Operator - Fase 2C (PATCH)
+   FIX: typewriter não reinicia a cada tick (evita "loop")
    ========================================================= */
 
 (function () {
@@ -34,7 +31,7 @@
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
-  // Typewriter
+  // Typewriter (com token)
   function typewriter(el, text, speed = 10) {
     if (!el) return;
     const token = Symbol("tw");
@@ -137,7 +134,6 @@
       <div id="rpCareer" style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;"></div>
     `;
 
-    // coloca abaixo do painel de perguntas, se existir
     const dqPanel = document.getElementById("dynamicQuestionsPanel");
     if (dqPanel) dqPanel.insertAdjacentElement("afterend", panel);
     else operationCard.appendChild(panel);
@@ -203,6 +199,12 @@
     units: [],
 
     lastReport: null,
+
+    // FIX: cache do texto pra não reiniciar typewriter em loop
+    ui: {
+      lastCallUid: null,
+      lastTranscript: "",
+    },
 
     // Carreira
     career: {
@@ -283,7 +285,6 @@
     state.career.warnings += 1;
     log(`⚠️ ADVERTÊNCIA (${state.career.warnings}/3): ${reason}`);
     if (state.career.warnings >= 3) {
-      // demissão virtual do turno
       log("🛑 DEMISSÃO VIRTUAL: 3 advertências no turno. Turno encerrado.");
       endShift();
     }
@@ -477,7 +478,6 @@
 
       asked: {},
       dispatchUnlocked: false,
-      timeToDispatch: 0, // tempo de atendimento (seg)
       startedAt: state.timeSec,
     };
   }
@@ -521,13 +521,14 @@
     }
 
     state.activeCall.asked[questionId] = true;
-    state.score += 1; // micro-recompensa educativa
+    state.score += 1;
     applyQuestionEffect(q.effect);
 
     log(`🧾 Perguntou: ${q.label} (+1)`);
     updateDispatchUnlock();
-    renderActiveCall();
+
     renderDynamicQuestions();
+    renderActiveCall(true); // força atualizar transcrição pq mudou
     renderAll();
   }
 
@@ -691,14 +692,20 @@
 
   // ----------------------------
   // Render chamada ativa (transcrição)
+  // FIX: Só roda typewriter quando o texto MUDAR
   // ----------------------------
-  function renderActiveCall() {
+  function renderActiveCall(force = false) {
     if (!el.callText || !el.callMeta) return;
 
     if (!state.activeCall) {
       el.callMeta.textContent = "—";
       el.callText.textContent = state.shiftActive ? "Aguardando chamadas..." : "Inicie um turno para receber chamadas.";
       if (el.dispatchInfo) el.dispatchInfo.textContent = "—";
+
+      // limpa cache
+      state.ui.lastCallUid = null;
+      state.ui.lastTranscript = "";
+
       renderDynamicQuestions();
       return;
     }
@@ -728,7 +735,17 @@
 
     if (def.hint) convo += `[Dica] ${def.hint}\n`;
 
-    typewriter(el.callText, convo, 10);
+    // ✅ FIX PRINCIPAL: só reescreve se mudou
+    const sameCall = state.ui.lastCallUid === c.uid;
+    const sameText = state.ui.lastTranscript === convo;
+
+    if (!force && sameCall && sameText) {
+      // não reinicia typewriter
+    } else {
+      state.ui.lastCallUid = c.uid;
+      state.ui.lastTranscript = convo;
+      typewriter(el.callText, convo, 10);
+    }
 
     if (el.dispatchInfo) {
       el.dispatchInfo.textContent = c.dispatchUnlocked
@@ -786,7 +803,6 @@
     }
 
     if (!correctRole) {
-      // despacho errado: falha, pode piorar conforme gravidade
       let desc = "Despacho incorreto. Resposta inadequada gerou falha operacional.";
       let lives = 0;
       if (s === "grave") desc = "Despacho incorreto em ocorrência GRAVE. Possível vítima/risco não atendido a tempo.";
@@ -800,7 +816,6 @@
       };
     }
 
-    // despacho correto, mas atrasou:
     if (overdue) {
       if (s === "grave") {
         return {
@@ -820,9 +835,8 @@
       };
     }
 
-    // sucesso
     let livesSaved = 0;
-    if (s === "grave") livesSaved = 1; // simplificado (pode evoluir no futuro)
+    if (s === "grave") livesSaved = 1;
     return {
       outcome: "success",
       outcomeLabel: "SUCESSO",
@@ -849,10 +863,11 @@
     state.activeCall = null;
     state.spawnAccumulator = 0;
 
-    state.stats = { handled: 0, dispatched: 0, correct: 0, wrong: 0, expired: 0, dismissedTrote: 0, overtime: 0 };
+    // limpa cache do typewriter
+    state.ui.lastCallUid = null;
+    state.ui.lastTranscript = "";
 
-    // reset advertências por turno (opcional — aqui mantemos acumulado para "carreira")
-    // Se quiser por turno: state.career.warnings = 0;
+    state.stats = { handled: 0, dispatched: 0, correct: 0, wrong: 0, expired: 0, dismissedTrote: 0, overtime: 0 };
 
     if (el.btnStartShift) el.btnStartShift.disabled = true;
     if (el.btnEndShift) el.btnEndShift.disabled = false;
@@ -861,7 +876,7 @@
 
     log(`✅ Turno iniciado em ${flagByCityId(state.cityId)} ${cityNameById(state.cityId)} • Agência: ${state.agency} • Dificuldade: ${state.difficulty}`);
     log(`🎓 Carreira: ${state.career.rank} (XP ${state.career.xp}) • Advertências ${state.career.warnings}/3`);
-    log(`🧠 Fase 2C: Relatório + resultados + início de carreira.`);
+    log(`🧠 Patch aplicado: typewriter não reinicia no tick.`);
 
     spawnCall();
     spawnCall();
@@ -897,10 +912,16 @@
     state.activeCall = state.queue.shift();
     state.stats.handled += 1;
 
+    // reseta cache e força render do texto UMA vez
+    state.ui.lastCallUid = null;
+    state.ui.lastTranscript = "";
+
     updateDispatchUnlock();
     log(`📞 Atendeu: "${state.activeCall.def.title}" (${humanSeverity(state.activeCall.severity)})`);
 
     renderUnits();
+    renderDynamicQuestions();
+    renderActiveCall(true);
     renderAll();
   }
 
@@ -912,6 +933,10 @@
 
     call.queueTTL = clamp(call.queueTTL, 10, 25);
     state.queue.unshift(call);
+
+    // limpa cache pois não há chamada ativa
+    state.ui.lastCallUid = null;
+    state.ui.lastTranscript = "";
 
     log(`⏸️ Chamada em espera e devolvida à fila.`);
     renderAll();
@@ -966,6 +991,9 @@
     }
 
     state.activeCall = null;
+    state.ui.lastCallUid = null;
+    state.ui.lastTranscript = "";
+
     renderAll();
   }
 
@@ -997,7 +1025,6 @@
     const correctRoles = (def.dispatch && Array.isArray(def.dispatch.correctRoles)) ? def.dispatch.correctRoles : ["any"];
     const isTrote = (severityNow === "trote") || (c.confidenceTrote >= 6);
 
-    // Marca unidade como ocupada por alguns segundos
     unit.status = "busy";
     setTimeout(() => {
       unit.status = "available";
@@ -1007,7 +1034,6 @@
 
     state.stats.dispatched += 1;
 
-    // atraso
     if (c.overdue && !c.overduePenalized) {
       c.overduePenalized = true;
       state.stats.overtime += 1;
@@ -1015,7 +1041,6 @@
 
     const correctRole = !isTrote && (correctRoles.includes(unit.role) || correctRoles.includes("any"));
 
-    // Calcula outcome
     const outcome = computeOutcome({
       isTrote,
       correctRole,
@@ -1023,7 +1048,6 @@
       severity: severityNow,
     });
 
-    // Aplica pontuação/XP
     let scoreDelta = 0;
     let xpDelta = 0;
 
@@ -1039,29 +1063,24 @@
       addWarning("Despacho incorreto (falha operacional).");
       state.career.totalFail += 1;
     } else if (outcome.outcome === "partial") {
-      // correto porém atrasou => ainda pontua, mas menos
       scoreDelta = Math.max(4, severityScore(severityNow) - 10);
-      scoreDelta -= 5; // penalidade de atraso
+      scoreDelta -= 5;
       xpDelta = 3;
       state.stats.correct += 1;
       state.career.totalSuccess += 1;
     } else {
-      // success
       scoreDelta = severityScore(severityNow);
       xpDelta = severityNow === "grave" ? 8 : 5;
       state.stats.correct += 1;
       state.career.totalSuccess += 1;
     }
 
-    // Vidas salvas (simples)
     if (outcome.livesSaved > 0) {
       state.career.totalLivesSaved += outcome.livesSaved;
-      // bônus extra
       scoreDelta += 6;
       xpDelta += 4;
     }
 
-    // atraso crítico em grave: aumenta advertência
     if (!isTrote && c.overdue && String(severityNow).toLowerCase() === "grave") {
       addWarning("Atraso crítico em ocorrência GRAVE.");
     }
@@ -1069,7 +1088,6 @@
     state.score += scoreDelta;
     addXp(xpDelta);
 
-    // log e relatório
     if (outcome.outcome === "success") log(`✅ SUCESSO: despacho correto (+${scoreDelta}) XP +${xpDelta}`);
     if (outcome.outcome === "partial") log(`⚠️ ${outcome.outcomeLabel}: (+${scoreDelta}) XP +${xpDelta}`);
     if (outcome.outcome === "fail") log(`❌ FALHA: (${scoreDelta}) XP ${xpDelta}`);
@@ -1088,6 +1106,11 @@
     });
 
     state.activeCall = null;
+
+    // limpa cache de transcrição
+    state.ui.lastCallUid = null;
+    state.ui.lastTranscript = "";
+
     renderAll();
   }
 
@@ -1144,6 +1167,7 @@
       if (state.queue.length < state.maxQueue) spawnCall();
     }
 
+    // ✅ Importante: renderActiveCall() agora NÃO reinicia typewriter
     renderAll();
   }
 
@@ -1156,12 +1180,14 @@
     setButtons();
     renderQueue();
     renderUnits();
-    renderActiveCall();
+
+    // agora renderActiveCall é seguro (não reinicia se não mudou)
+    renderActiveCall(false);
+
     renderDynamicQuestions();
     renderSummary();
 
-    // garante que painel de carreira aparece mesmo sem relatório novo
-    if (rp.career && (!state.lastReport)) {
+    if (rp.career && !state.lastReport) {
       rp.career.innerHTML = `
         <div class="pill">Rank: ${escapeHtml(state.career.rank)}</div>
         <div class="pill">XP: ${state.career.xp}</div>
@@ -1229,7 +1255,7 @@
     renderAll();
 
     log("✅ Sistema pronto. Clique em INICIAR TURNO.");
-    log("📌 Fase 2C ativa: relatório + resultados + carreira (XP, rank, advertências).");
+    log("✅ Correção aplicada: texto da ligação não reinicia a cada segundo.");
   }
 
   window.__LCDO = { state };
